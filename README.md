@@ -1,148 +1,84 @@
 <p align="center">
-  <img src="./assets/hero.svg" width="100%" alt="Voice-Assisted Coding Agent">
+  <img src="./assets/hero.svg" width="100%" alt="voxcode — voice-native coding engine">
 </p>
 
 <p align="center">
-  <a href="https://github.com/Nitro-Builds-Yash/Voice-Assisted-Coding-Agent/releases/latest"><img alt="Latest release" src="https://img.shields.io/badge/RELEASE-v1.0.0-238636?style=for-the-badge&logo=github&logoColor=white"></a>
-  <img alt="Python 3.9+" src="https://img.shields.io/badge/PYTHON-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-3776ab?style=for-the-badge&logo=python&logoColor=white">
-  <img alt="Cross Platform" src="https://img.shields.io/badge/PLATFORM-WINDOWS_%7C_LINUX_%7C_MACOS-1f6feb?style=for-the-badge">
+  <a href="https://github.com/Nitro-Builds-Yash/voxcode/releases/latest"><img alt="Download voxcode" src="https://img.shields.io/badge/DOWNLOAD-v1.0-0969da?style=for-the-badge&logo=python&logoColor=white"></a>
+  <a href="https://github.com/Nitro-Builds-Yash/voxcode/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/Nitro-Builds-Yash/voxcode?display_name=tag&style=for-the-badge&label=RELEASE&color=238636"></a>
+  <img alt="Python 3.7+" src="https://img.shields.io/badge/PYTHON-3.7%2B-3776ab?style=for-the-badge&logo=python&logoColor=white">
   <a href="./LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/LICENSE-MIT-8b949e?style=for-the-badge"></a>
 </p>
 
 <p align="center">
-  <strong>Speak your thoughts. Ship tested, context-aware code without breaking your flow.</strong><br>
-  A low-latency, voice-driven coding assistant powered by Tree-sitter AST parsing, hybrid BM25 + dense semantic retrieval, and multi-agent code synthesis.
+  <strong>Speak your intent. Get production-ready code.</strong><br>
+  A voice-native coding engine that listens, indexes your codebase with AST analysis, searches with hybrid BM25 + semantic retrieval, and generates context-aware code patches live.
 </p>
 
 ---
 
-## The code intelligence that stays in your flow
+## The engine that listens before it writes
 
 <p align="center">
-  <img src="./assets/architecture.svg" width="100%" alt="System Architecture: Voice Ingestion, AST Codebase Indexing, Hybrid Search, and Code Synthesis">
+  <img src="./assets/diagram.svg" width="100%" alt="Architecture pipeline diagram showing Listen, Think, Generate stages">
 </p>
 
-Traditional AI coding assistants rely on naive line-based chunking that tears functions in half and loses class scope. **Voice-Assisted Coding Agent** indexes your codebase at the Abstract Syntax Tree (AST) level, recognizing symbols, class hierarchies, and dependencies across Python, TypeScript, JavaScript, Java, and Markdown.
+The voxcode agent pipeline processes incoming voice audio locally using Whisper STT, passing the transcribed intent to the 'Think' phase. Here, a hybrid search utilizing BM25 and dense vectors queries the AST symbol index of your repository. Finally, the 'Generate' phase produces a context-aware code diff that is instantly applied live to your active workspace.
 
-## Voice commands should understand full codebase context
+## Code should know its context
 
-Voice coding fails when the model cannot see beyond the active file. When you say *"Refactor the user authentication flow and update the login test"*, the agent coordinates a full pipeline: audio transcription via Faster-Whisper, hybrid semantic retrieval across your repository, multi-step task planning, and verified patch generation.
+Traditional AI coding assistants struggle with large codebases because they rely on simple keyword search or limited context windows. voxcode exists to bridge the gap between human intent and structural codebase intelligence, allowing you to verbally instruct an agent that truly understands the relationships between your functions, classes, and modules.
 
 <table>
   <tr>
-    <td width="50%">
-      <strong>AST-Grounded Parsing</strong><br>
-      Extracts functions, classes, and scopes cleanly using Tree-sitter and AST fallbacks so code chunks never lose structural context.
+    <td>
+      <strong>Native & offline</strong><br>
+      No cloud, no accounts. Runs fully local with Whisper STT and local LLM models.
     </td>
-    <td width="50%">
-      <strong>Hybrid Search &amp; Reranking</strong><br>
-      Combines BM25 exact keyword matching with dense Qdrant vector embeddings, fused via Cross-Encoder reranking for sub-50ms query responses.
+    <td>
+      <strong>AST Indexing</strong><br>
+      Extracts functions, classes, and symbols across Python, JavaScript, TypeScript, and Java.
     </td>
   </tr>
   <tr>
-    <td width="50%">
-      <strong>Multi-Provider Generation</strong><br>
-      Natively supports local Ollama models (DeepSeek-Coder, CodeLlama), OpenAI, and OpenRouter for high-speed offline or cloud inference.
+    <td>
+      <strong>Hybrid Search</strong><br>
+      BM25 lexical + dense semantic vector retrieval, fused with Reciprocal Rank Fusion.
     </td>
-    <td width="50%">
-      <strong>Editor &amp; Diff Integration</strong><br>
-      Streams structured diffs with dry-run verification, preserving formatting and catching syntax errors before applying patches.
+    <td>
+      <strong>Voice-native</strong><br>
+      Continuous voice dictation, voice commands, and live diff sync to your editor.
     </td>
   </tr>
 </table>
 
-## Install &amp; Quickstart
+## Install
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/Nitro-Builds-Yash/Voice-Assisted-Coding-Agent.git
-   cd Voice-Assisted-Coding-Agent
-   ```
-
-2. **Set up a Python environment and install dependencies:**
-   ```bash
-   python -m venv venv
-   # On Windows:
-   .\venv\Scripts\activate
-   # On Linux/macOS:
-   source venv/bin/activate
-
-   pip install -r requirements.txt
-   ```
-
-3. **Index your repository:**
-   ```bash
-   python scripts/indexing/test_index.py
-   ```
-
-4. **Launch the agent pipeline:**
-   ```bash
-   python scripts/testing/test_agent_pipeline.py
-   ```
+1. `git clone https://github.com/Nitro-Builds-Yash/voxcode`
+2. `pip install -r requirements.txt`
+3. `python -m backend.main`
 
 > [!NOTE]
-> For private, completely offline execution, start [Ollama](https://ollama.com) locally (`ollama run deepseek-coder`) and configure `OLLAMA_MODEL` in your environment settings.
+> Requires Python 3.7+. For voice features, a microphone must be connected and the Whisper model downloaded.
 
-## Controls &amp; Capabilities
+## Usage
 
-| Capability / Command | What it does |
+| Command | What it does |
 | --- | --- |
-| **Voice Dictation (`Ctrl+Alt+V`)** | Streams speech input to Faster-Whisper STT with noise suppression. |
-| **AST Repository Indexing** | Scans and chunks codebases by symbol boundaries rather than arbitrary line counts. |
-| **Hybrid BM25 + Vector Search** | Executes reciprocal rank fusion across lexical tokens and embedding vectors. |
-| **Cross-Encoder Reranking** | Re-scores retrieved candidate snippets against the query for optimal context precision. |
-| **Multi-Step Agent Planner** | Classifies requests (explanation, refactoring, bugfix, test generation) and plans execution steps. |
-| **Diff Validator** | Generates standard unified diffs and verifies syntax before writing changes to disk. |
+| `python -m backend.main` | Start the voxcode engine |
+| `python scripts/indexing/test_index.py` | Index a repository and extract symbols |
+| `python scripts/indexing/test_bm25.py` | Test BM25 keyword search |
+| `python scripts/indexing/test_hybrid.py` | Test hybrid retrieval pipeline |
+| `python scripts/testing/test_agent_pipeline.py` | Run full agent pipeline test |
+| VS Code Extension (`vscode-extension/`) | Live voice dictation and diff sync in editor |
 
-## How it works
+## Architecture
 
-1. **Speech Ingestion**: Captures voice input in 16 kHz mono PCM and transcribes instructions with high-accuracy local Whisper models.
-2. **AST Decomposition**: Parses repository files into discrete `CodeChunk` objects tagged with symbol names, signatures, and line ranges.
-3. **Dual-Index Querying**: Queries BM25 inverted indexes for identifiers and dense vector stores for semantic concept search simultaneously.
-4. **Context Construction**: Formats the most relevant code chunks within the model's token budget along with conversation history.
-5. **Execution &amp; Patch**: Produces structured code modifications ready to apply directly to files or review in VS Code.
-
-## Built for Developers
-
-- **Local-First &amp; Air-Gappable:** Run entirely locally with Ollama and sentence-transformers—no telemetry, no leaked intellectual property.
-- **Persistent Index Cache:** Serializes indexes to disk for instant restart without re-parsing unaffected files.
-- **Session Memory:** Retains multi-turn conversation context across queries within an interactive coding session.
-- **Modular Extensibility:** Clean abstractions for LLM providers, vector backends, and AST parsers.
-
-## Build and Test from source
-
-To execute the test suite:
-
-```bash
-pytest tests/ -v
-```
-
-Repository layout:
-
-```text
-backend/
-  agent/                Execution planning, step executor, memory manager, sessions
-  codebase/             Tree-sitter AST parsers, repository scanner, chunk builder
-  config/               Path resolution, settings, environment management
-  core/                 Model registry, embedding manager, Qdrant store, repository manager
-  generation/           Context builder, prompt synthesis, Ollama / OpenAI providers
-  models/               Pydantic schemas for CodeChunk, Symbol, RetrievalResult
-  monitoring/           Prometheus metrics, health checks, latency middleware
-  retrieval/            BM25 indexer, semantic retriever, cross-encoder reranker
-vscode-extension/       Visual Studio Code extension for voice recording & diff sync
-playground/             Sample repositories for indexing and benchmarking
-scripts/                Harness scripts for testing indexing, hybrid search, and pipeline
-assets/                 High-resolution SVG architecture and status artwork
-```
-
-## Release
-
-The current stable release is [v1.0.0](https://github.com/Nitro-Builds-Yash/Voice-Assisted-Coding-Agent/releases/tag/v1.0.0).
+voxcode parses your codebase into AST symbol trees — functions, classes, imports — chunks them into semantically coherent units, builds a BM25 keyword index and a dense embedding vector store, and retrieves the most relevant context for any voice query using Reciprocal Rank Fusion. The language model generates a minimal, context-aware code patch applied as a live diff.
 
 ## License
 
-Released under the [MIT License](./LICENSE).
+[MIT License](./LICENSE)
 
 <p align="center">
-  <img src="./assets/live-status.svg" width="100%" alt="System Status: Active, Local First, Zero Telemetry">
+  <img src="./assets/live-status.svg" width="100%" alt="Live status banner indicating voxcode active">
 </p>

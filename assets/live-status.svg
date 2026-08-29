@@ -1,13 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 80" width="100%" height="100%">
-  <rect width="900" height="80" rx="10" fill="#0f172a" stroke="#1e293b" stroke-width="1.5"/>
-  <g transform="translate(30, 45)">
-    <circle cx="10" cy="0" r="6" fill="#22c55e"/>
-    <circle cx="10" cy="0" r="11" fill="none" stroke="#22c55e" opacity="0.4"/>
-    <text x="30" y="5" fill="#f8fafc" font-family="sans-serif" font-size="14" font-weight="bold">ENGINE STATUS: ACTIVE</text>
-  </g>
-  <g transform="translate(320, 48)">
-    <text x="0" y="0" fill="#94a3b8" font-family="monospace" font-size="12">AST INDEXER: READY</text>
-    <text x="170" y="0" fill="#94a3b8" font-family="monospace" font-size="12">HYBRID RETRIEVAL: OK</text>
-    <text x="370" y="0" fill="#38bdf8" font-family="monospace" font-size="12">ZERO TELEMETRY</text>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 150" width="100%" height="100%">
+  <style>
+    :root { --panel: #f6f8fa; --panel-2: #ffffff; --ink: #0d1117; --muted: #57606a; --line: #d0d7de; --accent: #0969da; --good: #1a7f37; }
+    @media (prefers-color-scheme: dark) { :root { --panel: #0d1117; --panel-2: #161b22; --ink: #f0f6fc; --muted: #8b949e; --line: #30363d; --accent: #58a6ff; --good: #3fb950; } }
+    .sans { font-family: Geist, "Avenir Next", "Segoe UI", system-ui, sans-serif; }
+    .mono { font-family: "Cascadia Mono", "SFMono-Regular", Consolas, monospace; }
+    .trace { stroke-dasharray: 7 10; animation: trace 2s linear infinite; }
+    .blink { animation: blink 2.4s ease-in-out infinite; }
+    @keyframes trace { to { stroke-dashoffset: -34; } }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+  </style>
+
+  <rect x="2" y="2" width="1196" height="146" rx="20" fill="var(--panel-2)" stroke="var(--line)" stroke-width="2"/>
+  
+  <circle cx="50" cy="75" r="8" fill="var(--good)" class="blink"/>
+  
+  <text x="76" y="82" class="sans" fill="var(--ink)" font-size="24" font-weight="800">VOXCODE ACTIVE</text>
+  <text x="320" y="80" class="mono" fill="var(--muted)" font-size="16">offline-first · zero telemetry · voice-native</text>
+  
+  <path d="M 850 75 Q 880 50 910 75 T 970 75 T 1030 75 T 1090 75" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linecap="round" class="trace" opacity="0.6"/>
+  <circle cx="1120" cy="75" r="5" fill="var(--accent)"/>
 </svg>
