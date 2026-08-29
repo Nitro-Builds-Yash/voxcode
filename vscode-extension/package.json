@@ -1,0 +1,81 @@
+{
+  "name": "voice-assisted-coding-agent",
+  "displayName": "Voice Assisted Coding Agent",
+  "description": "Voice-driven AI coding assistant with local AST codebase indexing, hybrid retrieval, and real-time diff execution.",
+  "version": "1.0.0",
+  "publisher": "Nitro-Builds-Yash",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Nitro-Builds-Yash/Voice-Assisted-Coding-Agent"
+  },
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Snippets",
+    "Other"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "voiceCoding.startRecording",
+        "title": "Voice Coding: Start Dictation / Prompt",
+        "icon": "$(mic)"
+      },
+      {
+        "command": "voiceCoding.stopRecording",
+        "title": "Voice Coding: Stop Dictation & Execute",
+        "icon": "$(primitive-square)"
+      },
+      {
+        "command": "voiceCoding.indexWorkspace",
+        "title": "Voice Coding: Reindex Current Workspace",
+        "icon": "$(database)"
+      },
+      {
+        "command": "voiceCoding.openSettings",
+        "title": "Voice Coding: Open Configuration",
+        "icon": "$(gear)"
+      }
+    ],
+    "configuration": {
+      "title": "Voice Assisted Coding Agent",
+      "properties": {
+        "voiceCoding.backendUrl": {
+          "type": "string",
+          "default": "http://localhost:8000",
+          "description": "Backend API URL of the Voice-Assisted Coding Agent service"
+        },
+        "voiceCoding.sampleRate": {
+          "type": "number",
+          "default": 16000,
+          "description": "Audio recording sample rate (Hz)"
+        },
+        "voiceCoding.autoApplyDiffs": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically apply validated code patches without manual review"
+        }
+      }
+    },
+    "keybindings": [
+      {
+        "command": "voiceCoding.startRecording",
+        "key": "ctrl+alt+v",
+        "mac": "cmd+alt+v"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "@types/vscode": "^1.75.0",
+    "typescript": "^5.0.0"
+  }
+}
