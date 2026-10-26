@@ -8,6 +8,9 @@ from backend.retrieval.rerank.reranker import CrossEncoderReranker
 from backend.generation.providers.ollama_provider import OllamaProvider
 from backend.generation.providers.openai_provider import OpenAIProvider
 from backend.generation.providers.openrouter_provider import OpenRouterProvider
+from backend.generation.providers.gemini_provider import GeminiProvider
+from backend.generation.providers.groq_provider import GroqProvider
+from backend.generation.providers.anthropic_provider import AnthropicProvider
 
 
 class ModelRegistry:
@@ -31,10 +34,6 @@ class ModelRegistry:
         self._reranker = None
         self._providers = {}
 
-    # =====================================================
-    # Embedder
-    # =====================================================
-
     def get_embedder(self):
 
         if self._embedder is None:
@@ -42,20 +41,12 @@ class ModelRegistry:
 
         return self._embedder
 
-    # =====================================================
-    # Reranker
-    # =====================================================
-
     def get_reranker(self):
 
         if self._reranker is None:
             self._reranker = CrossEncoderReranker()
 
         return self._reranker
-
-    # =====================================================
-    # Providers
-    # =====================================================
 
     def get_provider(
         self,
@@ -70,7 +61,6 @@ class ModelRegistry:
         # -------------------------------
         # Ollama
         # -------------------------------
-
         if provider_name == "ollama":
             instance = OllamaProvider(
                 model=settings.OLLAMA_MODEL,
@@ -78,9 +68,35 @@ class ModelRegistry:
             )
 
         # -------------------------------
+        # Google Gemini
+        # -------------------------------
+        elif provider_name == "gemini":
+            instance = GeminiProvider(
+                api_key=settings.GEMINI_API_KEY,
+                model=settings.GEMINI_MODEL,
+            )
+
+        # -------------------------------
+        # Groq
+        # -------------------------------
+        elif provider_name == "groq":
+            instance = GroqProvider(
+                api_key=settings.GROQ_API_KEY,
+                model=settings.GROQ_MODEL,
+            )
+
+        # -------------------------------
+        # Anthropic Claude
+        # -------------------------------
+        elif provider_name == "anthropic":
+            instance = AnthropicProvider(
+                api_key=settings.ANTHROPIC_API_KEY,
+                model=settings.ANTHROPIC_MODEL,
+            )
+
+        # -------------------------------
         # OpenAI
         # -------------------------------
-
         elif provider_name == "openai":
             instance = OpenAIProvider(
                 api_key=settings.OPENAI_API_KEY,
@@ -90,7 +106,6 @@ class ModelRegistry:
         # -------------------------------
         # OpenRouter
         # -------------------------------
-
         elif provider_name == "openrouter":
             instance = OpenRouterProvider(
                 api_key=settings.OPENROUTER_API_KEY,
@@ -104,9 +119,8 @@ class ModelRegistry:
 
         return instance
 
-    # =====================================================
-    # Cleanup
-    # =====================================================
+    def set_provider_config(self, provider_name: str, instance):
+        self._providers[provider_name.lower()] = instance
 
     def unload(self):
 

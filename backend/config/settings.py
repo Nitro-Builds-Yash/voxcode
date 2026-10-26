@@ -10,7 +10,7 @@ class Settings(BaseSettings):
 
     APP_NAME: str = "Voice Assisted Coding Agent"
 
-    APP_VERSION: str = "0.1.0"
+    APP_VERSION: str = "0.2.0"
 
     DEBUG: bool = True
 
@@ -61,7 +61,7 @@ class Settings(BaseSettings):
         repr=False,
     )
 
-    OPENAI_MODEL: str = "gpt-4.1"
+    OPENAI_MODEL: str = "gpt-4o"
 
     # =====================================================
     # OpenRouter
@@ -75,10 +75,52 @@ class Settings(BaseSettings):
     OPENROUTER_MODEL: str = "deepseek/deepseek-chat"
 
     # =====================================================
+    # Google Gemini
+    # =====================================================
+
+    GEMINI_API_KEY: str = Field(
+        default="",
+        repr=False,
+    )
+
+    GEMINI_MODEL: str = "gemini-2.5-flash"
+
+    # =====================================================
+    # Anthropic Claude
+    # =====================================================
+
+    ANTHROPIC_API_KEY: str = Field(
+        default="",
+        repr=False,
+    )
+
+    ANTHROPIC_MODEL: str = "claude-3-7-sonnet-20250219"
+
+    # =====================================================
+    # Groq (Ultra-Fast Inference)
+    # =====================================================
+
+    GROQ_API_KEY: str = Field(
+        default="",
+        repr=False,
+    )
+
+    GROQ_MODEL: str = "llama-3.3-70b-versatile"
+
+    # =====================================================
     # Qdrant
     # =====================================================
 
+    QDRANT_HOST: str = "localhost"
+    QDRANT_PORT: int = 6333
     QDRANT_COLLECTION: str = "repository_chunks"
+
+    # =====================================================
+    # Redis
+    # =====================================================
+
+    REDIS_HOST: str = "localhost"
+    REDIS_PORT: int = 6379
 
     class Config:
 

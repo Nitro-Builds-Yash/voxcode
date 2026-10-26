@@ -1,5 +1,8 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 from backend.api.routes.health import (
     router as health_router,
@@ -13,6 +16,9 @@ from backend.api.routes.voice import (
 from backend.api.routes.index import (
     router as index_router,
 )
+from backend.api.routes.config import (
+    router as config_router,
+)
 from backend.config.settings import (
     settings,
 )
@@ -22,7 +28,6 @@ app = FastAPI(
     version=settings.APP_VERSION,
 )
 
-# Allow VS Code extension and local frontends to communicate
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -31,14 +36,24 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Include API Routers
 app.include_router(health_router)
 app.include_router(agent_router)
 app.include_router(voice_router)
 app.include_router(index_router)
+app.include_router(config_router)
+
+# Serve Web UI
+ui_dir = os.path.join(os.path.dirname(__file__), "ui")
+if os.path.exists(ui_dir):
+    app.mount("/static", StaticFiles(directory=ui_dir), name="static")
 
 
 @app.get("/")
 def root():
+    index_file = os.path.join(ui_dir, "index.html")
+    if os.path.exists(index_file):
+        return FileResponse(index_file)
     return {
         "name": settings.APP_NAME,
         "version": settings.APP_VERSION,
