@@ -8,7 +8,7 @@ class EmotionProfile(BaseModel):
     intensity: float  # 0.0 to 1.0
     sentiment: str  # "negative", "neutral", "positive"
     tone_description: str
-    jarvis_directive: str  # How JARVIS should tailor its persona and technical response
+    vox_adaptation: str  # How Vox should tailor tone and engineering support
 
 
 class EmotionAnalyzer:
@@ -16,7 +16,7 @@ class EmotionAnalyzer:
     Analyzes natural speech transcripts and acoustic cues to determine:
     1. Emotional state (frustration, urgency, curiosity, fatigue, calm)
     2. Sentiment & intensity
-    3. Custom JARVIS behavioral adaptations (calm reassurance, high-speed triage, deep technical mentorship)
+    3. Custom Vox adaptive behavioral responses (calm problem resolution, incident response, architectural deep-dive)
     """
 
     FRUSTRATION_KEYWORDS = [
@@ -55,7 +55,6 @@ class EmotionAnalyzer:
         curiosity_hits = sum(1 for kw in self.CURIOSITY_KEYWORDS if kw in text_lower)
         confident_hits = sum(1 for kw in self.CONFIDENT_KEYWORDS if kw in text_lower)
 
-        # Exclamation and caps detection
         exclamations = text.count("!")
         words = text.split()
         caps_words = sum(1 for w in words if w.isupper() and len(w) > 1)
@@ -67,10 +66,10 @@ class EmotionAnalyzer:
                 primary_emotion="frustrated",
                 intensity=intensity,
                 sentiment="negative",
-                tone_description="User appears stressed, blocked, or encountering errors.",
-                jarvis_directive=(
-                    "Adopt a calming, reassuring, steady JARVIS tone. Acknowledge the irritation with poise, "
-                    "cut straight to the root cause without lecturing, and provide a clean, immediate remedy."
+                tone_description="Stress or blocker detected.",
+                vox_adaptation=(
+                    "Adopt a steady, reassuring tone. Cut directly to the root cause without lecturing, "
+                    "and provide an immediate, clear remedy to unblock the developer."
                 ),
             )
 
@@ -81,10 +80,10 @@ class EmotionAnalyzer:
                 primary_emotion="urgent",
                 intensity=intensity,
                 sentiment="neutral",
-                tone_description="High-priority, time-sensitive situation or active incident.",
-                jarvis_directive=(
-                    "Switch to Tactical Incident mode. Be extremely crisp, decisive, and rapid. "
-                    "Lead with direct actionable commands and diffs first, explanation second."
+                tone_description="Time-sensitive incident or rapid patch needed.",
+                vox_adaptation=(
+                    "Switch to Incident Response mode. Keep communications brief and decisive. "
+                    "Provide actionable commands and code diffs first."
                 ),
             )
 
@@ -94,10 +93,10 @@ class EmotionAnalyzer:
                 primary_emotion="fatigued",
                 intensity=0.7,
                 sentiment="neutral",
-                tone_description="Late night or cognitive exhaustion detected.",
-                jarvis_directive=(
-                    "Adopt a supportive, highly attentive copilot demeanor. Handle the heavy lifting, "
-                    "simplify choices, double-check edge cases gently, and suggest taking a break if needed."
+                tone_description="Developer fatigue or late session detected.",
+                vox_adaptation=(
+                    "Minimize cognitive strain. Keep explanations concise, handle edge cases cleanly, "
+                    "and offer clear, low-effort action steps."
                 ),
             )
 
@@ -107,21 +106,21 @@ class EmotionAnalyzer:
                 primary_emotion="curious",
                 intensity=0.8,
                 sentiment="positive",
-                tone_description="Deep dive, architectural exploration, or learning mode.",
-                jarvis_directive=(
-                    "Act as an insightful systems mentor and co-architect. Provide rich context, "
-                    "tradeoffs, AST relationships, and design pattern analogies."
+                tone_description="Exploration, learning, or architectural inquiry.",
+                vox_adaptation=(
+                    "Provide comprehensive architectural clarity, AST relationships, "
+                    "and design tradeoffs."
                 ),
             )
 
-        # Default: Confident / Calm Collaborator
+        # Default: Composed / Flow State
         return EmotionProfile(
             primary_emotion="calm",
             intensity=0.5,
             sentiment="positive" if confident_hits > 0 else "neutral",
-            tone_description="Composed, productive engineering flow.",
-            jarvis_directive=(
-                "Speak as J.A.R.V.I.S.: sophisticated, proactive, dryly witty, mathematically precise, "
-                "addressing the user with high professional respect ('sir' / 'commander' when natural)."
+            tone_description="Focused, productive flow state.",
+            vox_adaptation=(
+                "Maintain a crisp, highly efficient engineering flow. "
+                "Be proactive, clear, and mathematically accurate."
             ),
         )

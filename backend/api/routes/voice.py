@@ -31,7 +31,7 @@ class ToneAnalysisRequest(BaseModel):
 @router.post("/transcribe")
 async def transcribe_audio(file: UploadFile = File(...)):
     """
-    Accepts an audio file upload, returns transcribed text AND emotional tone analysis.
+    Accepts an audio file upload, returns transcribed text and tone detection.
     """
     try:
         content = await file.read()
@@ -51,7 +51,7 @@ async def transcribe_audio(file: UploadFile = File(...)):
 @router.post("/analyze-tone")
 def analyze_tone(payload: ToneAnalysisRequest):
     """
-    Analyzes emotional state, sentiment, and JARVIS adaptation directives for any input text.
+    Analyzes developer tone, emotion, and Vox adaptive directives.
     """
     emotion = emotion_analyzer.analyze(payload.text)
     return emotion.model_dump()
@@ -60,7 +60,7 @@ def analyze_tone(payload: ToneAnalysisRequest):
 @router.post("/speak")
 def speak_text(payload: TTSRequest):
     """
-    Synthesizes and speaks text out loud with emotion-tailored speech cadence.
+    Synthesizes and speaks text out loud with emotion-tailored cadence.
     """
     tts_service.speak(payload.text, emotion=payload.emotion, intensity=payload.intensity)
     return {"status": "ok", "spoken": payload.text, "emotion": payload.emotion}
@@ -72,7 +72,7 @@ async def websocket_voice_endpoint(websocket: WebSocket):
     WebSocket endpoint for continuous audio streaming or voice commands.
     """
     await websocket.accept()
-    await websocket.send_json({"type": "status", "message": "J.A.R.V.I.S. Voice connection online, sir."})
+    await websocket.send_json({"type": "status", "message": "VoxCode Voice stream connected."})
     try:
         while True:
             data = await websocket.receive_bytes()

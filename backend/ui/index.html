@@ -3,33 +3,33 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VoxCode — J.A.R.V.I.S. Autonomous Voice Agent Cockpit</title>
+  <title>VoxCode — Voice-Native Adaptive AI Coding Cockpit</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
   <style>
     :root {
-      --bg: #050811;
-      --card-bg: rgba(10, 16, 31, 0.78);
-      --card-border: rgba(0, 212, 255, 0.12);
-      --arc-blue: #00d4ff;
-      --arc-glow: rgba(0, 212, 255, 0.4);
-      --jarvis-gold: #fbbf24;
-      --accent: #6366f1;
+      --bg: #07090e;
+      --card-bg: rgba(13, 20, 36, 0.75);
+      --card-border: rgba(99, 102, 241, 0.16);
+      --vox-indigo: #6366f1;
+      --vox-cyan: #06b6d4;
+      --vox-glow: rgba(99, 102, 241, 0.35);
       --emerald: #10b981;
       --rose: #f43f5e;
+      --amber: #f59e0b;
+      --purple: #a855f7;
       --text: #f8fafc;
       --text-muted: #94a3b8;
       --mono: 'JetBrains Mono', monospace;
       --sans: 'Plus Jakarta Sans', sans-serif;
-      --cinzel: 'Cinzel', serif;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      background: radial-gradient(circle at 50% 5%, #0c213e 0%, var(--bg) 65%);
+      background: radial-gradient(circle at 50% 0%, #171c38 0%, var(--bg) 65%);
       color: var(--text);
       font-family: var(--sans);
       min-height: 100vh;
@@ -44,7 +44,7 @@
       padding: 1rem 2rem;
       border-bottom: 1px solid var(--card-border);
       backdrop-filter: blur(20px);
-      background: rgba(5, 8, 17, 0.88);
+      background: rgba(7, 9, 14, 0.88);
       position: sticky;
       top: 0;
       z-index: 50;
@@ -54,27 +54,20 @@
       display: flex;
       align-items: center;
       gap: 0.85rem;
-      font-family: var(--cinzel);
-      font-size: 1.35rem;
-      font-weight: 700;
-      letter-spacing: 1px;
+      font-size: 1.3rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
     }
 
-    .arc-reactor-logo {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      border: 2px solid var(--arc-blue);
-      box-shadow: 0 0 12px var(--arc-glow), inset 0 0 8px var(--arc-glow);
+    .vox-logo-badge {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--vox-indigo), var(--vox-cyan));
       display: flex;
       align-items: center;
       justify-content: center;
-      animation: arcSpin 8s linear infinite;
-    }
-
-    @keyframes arcSpin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+      box-shadow: 0 0 15px var(--vox-glow);
     }
 
     .status-pill {
@@ -83,9 +76,9 @@
       gap: 0.5rem;
       font-size: 0.8rem;
       padding: 0.35rem 0.85rem;
-      background: rgba(0, 212, 255, 0.08);
-      border: 1px solid rgba(0, 212, 255, 0.3);
-      color: var(--arc-blue);
+      background: rgba(99, 102, 241, 0.08);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      color: #a5b4fc;
       border-radius: 9999px;
     }
 
@@ -93,9 +86,9 @@
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background: var(--arc-blue);
-      box-shadow: 0 0 10px var(--arc-blue);
-      animation: pulse 1.8s infinite;
+      background: #34d399;
+      box-shadow: 0 0 10px #34d399;
+      animation: pulse 2s infinite;
     }
 
     @keyframes pulse {
@@ -103,7 +96,7 @@
       50% { opacity: 0.3; }
     }
 
-    /* 3 Column Grid */
+    /* 3 Column Cockpit */
     .dashboard-container {
       flex: 1;
       display: grid;
@@ -127,7 +120,7 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
     }
 
     .panel-header {
@@ -149,22 +142,22 @@
       gap: 1rem;
     }
 
-    /* Arc Reactor Voice Center */
-    .arc-reactor-hub {
+    /* Vox Acoustic Hub */
+    .vox-hub {
       text-align: center;
       padding: 2.25rem 1.5rem 1.75rem;
-      background: radial-gradient(circle at 50% 50%, rgba(0, 212, 255, 0.12) 0%, transparent 75%);
+      background: radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.14) 0%, transparent 75%);
       border-bottom: 1px solid var(--card-border);
       position: relative;
     }
 
-    .jarvis-orb {
-      width: 96px;
-      height: 96px;
+    .vox-orb {
+      width: 90px;
+      height: 90px;
       border-radius: 50%;
-      background: radial-gradient(circle, #0ea5e9 0%, #0369a1 70%, #082f49 100%);
-      border: 2px solid var(--arc-blue);
-      box-shadow: 0 0 35px var(--arc-glow);
+      background: linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 0 35px var(--vox-glow);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -173,26 +166,26 @@
       transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    .jarvis-orb:hover {
+    .vox-orb:hover {
       transform: scale(1.08);
-      box-shadow: 0 0 50px rgba(0, 212, 255, 0.8);
+      box-shadow: 0 0 45px rgba(99, 102, 241, 0.7);
     }
 
-    .jarvis-orb.active {
-      border-color: #38bdf8;
-      box-shadow: 0 0 60px rgba(56, 189, 248, 0.9);
-      animation: jarvisPulse 1.2s infinite;
+    .vox-orb.active {
+      background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
+      box-shadow: 0 0 50px rgba(244, 63, 94, 0.8);
+      animation: voxPulse 1.2s infinite;
     }
 
-    @keyframes jarvisPulse {
+    @keyframes voxPulse {
       0%, 100% { transform: scale(1); }
       50% { transform: scale(1.1); }
     }
 
     /* Emotion & Tone HUD */
     .emotion-hud {
-      background: rgba(0, 212, 255, 0.04);
-      border: 1px solid rgba(0, 212, 255, 0.18);
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 0.75rem;
       padding: 0.85rem 1rem;
       display: flex;
@@ -204,7 +197,7 @@
       display: inline-flex;
       align-items: center;
       gap: 0.4rem;
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.06em;
@@ -230,8 +223,8 @@
 
     select, input, textarea {
       width: 100%;
-      background: rgba(10, 16, 31, 0.88);
-      border: 1px solid rgba(0, 212, 255, 0.15);
+      background: rgba(10, 16, 31, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: 0.6rem;
       padding: 0.7rem 0.85rem;
       color: white;
@@ -242,12 +235,12 @@
 
     select:focus, input:focus, textarea:focus {
       outline: none;
-      border-color: var(--arc-blue);
-      box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+      border-color: var(--vox-indigo);
+      box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
     }
 
     .btn {
-      background: linear-gradient(135deg, #0284c7, #0369a1);
+      background: linear-gradient(135deg, #4f46e5, #4338ca);
       border: none;
       color: white;
       font-weight: 600;
@@ -263,7 +256,7 @@
     }
 
     .btn:hover {
-      box-shadow: 0 0 15px rgba(2, 132, 199, 0.5);
+      box-shadow: 0 0 15px rgba(99, 102, 241, 0.5);
       transform: translateY(-1px);
     }
 
@@ -273,14 +266,14 @@
     }
 
     .btn-secondary:hover {
-      background: rgba(0, 212, 255, 0.1);
-      border-color: var(--arc-blue);
+      background: rgba(99, 102, 241, 0.15);
+      border-color: var(--vox-indigo);
     }
 
-    /* Terminal */
+    /* Terminal & Diff View */
     .terminal-window {
-      background: #020409;
-      border: 1px solid rgba(0, 212, 255, 0.12);
+      background: #030712;
+      border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 0.75rem;
       padding: 1.25rem;
       font-family: var(--mono);
@@ -300,8 +293,8 @@
       position: fixed;
       bottom: 2rem;
       right: 2rem;
-      background: #082f49;
-      border: 1px solid var(--arc-blue);
+      background: #1e1b4b;
+      border: 1px solid var(--vox-indigo);
       color: white;
       padding: 0.75rem 1.25rem;
       border-radius: 0.6rem;
@@ -322,41 +315,42 @@
 <body>
 
   <div id="toast-banner">
-    <i data-lucide="info" style="width: 18px; height: 18px; color: var(--arc-blue);"></i>
-    <span id="toast-message">J.A.R.V.I.S. Systems Online</span>
+    <i data-lucide="info" style="width: 18px; height: 18px; color: #a5b4fc;"></i>
+    <span id="toast-message">VoxCode Engine Active</span>
   </div>
 
   <header>
     <div class="brand">
-      <div class="arc-reactor-logo">
-        <i data-lucide="cpu" style="width: 14px; height: 14px; color: var(--arc-blue);"></i>
+      <div class="vox-logo-badge">
+        <i data-lucide="mic" style="width: 18px; height: 18px; color: white;"></i>
       </div>
-      <span>J.A.R.V.I.S. // VOXCODE</span>
+      <span>VoxCode</span>
+      <span style="font-size: 0.7rem; font-family: var(--mono); background: rgba(99, 102, 241, 0.2); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.4); padding: 0.2rem 0.5rem; border-radius: 9999px;">AI COPILOT</span>
     </div>
 
     <div style="display: flex; align-items: center; gap: 1rem;">
       <div class="status-pill">
         <div class="status-dot"></div>
-        <span id="backend-status-text">Autonomous Agent Ready</span>
+        <span id="backend-status-text">Vox Agent Ready</span>
       </div>
       <button class="btn btn-secondary" onclick="reindexRepo()">
         <i data-lucide="database" style="width: 16px; height: 16px;"></i>
-        Scan Repository
+        Index Workspace
       </button>
     </div>
   </header>
 
   <div class="dashboard-container">
 
-    <!-- Left: AI Engine & Persona Config -->
+    <!-- Left: Models & Configuration -->
     <div class="panel">
       <div class="panel-header">
-        <span><i data-lucide="cpu" style="width: 16px; height: 16px; vertical-align: middle;"></i> Neural Architecture</span>
+        <span><i data-lucide="sliders" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px;"></i> AI Models & Config</span>
         <span class="emotion-badge emo-calm" id="active-provider-chip">GEMINI</span>
       </div>
       <div class="panel-content">
         <div>
-          <label>Cognitive LLM Engine</label>
+          <label>Active LLM Engine</label>
           <select id="provider-select" onchange="switchProvider()">
             <option value="gemini">Google Gemini 2.5 Flash</option>
             <option value="groq">Groq LPU (Llama 3.3 70B)</option>
@@ -373,50 +367,42 @@
         </div>
 
         <div>
-          <label>Agent Persona Protocol</label>
-          <select id="persona-select">
-            <option value="jarvis">J.A.R.V.I.S. (Emotion-Aware & Proactive)</option>
-            <option value="standard">Standard Engineering Copilot</option>
-          </select>
-        </div>
-
-        <div>
           <label>Workspace Target</label>
           <input type="text" id="repo-path" value="." placeholder="e.g. C:/Projects/repo">
         </div>
 
         <button class="btn" onclick="saveAIConfig()">
-          <i data-lucide="shield-check" style="width: 16px; height: 16px;"></i>
-          Synchronize Core
+          <i data-lucide="save" style="width: 16px; height: 16px;"></i>
+          Save & Apply Config
         </button>
 
         <hr style="border: 0; border-top: 1px solid var(--card-border); margin: 0.5rem 0;">
 
-        <!-- Emotional Adaptation Telemetry -->
+        <!-- Adaptive Telemetry -->
         <div>
-          <label>Acoustic & Tone Directive</label>
-          <div style="background: rgba(0,0,0,0.3); border-radius: 0.6rem; padding: 0.75rem; margin-top: 0.4rem; font-size: 0.8rem; color: var(--text-muted); line-height: 1.5;" id="jarvis-directive-box">
-            Awaiting user input. Tonal analysis will adjust speech velocity and agent temperament automatically.
+          <label>Adaptive Assistance Directive</label>
+          <div style="background: rgba(0,0,0,0.3); border-radius: 0.6rem; padding: 0.75rem; margin-top: 0.4rem; font-size: 0.8rem; color: var(--text-muted); line-height: 1.5;" id="vox-directive-box">
+            Awaiting input. Tone and emotion analysis will adapt response depth, pace, and vocal cadence automatically.
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Center: Arc Reactor Voice Hub & Live Execution -->
+    <!-- Center: Voice Hub & Execution Stream -->
     <div class="panel">
-      <div class="arc-reactor-hub">
-        <button id="mic-btn" class="jarvis-orb" onclick="toggleRecording()">
-          <i data-lucide="mic" id="mic-icon" style="width: 40px; height: 40px; color: white;"></i>
+      <div class="vox-hub">
+        <button id="mic-btn" class="vox-orb" onclick="toggleRecording()">
+          <i data-lucide="mic" id="mic-icon" style="width: 38px; height: 38px; color: white;"></i>
         </button>
-        <h2 id="voice-heading" style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.35rem; font-family: var(--cinzel); letter-spacing: 0.5px;">Click to Instruct J.A.R.V.I.S.</h2>
-        <p style="color: var(--text-muted); font-size: 0.85rem;" id="voice-subtext">"At your service, sir. Speak your intent or command."</p>
+        <h2 id="voice-heading" style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.35rem;">Speak or Type Your Intent</h2>
+        <p style="color: var(--text-muted); font-size: 0.85rem;" id="voice-subtext">Click the microphone to dictate instructions in real-time.</p>
       </div>
 
       <div class="panel-content">
-        <!-- Live Tone & Emotion Telemetry Ribbon -->
+        <!-- Live Tone & Emotion Telemetry -->
         <div class="emotion-hud">
           <div style="display: flex; align-items: center; gap: 0.6rem;">
-            <i data-lucide="activity" style="width: 18px; height: 18px; color: var(--arc-blue);"></i>
+            <i data-lucide="activity" style="width: 18px; height: 18px; color: #a5b4fc;"></i>
             <span style="font-size: 0.85rem; font-weight: 600;">Detected Tone:</span>
           </div>
           <div class="emotion-badge emo-calm" id="emotion-tag">
@@ -425,20 +411,19 @@
         </div>
 
         <div style="display: flex; gap: 0.75rem;">
-          <input type="text" id="prompt-input" placeholder="e.g. 'Why does the retriever keep breaking on empty files? Fix it immediately'..." onkeydown="if(event.key==='Enter') runAgent()">
+          <input type="text" id="prompt-input" placeholder="e.g. 'Refactor the tokenizer to handle markdown snippets with tests'..." onkeydown="if(event.key==='Enter') runAgent()">
           <button class="btn" onclick="runAgent()" style="flex-shrink: 0;">
-            <i data-lucide="terminal" style="width: 16px; height: 16px;"></i>
+            <i data-lucide="sparkles" style="width: 16px; height: 16px;"></i>
             Execute
           </button>
         </div>
 
         <div class="terminal-window" id="terminal-out">
-[J.A.R.V.I.S. Protocol Initialized]
-All systems operational.
-- Emotional Sentiment & Tone Analysis: ACTIVE
+[VoxCode Agent Ready]
+- Adaptive Tone & Sentiment Analysis: ACTIVE
 - Speech Modulation Engine: ONLINE
-- AST Code Intelligence & Hybrid Retrieval: STANDBY
-Speak or input your query above.
+- AST Code Intelligence & Hybrid Retrieval: READY
+Enter a query or click the microphone to begin.
         </div>
       </div>
     </div>
@@ -446,35 +431,35 @@ Speak or input your query above.
     <!-- Right: Telemetry & Spoken Audio -->
     <div class="panel">
       <div class="panel-header">
-        <span><i data-lucide="bar-chart-2" style="width: 16px; height: 16px; vertical-align: middle;"></i> System Telemetry</span>
+        <span><i data-lucide="bar-chart-2" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px;"></i> Workspace Intelligence</span>
         <span class="emotion-badge emo-curious" id="chunk-count-chip">0 Chunks</span>
       </div>
       <div class="panel-content">
-        <div style="background: rgba(0,212,255,0.03); padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--card-border);">
+        <div style="background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--card-border);">
           <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">TOTAL CODE SYMBOLS</div>
-          <div id="symbols-count" style="font-size: 1.8rem; font-weight: 800; color: var(--arc-blue);">0</div>
+          <div id="symbols-count" style="font-size: 1.8rem; font-weight: 800; color: #38bdf8;">0</div>
         </div>
 
-        <div style="background: rgba(0,212,255,0.03); padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--card-border);">
+        <div style="background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--card-border);">
           <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">FUNCTIONS & METHODS</div>
           <div id="func-count" style="font-size: 1.8rem; font-weight: 800; color: #34d399;">0</div>
         </div>
 
-        <div style="background: rgba(0,212,255,0.03); padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--card-border);">
+        <div style="background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--card-border);">
           <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">CLASSES & INTERFACES</div>
           <div id="class-count" style="font-size: 1.8rem; font-weight: 800; color: #fbbf24;">0</div>
         </div>
 
-        <div style="background: rgba(0,212,255,0.03); padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--card-border);">
-          <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">JARVIS VOICE LINE</div>
+        <div style="background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--card-border);">
+          <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">VOX SPOKEN FEEDBACK</div>
           <div id="voice-line-preview" style="font-size: 0.85rem; color: #e2e8f0; font-style: italic;">
-            "Awaiting your command, sir."
+            "VoxCode is ready for your instructions."
           </div>
         </div>
 
         <button class="btn" onclick="speakSummary()" style="margin-top: auto;">
           <i data-lucide="volume-2" style="width: 18px; height: 18px;"></i>
-          Synthesize Spoken Response
+          Read Output Aloud (TTS)
         </button>
       </div>
     </div>
@@ -486,7 +471,7 @@ Speak or input your query above.
 
     let isRecording = false;
     let recognition = null;
-    let lastSummary = "At your service, sir. Systems are fully calibrated.";
+    let lastSummary = "VoxCode is online and ready.";
     let lastEmotion = "calm";
     let lastIntensity = 0.5;
 
@@ -526,11 +511,11 @@ Speak or input your query above.
 
       if (isRecording) {
         btn.classList.add('active');
-        heading.innerText = "Analyzing Acoustic & Intent Stream...";
+        heading.innerText = "Listening to Voice Instruction...";
         if (recognition) { try { recognition.start(); } catch(e){} }
       } else {
         btn.classList.remove('active');
-        heading.innerText = "Click to Instruct J.A.R.V.I.S.";
+        heading.innerText = "Speak or Type Your Intent";
         if (recognition) { try { recognition.stop(); } catch(e){} }
       }
     }
@@ -566,9 +551,9 @@ Speak or input your query above.
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        showToast(`Core updated: Active Engine is ${prov.toUpperCase()}`);
+        showToast(`Configuration updated: Active Engine is ${prov.toUpperCase()}`);
       } catch (err) {
-        showToast('Configuration sync failed: ' + err);
+        showToast('Configuration update failed: ' + err);
       }
     }
 
@@ -580,19 +565,19 @@ Speak or input your query above.
       const tag = document.getElementById('emotion-tag');
       const text = document.getElementById('emotion-text');
       const intensity = document.getElementById('emotion-intensity');
-      const directiveBox = document.getElementById('jarvis-directive-box');
+      const directiveBox = document.getElementById('vox-directive-box');
 
       text.innerText = emotion.primary_emotion.toUpperCase();
       intensity.innerText = Math.round(emotion.intensity * 100) + '%';
-      directiveBox.innerText = emotion.jarvis_directive;
+      directiveBox.innerText = emotion.vox_adaptation;
 
       tag.className = 'emotion-badge emo-' + emotion.primary_emotion;
     }
 
     function formatTerminalDiff(text, diff) {
-      let output = `[J.A.R.V.I.S. Analysis & Summary]\n${text}\n\n`;
+      let output = `[VoxCode Summary]\n${text}\n\n`;
       if (diff) {
-        output += `[Synthesized Code Patch]\n`;
+        output += `[Generated Code Patch]\n`;
         const lines = diff.split('\n');
         for (const line of lines) {
           if (line.startsWith('+') && !line.startsWith('+++')) {
@@ -618,9 +603,8 @@ Speak or input your query above.
 
       const terminal = document.getElementById('terminal-out');
       const repoPath = document.getElementById('repo-path').value || '.';
-      const persona = document.getElementById('persona-select').value;
 
-      terminal.innerText = `> Connecting to neural core...\n> Analyzing intent, tonal sentiment, and AST symbols for "${prompt}"...`;
+      terminal.innerText = `> Analyzing instruction & tone for: "${prompt}"...\n> Searching AST symbols and generating code patch...`;
 
       try {
         const res = await fetch('/agent/query', {
@@ -629,7 +613,6 @@ Speak or input your query above.
           body: JSON.stringify({
             query: prompt,
             repository_path: repoPath,
-            persona: persona,
             auto_tts: false
           })
         });
@@ -638,20 +621,20 @@ Speak or input your query above.
         updateEmotionUI(data.emotion);
 
         lastSummary = data.summary || "Completed instruction.";
-        if (data.jarvis_voice_line) {
-          document.getElementById('voice-line-preview').innerText = `"${data.jarvis_voice_line}"`;
+        if (data.vox_voice_feedback) {
+          document.getElementById('voice-line-preview').innerText = `"${data.vox_voice_feedback}"`;
         }
 
         terminal.innerHTML = formatTerminalDiff(lastSummary, data.diff);
       } catch (err) {
-        terminal.innerText = `[J.A.R.V.I.S. Alert]: ${err}`;
+        terminal.innerText = `[VoxCode Error]: ${err}`;
       }
     }
 
     async function reindexRepo() {
       const repoPath = document.getElementById('repo-path').value || '.';
       const terminal = document.getElementById('terminal-out');
-      terminal.innerText = `> J.A.R.V.I.S. is mapping repository AST at: ${repoPath}...`;
+      terminal.innerText = `> Indexing repository AST at: ${repoPath}...`;
 
       try {
         const res = await fetch('/index/', {
@@ -666,10 +649,10 @@ Speak or input your query above.
         document.getElementById('class-count').innerText = data.classes_found;
         document.getElementById('symbols-count').innerText = data.functions_found + data.classes_found;
 
-        terminal.innerText = `✓ Repository scan complete, sir.\nIdentified ${data.functions_found} functions and ${data.classes_found} classes across ${data.files_indexed} files.`;
-        showToast('Repository fully indexed by J.A.R.V.I.S.');
+        terminal.innerText = `✓ Repository scan complete.\nIdentified ${data.functions_found} functions and ${data.classes_found} classes across ${data.files_indexed} files.`;
+        showToast('Repository fully indexed');
       } catch (err) {
-        terminal.innerText = `[Diagnostics Error]: ${err}`;
+        terminal.innerText = `[Indexing Error]: ${err}`;
       }
     }
 
@@ -685,7 +668,7 @@ Speak or input your query above.
             intensity: lastIntensity
           })
         });
-        showToast('J.A.R.V.I.S. vocalizing response...');
+        showToast('Playing voice summary...');
       } catch (e) {
         console.warn(e);
       }
