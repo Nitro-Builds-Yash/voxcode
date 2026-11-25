@@ -17,7 +17,6 @@ from backend.monitoring.metrics import (
 
 
 class Metrics:
-
     # ==================================================
     # Request Metrics
     # ==================================================

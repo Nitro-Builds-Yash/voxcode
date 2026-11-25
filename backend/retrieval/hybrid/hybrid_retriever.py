@@ -1,48 +1,59 @@
+"""Hybrid search over one repository: BM25 + vectors, fused, reranked,
+then expanded with call-graph neighbours."""
+
+from __future__ import annotations
+
+import logging
+from concurrent.futures import ThreadPoolExecutor
+
+from backend.codebase.graph.code_graph import CodeGraph
+from backend.codebase.indexer.index_store import RepositoryIndex
+from backend.config.settings import settings
+from backend.models.retrieval_result import RetrievalResult
+from backend.retrieval.bm25.bm25_retriever import BM25Retriever, to_result
+from backend.retrieval.hybrid.fusion import reciprocal_rank_fusion
 from backend.retrieval.semantic.semantic_retriever import SemanticRetriever
+from backend.retrieval.semantic.vector_store import VectorStore
 
-from backend.retrieval.bm25.bm25_retriever import BM25Retriever
+logger = logging.getLogger(__name__)
 
-from backend.retrieval.hybrid.fusion import ReciprocalRankFusion
+_pool = ThreadPoolExecutor(max_workers=4, thread_name_prefix="retrieval")
 
 
 class HybridRetriever:
+    def __init__(self, index: RepositoryIndex, embedder=None, vector_store: VectorStore | None = None):
+        self.index = index
+        self.chunks_by_id = {c.chunk_id: c for c in index.chunks}
+        self.bm25 = BM25Retriever(index.chunks)
+        self.graph = CodeGraph(index.chunks)
+        self.semantic = None
+        if embedder is not None and index.semantic_model:
+            self.semantic = SemanticRetriever(
+                embedder, vector_store or VectorStore(index.repo_key), self.chunks_by_id
+            )
 
-    def __init__(
-        self,
-        repository_name: str,
-    ):
+    def search(self, query: str, top_k: int | None = None) -> list[RetrievalResult]:
+        """First-stage retrieval: BM25 and semantic search in parallel, fused."""
+        top_k = top_k or settings.RETRIEVAL_CANDIDATES
+        bm25_future = _pool.submit(self.bm25.search, query, top_k)
+        semantic_results: list[RetrievalResult] = []
+        if self.semantic is not None:
+            try:
+                semantic_results = self.semantic.search(query, top_k)
+            except Exception as exc:
+                logger.warning("Semantic search failed, using BM25 only: %s", exc)
+        return reciprocal_rank_fusion([semantic_results, bm25_future.result()])[:top_k]
 
-        self.semantic = SemanticRetriever()
-
-        self.bm25 = BM25Retriever(repository_name)
-
-        self.fusion = ReciprocalRankFusion()
-
-    def search(
-        self,
-        query: str,
-        top_k: int = 10,
-    ):
-
-        semantic_results = self.semantic.search(
-            query,
-            top_k=top_k,
-        )
-
-        bm25_results = self.bm25.search(
-            query,
-            top_k=top_k,
-        )
-
-        ranked, documents = self.fusion.fuse(
-            semantic_results,
-            bm25_results,
-        )
-
-        final_results = []
-
-        for chunk_id, _ in ranked:
-
-            final_results.append(documents[chunk_id])
-
-        return final_results[:top_k]
+    def expand(self, results: list[RetrievalResult], limit: int | None = None) -> list[RetrievalResult]:
+        """Append callers/callees of the top results that are not already present."""
+        limit = settings.GRAPH_EXPANSION if limit is None else limit
+        if limit <= 0:
+            return results
+        present = {r.chunk_id for r in results}
+        extra: list[RetrievalResult] = []
+        for result in results[:3]:
+            for neighbor_id in self.graph.neighbors(result.chunk_id, limit):
+                if neighbor_id not in present and len(extra) < limit:
+                    present.add(neighbor_id)
+                    extra.append(to_result(self.chunks_by_id[neighbor_id], 0.0, "graph"))
+        return results + extra

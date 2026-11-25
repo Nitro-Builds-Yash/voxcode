@@ -1,55 +1,43 @@
-import os
-import logging
-from typing import Optional
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+"""Repository indexing endpoints."""
+
+from __future__ import annotations
+
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from backend.codebase.indexer.repository_indexer import RepositoryIndexer
+from backend.api import services
+from backend.core.repository import RepositoryPathError, resolve_repository_path
 
-logger = logging.getLogger(__name__)
-
-router = APIRouter(
-    prefix="/index",
-    tags=["index"],
-)
+router = APIRouter(prefix="/index", tags=["index"])
 
 
 class IndexRequest(BaseModel):
     repository_path: str
+    full: bool = False  # ignore the previous index and rebuild everything
+    watch: bool | None = None  # start/stop re-indexing on file changes
 
 
-class IndexResponse(BaseModel):
-    repository_path: str
-    files_indexed: int
-    chunks_created: int
-    functions_found: int
-    classes_found: int
-    status: str
-
-
-indexer = RepositoryIndexer()
-
-
-@router.post("/", response_model=IndexResponse)
-def index_workspace(payload: IndexRequest):
-    """
-    Scans and indexes the repository at the given local file path.
-    Extracts AST symbols, builds chunks, and updates code intelligence.
-    """
-    path = os.path.abspath(payload.repository_path)
-    if not os.path.exists(path):
-        raise HTTPException(status_code=404, detail=f"Path not found: {path}")
-
+@router.post("/")
+def index_workspace(payload: IndexRequest) -> dict:
+    """Incrementally index a repository: chunks, BM25, vectors, call graph."""
     try:
-        chunks, total_funcs, total_classes = indexer.index_repository(path)
-        return IndexResponse(
-            repository_path=path,
-            files_indexed=len({getattr(c, "file_path", "") for c in chunks}),
-            chunks_created=len(chunks),
-            functions_found=total_funcs,
-            classes_found=total_classes,
-            status="completed",
-        )
-    except Exception as e:
-        logger.error(f"Error during workspace indexing: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        repo = resolve_repository_path(payload.repository_path)
+    except RepositoryPathError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    stats = services.index_repository(repo, full=payload.full)
+    if payload.watch is True:
+        services.watcher.watch(repo, services.index_repository)
+    elif payload.watch is False:
+        services.watcher.unwatch(repo)
+
+    return {
+        **stats.to_dict(),
+        "watching": services.watcher.is_watching(repo),
+        "status": "completed",
+    }
+
+
+@router.get("/repos")
+def list_indexed_repositories() -> list[dict]:
+    return services.indexer.store.list()

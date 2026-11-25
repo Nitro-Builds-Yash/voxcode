@@ -1,75 +1,42 @@
-from transformers import (
-    AutoTokenizer,
-    AutoModelForSequenceClassification,
-)
+"""Cross-encoder reranking (optional; needs `transformers` + `torch`)."""
 
-import torch
+from __future__ import annotations
 
-from backend.config.settings import settings
 from backend.models.retrieval_result import RetrievalResult
-from backend.retrieval.rerank.reranker_result import RerankResult
 
 
 class CrossEncoderReranker:
+    def __init__(self, model_name: str):
+        import torch
+        from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
-    def __init__(self):
-
+        self._torch = torch
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-
-        self.tokenizer = AutoTokenizer.from_pretrained(settings.RERANK_MODEL)
-
-        self.model = AutoModelForSequenceClassification.from_pretrained(
-            settings.RERANK_MODEL
-        )
-
-        self.model.to(self.device)
-        self.model.eval()
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self.model = AutoModelForSequenceClassification.from_pretrained(model_name)
+        if self.device == "cuda":
+            self.model.half()
+        self.model.to(self.device).eval()
 
     def rerank(
-        self,
-        query: str,
-        results: list[RetrievalResult],
-        top_k: int = 5,
-    ) -> list[RerankResult]:
-
+        self, query: str, results: list[RetrievalResult], top_k: int = 5, batch_size: int = 16
+    ) -> list[RetrievalResult]:
         if not results:
             return []
+        scores: list[float] = []
+        for start in range(0, len(results), batch_size):
+            batch = results[start : start + batch_size]
+            inputs = self.tokenizer(
+                [[query, r.content] for r in batch],
+                padding=True,
+                truncation=True,
+                max_length=512,
+                return_tensors="pt",
+            ).to(self.device)
+            with self._torch.inference_mode():
+                logits = self.model(**inputs).logits.view(-1)
+            scores.extend(logits.float().cpu().tolist())
 
-        pairs = [[query, result.content] for result in results]
-
-        inputs = self.tokenizer(
-            pairs,
-            padding=True,
-            truncation=True,
-            return_tensors="pt",
-            max_length=512,
-        )
-
-        inputs = {key: value.to(self.device) for key, value in inputs.items()}
-
-        with torch.no_grad():
-
-            logits = self.model(**inputs).logits.squeeze(-1)
-
-        scores = logits.cpu().tolist()
-        reranked = []
-
-        for result, score in zip(results, scores):
-
-            reranked.append(
-                RerankResult(
-                    chunk_id=result.chunk_id,
-                    file_path=result.file_path,
-                    symbol_name=result.symbol_name,
-                    content=result.content,
-                    retrieval_score=result.score,
-                    rerank_score=float(score),
-                    source=result.source,
-                )
-            )
-        reranked.sort(
-            key=lambda x: x.rerank_score,
-            reverse=True,
-        )
-
-        return reranked[:top_k]
+        ranked = [r.model_copy(update={"rerank_score": s}) for r, s in zip(results, scores, strict=True)]
+        ranked.sort(key=lambda r: r.rerank_score or 0.0, reverse=True)
+        return ranked[:top_k]

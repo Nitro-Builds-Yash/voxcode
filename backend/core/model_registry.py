@@ -1,129 +1,145 @@
-from threading import Lock
+"""Process-wide cache of heavy models and LLM provider clients.
+
+Every model is loaded lazily, once. If an optional ML dependency is missing
+or a model cannot be downloaded, the getter returns None and the system
+degrades gracefully (e.g. BM25-only search, no reranking).
+"""
+
+from __future__ import annotations
+
+import hashlib
+import logging
+import threading
+from typing import Any
 
 from backend.config.settings import settings
 
-from backend.retrieval.semantic.embedder import Embedder
-from backend.retrieval.rerank.reranker import CrossEncoderReranker
+logger = logging.getLogger(__name__)
 
-from backend.generation.providers.ollama_provider import OllamaProvider
-from backend.generation.providers.openai_provider import OpenAIProvider
-from backend.generation.providers.openrouter_provider import OpenRouterProvider
-from backend.generation.providers.gemini_provider import GeminiProvider
-from backend.generation.providers.groq_provider import GroqProvider
-from backend.generation.providers.anthropic_provider import AnthropicProvider
+_UNAVAILABLE = object()
+
+PROVIDER_NAMES = ("ollama", "gemini", "groq", "anthropic", "openai", "openrouter")
 
 
 class ModelRegistry:
-
-    _instance = None
-    _lock = Lock()
+    _instance: ModelRegistry | None = None
+    _instance_lock = threading.Lock()
+    _lock: threading.RLock
+    _models: dict[str, Any]
+    _model_locks: dict[str, threading.Lock]
+    _providers: dict[str, tuple[str, Any]]
 
     def __new__(cls):
-
-        if cls._instance is None:
-            with cls._lock:
-                if cls._instance is None:
-                    cls._instance = super().__new__(cls)
-                    cls._instance._initialize()
-
+        with cls._instance_lock:
+            if cls._instance is None:
+                instance = super().__new__(cls)
+                instance._lock = threading.RLock()
+                instance._model_locks = {}
+                instance._models = {}
+                instance._providers = {}
+                cls._instance = instance
         return cls._instance
 
-    def _initialize(self):
+    # -------------------------------------------------------------- models
+    def _load(self, key: str, factory):
+        # One lock per model: loading the embedder (possibly a long download)
+        # must not block provider lookups or other models.
+        with self._lock:
+            if key in self._models:
+                value = self._models[key]
+                return None if value is _UNAVAILABLE else value
+            model_lock = self._model_locks.setdefault(key, threading.Lock())
 
-        self._embedder = None
-        self._reranker = None
-        self._providers = {}
+        with model_lock:
+            with self._lock:
+                if key in self._models:
+                    value = self._models[key]
+                    return None if value is _UNAVAILABLE else value
+            try:
+                value = factory()
+                logger.info("Loaded %s", key)
+            except Exception as exc:  # missing package, no network, bad model
+                logger.warning("%s unavailable (%s); continuing without it", key, exc)
+                value = _UNAVAILABLE
+            with self._lock:
+                self._models[key] = value
+        return None if value is _UNAVAILABLE else value
+
+    def model_status(self, key: str) -> str:
+        """`loaded`, `unavailable` or `not_loaded`, without triggering a load."""
+        with self._lock:
+            if key not in self._models:
+                return "not_loaded"
+            return "unavailable" if self._models[key] is _UNAVAILABLE else "loaded"
 
     def get_embedder(self):
+        from backend.retrieval.semantic.embedder import Embedder
 
-        if self._embedder is None:
-            self._embedder = Embedder()
-
-        return self._embedder
+        return self._load(
+            f"embedder:{settings.EMBEDDING_MODEL}",
+            lambda: Embedder(settings.EMBEDDING_MODEL, settings.EMBEDDING_BATCH_SIZE),
+        )
 
     def get_reranker(self):
+        if not settings.RERANK_ENABLED:
+            return None
+        from backend.retrieval.rerank.reranker import CrossEncoderReranker
 
-        if self._reranker is None:
-            self._reranker = CrossEncoderReranker()
+        return self._load(
+            f"reranker:{settings.RERANK_MODEL}",
+            lambda: CrossEncoderReranker(settings.RERANK_MODEL),
+        )
 
-        return self._reranker
+    def get_stt(self):
+        from backend.voice.stt.whisper_service import WhisperSTTService
 
-    def get_provider(
-        self,
-        provider_name: str = None,
-    ):
+        return self._load(f"whisper:{settings.WHISPER_MODEL}", WhisperSTTService)
 
-        provider_name = (provider_name or settings.DEFAULT_PROVIDER).lower()
+    def set_model(self, key: str, value) -> None:
+        """Inject a model (used by tests)."""
+        with self._lock:
+            self._models[key] = value
 
-        if provider_name in self._providers:
-            return self._providers[provider_name]
+    # ----------------------------------------------------------- providers
+    def get_provider(self, provider_name: str | None = None):
+        """Provider client for the given (or default) provider.
 
-        # -------------------------------
-        # Ollama
-        # -------------------------------
-        if provider_name == "ollama":
-            instance = OllamaProvider(
-                model=settings.OLLAMA_MODEL,
-                host=settings.OLLAMA_HOST,
+        Clients are cached per configuration, so changing a key or model via
+        /config/update takes effect on the next request automatically.
+        """
+        from backend.generation.providers import create_provider
+
+        name = (provider_name or settings.DEFAULT_PROVIDER).lower()
+        fingerprint = hashlib.sha1(repr(_provider_config(name)).encode()).hexdigest()
+        with self._lock:
+            cached = self._providers.get(name)
+            if cached and cached[0] == fingerprint:
+                return cached[1]
+            # The old client is not closed here: a request may still be
+            # streaming from it. It is garbage-collected when done.
+            provider = create_provider(name)
+            self._providers[name] = (fingerprint, provider)
+            return provider
+
+    def set_provider(self, name: str, provider) -> None:
+        with self._lock:
+            self._providers[name.lower()] = (
+                hashlib.sha1(repr(_provider_config(name.lower())).encode()).hexdigest(),
+                provider,
             )
 
-        # -------------------------------
-        # Google Gemini
-        # -------------------------------
-        elif provider_name == "gemini":
-            instance = GeminiProvider(
-                api_key=settings.GEMINI_API_KEY,
-                model=settings.GEMINI_MODEL,
-            )
+    def unload(self) -> None:
+        with self._lock:
+            self._models.clear()
+            for _, provider in self._providers.values():
+                provider.close()
+            self._providers.clear()
 
-        # -------------------------------
-        # Groq
-        # -------------------------------
-        elif provider_name == "groq":
-            instance = GroqProvider(
-                api_key=settings.GROQ_API_KEY,
-                model=settings.GROQ_MODEL,
-            )
 
-        # -------------------------------
-        # Anthropic Claude
-        # -------------------------------
-        elif provider_name == "anthropic":
-            instance = AnthropicProvider(
-                api_key=settings.ANTHROPIC_API_KEY,
-                model=settings.ANTHROPIC_MODEL,
-            )
-
-        # -------------------------------
-        # OpenAI
-        # -------------------------------
-        elif provider_name == "openai":
-            instance = OpenAIProvider(
-                api_key=settings.OPENAI_API_KEY,
-                model=settings.OPENAI_MODEL,
-            )
-
-        # -------------------------------
-        # OpenRouter
-        # -------------------------------
-        elif provider_name == "openrouter":
-            instance = OpenRouterProvider(
-                api_key=settings.OPENROUTER_API_KEY,
-                model=settings.OPENROUTER_MODEL,
-            )
-
-        else:
-            raise ValueError(f"Unsupported provider: {provider_name}")
-
-        self._providers[provider_name] = instance
-
-        return instance
-
-    def set_provider_config(self, provider_name: str, instance):
-        self._providers[provider_name.lower()] = instance
-
-    def unload(self):
-
-        self._embedder = None
-        self._reranker = None
-        self._providers.clear()
+def _provider_config(name: str) -> tuple:
+    upper = name.upper()
+    return (
+        getattr(settings, f"{upper}_MODEL", None),
+        getattr(settings, f"{upper}_API_KEY", None),
+        settings.OLLAMA_HOST if name == "ollama" else None,
+    )

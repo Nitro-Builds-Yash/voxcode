@@ -467,6 +467,12 @@ Enter a query or click the microphone to begin.
   </div>
 
   <script>
+    function apiFetch(url, options = {}) {
+      const headers = Object.assign({}, options.headers || {});
+      if (window.VOXCODE_TOKEN) headers['X-VoxCode-Token'] = window.VOXCODE_TOKEN;
+      return fetch(url, Object.assign({}, options, { headers }));
+    }
+
     if (window.lucide) { lucide.createIcons(); }
 
     let isRecording = false;
@@ -522,7 +528,7 @@ Enter a query or click the microphone to begin.
 
     async function loadConfig() {
       try {
-        const res = await fetch('/config/');
+        const res = await apiFetch('/config/');
         const data = await res.json();
         document.getElementById('provider-select').value = data.active_provider;
         document.getElementById('active-provider-chip').innerText = data.active_provider.toUpperCase();
@@ -546,7 +552,7 @@ Enter a query or click the microphone to begin.
       if (prov === 'openai' && key) payload.openai_api_key = key;
 
       try {
-        const res = await fetch('/config/update', {
+        const res = await apiFetch('/config/update', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -607,7 +613,7 @@ Enter a query or click the microphone to begin.
       terminal.innerText = `> Analyzing instruction & tone for: "${prompt}"...\n> Searching AST symbols and generating code patch...`;
 
       try {
-        const res = await fetch('/agent/query', {
+        const res = await apiFetch('/agent/query', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -617,6 +623,10 @@ Enter a query or click the microphone to begin.
           })
         });
         const data = await res.json();
+        if (!res.ok) {
+          terminal.innerText = `[VoxCode Error]: ${data.detail || res.status}`;
+          return;
+        }
 
         updateEmotionUI(data.emotion);
 
@@ -626,9 +636,27 @@ Enter a query or click the microphone to begin.
         }
 
         terminal.innerHTML = formatTerminalDiff(lastSummary, data.diff);
+        if (data.diff) {
+          lastDiff = data.diff;
+          lastRepoPath = repoPath;
+          terminal.innerHTML += `\n<button class="btn" onclick="applyLastPatch()">Apply patch (${escapeHtml(data.status)})</button>`;
+        }
       } catch (err) {
         terminal.innerText = `[VoxCode Error]: ${err}`;
       }
+    }
+
+    let lastDiff = null, lastRepoPath = '.';
+    async function applyLastPatch() {
+      if (!lastDiff) return;
+      const res = await apiFetch('/agent/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ repository_path: lastRepoPath, diff: lastDiff })
+      });
+      const data = await res.json();
+      showToast(res.ok ? `Applied to ${data.files_modified.join(', ')}` : `Apply failed: ${data.detail}`);
+      if (res.ok) lastDiff = null;
     }
 
     async function reindexRepo() {
@@ -637,12 +665,13 @@ Enter a query or click the microphone to begin.
       terminal.innerText = `> Indexing repository AST at: ${repoPath}...`;
 
       try {
-        const res = await fetch('/index/', {
+        const res = await apiFetch('/index/', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ repository_path: repoPath })
         });
         const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || res.status);
 
         document.getElementById('chunk-count-chip').innerText = `${data.chunks_created} Chunks`;
         document.getElementById('func-count').innerText = data.functions_found;
@@ -659,7 +688,7 @@ Enter a query or click the microphone to begin.
     async function speakSummary() {
       try {
         const previewText = document.getElementById('voice-line-preview').innerText.replace(/"/g, '');
-        await fetch('/voice/speak', {
+        await apiFetch('/voice/speak', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

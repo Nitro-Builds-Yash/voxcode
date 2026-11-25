@@ -1,19 +1,17 @@
-from __future__ import annotations
-from typing import Optional, Dict, Any
-
-try:
-    from pydantic import BaseModel
-except ImportError:
-    class BaseModel:
-        def __init__(self, **kwargs):
-            for k, v in kwargs.items():
-                setattr(self, k, v)
+from pydantic import BaseModel
 
 
 class RetrievalResult(BaseModel):
-    chunk_id: str = ""
-    file_path: str = ""
-    symbol_name: str = ""
-    content: str = ""
+    """A chunk returned by search, with the scores that ranked it."""
+
+    chunk_id: str
+    file_path: str
+    symbol_name: str
+    content: str
+    start_line: int = 1
+    end_line: int = 1
+    language: str = ""
+    chunk_type: str = ""
     score: float = 0.0
-    source: str = "hybrid"
+    rerank_score: float | None = None
+    source: str = "hybrid"  # bm25 | semantic | hybrid | graph
