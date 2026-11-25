@@ -1,49 +1,40 @@
+"""Speech-to-text with faster-whisper (loaded once, run off the event loop)."""
+
+from __future__ import annotations
+
 import io
 import logging
-from typing import BinaryIO, Optional
+import threading
+
+import numpy as np
+
+from backend.config.settings import settings
 
 logger = logging.getLogger(__name__)
 
 
 class WhisperSTTService:
-    """
-    Speech-To-Text service using faster-whisper or fallbacks for local transcription.
-    """
+    """Raises ImportError at construction if faster-whisper is not installed."""
 
-    def __init__(self, model_size: str = "base", device: str = "cpu", compute_type: str = "int8"):
-        self.model_size = model_size
-        self.device = device
-        self.compute_type = compute_type
-        self._model = None
+    def __init__(self):
+        from faster_whisper import WhisperModel
 
-    def _get_model(self):
-        if self._model is None:
-            try:
-                from faster_whisper import WhisperModel
-                logger.info(f"Loading Whisper STT model '{self.model_size}' on {self.device}...")
-                self._model = WhisperModel(self.model_size, device=self.device, compute_type=self.compute_type)
-            except Exception as e:
-                logger.warning(f"Could not load faster-whisper model: {e}. Transcription will run in mock/fallback mode.")
-                self._model = False
-        return self._model
+        self.model = WhisperModel(
+            settings.WHISPER_MODEL,
+            device=settings.WHISPER_DEVICE,
+            compute_type=settings.WHISPER_COMPUTE_TYPE,
+        )
+        # CTranslate2 models are not safe for concurrent transcribe() calls.
+        self._lock = threading.Lock()
 
-    def transcribe_audio_file(self, audio_file: BinaryIO) -> str:
-        """
-        Transcribes binary audio data (wav, mp3, webm, etc.).
-        """
-        model = self._get_model()
-        if not model:
-            return "Fallback: Whisper STT model not installed or failed to initialize."
-
-        try:
-            segments, info = model.transcribe(audio_file, beam_size=5)
-            transcribed_text = " ".join([segment.text.strip() for segment in segments]).strip()
-            logger.info(f"Detected speech ({info.language} with prob {info.language_probability:.2f}): {transcribed_text}")
-            return transcribed_text
-        except Exception as e:
-            logger.error(f"Error during transcription: {e}")
-            return ""
-
-    def transcribe_bytes(self, audio_bytes: bytes) -> str:
-        buffer = io.BytesIO(audio_bytes)
-        return self.transcribe_audio_file(buffer)
+    def transcribe(self, audio: bytes | np.ndarray) -> str:
+        """Transcribe encoded audio bytes (wav/webm/mp3...) or 16 kHz float32 PCM."""
+        source = io.BytesIO(audio) if isinstance(audio, (bytes, bytearray)) else audio
+        with self._lock:
+            segments, _ = self.model.transcribe(
+                source,
+                beam_size=settings.WHISPER_BEAM_SIZE,
+                vad_filter=True,
+                condition_on_previous_text=False,
+            )
+            return " ".join(segment.text.strip() for segment in segments).strip()

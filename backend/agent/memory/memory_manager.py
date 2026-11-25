@@ -1,81 +1,75 @@
-from datetime import datetime
+"""Conversation memory per session (Redis when available, else in-process)."""
 
-from backend.agent.memory.redis_store import RedisStore
-from backend.agent.memory.memory_models import (
-    ConversationMessage,
-    ConversationHistory,
-)
+from __future__ import annotations
+
+import logging
+import socket
+from datetime import datetime, timezone
+
+from backend.agent.memory.memory_models import ConversationHistory, ConversationMessage
+from backend.agent.memory.stores import InMemoryStore, MemoryStore, RedisStore
+from backend.config.settings import settings
+
+logger = logging.getLogger(__name__)
+
+
+def create_store() -> MemoryStore:
+    backend = settings.MEMORY_BACKEND.lower()
+    if backend == "auto" and not _port_open(settings.REDIS_HOST, settings.REDIS_PORT):
+        logger.warning("Redis unavailable; conversation memory is in-process only")
+        return InMemoryStore(settings.MEMORY_TTL_SECONDS)
+    if backend in ("redis", "auto"):
+        try:
+            store = RedisStore(settings.REDIS_HOST, settings.REDIS_PORT, settings.MEMORY_TTL_SECONDS)
+            if store.ping():
+                logger.info("Conversation memory: Redis at %s:%s", settings.REDIS_HOST, settings.REDIS_PORT)
+                return store
+            if backend == "redis":
+                raise RuntimeError(f"Redis is not reachable at {settings.REDIS_HOST}:{settings.REDIS_PORT}")
+        except ImportError:
+            if backend == "redis":
+                raise
+        logger.warning("Redis unavailable; conversation memory is in-process only")
+    return InMemoryStore(settings.MEMORY_TTL_SECONDS)
+
+
+def _port_open(host: str, port: int, timeout: float = 0.5) -> bool:
+    try:
+        with socket.create_connection((host, port), timeout=timeout):
+            return True
+    except OSError:
+        return False
 
 
 class MemoryManager:
-    def __init__(self):
-        self.store = RedisStore()
+    def __init__(self, store: MemoryStore | None = None, max_messages: int | None = None):
+        self.store = store or create_store()
+        self.max_messages = max_messages or settings.MEMORY_MAX_MESSAGES
 
-        if not self.store.ping():
-            raise RuntimeError(
-                "Redis is not running or is unreachable at localhost:6379. "
-                "Start Redis before using MemoryManager."
-            )
-
-    def _session_key(
-        self,
-        session_id: str,
-    ) -> str:
+    @staticmethod
+    def _key(session_id: str) -> str:
         return f"conversation:{session_id}"
 
-    def get_history(
-        self,
-        session_id: str,
-    ) -> ConversationHistory:
-        data = self.store.load(self._session_key(session_id))
-
+    def get_history(self, session_id: str) -> ConversationHistory:
+        data = self.store.load(self._key(session_id))
         if not data:
-            return ConversationHistory(
-                session_id=session_id,
-                messages=[],
-            )
-
+            return ConversationHistory(session_id=session_id)
         return ConversationHistory.model_validate(data)
 
-    def add_message(
-        self,
-        session_id: str,
-        role: str,
-        content: str,
-    ) -> None:
+    def add_messages(self, session_id: str, *messages: tuple[str, str]) -> None:
         history = self.get_history(session_id)
+        now = datetime.now(timezone.utc)
+        for role, content in messages:
+            history.messages.append(ConversationMessage(role=role, content=content, timestamp=now))
+        history.messages = history.messages[-self.max_messages :]
+        self.store.save(self._key(session_id), history.model_dump(mode="json"))
 
-        history.messages.append(
-            ConversationMessage(
-                role=role,
-                content=content,
-                timestamp=datetime.utcnow(),
-            )
-        )
+    def add_message(self, session_id: str, role: str, content: str) -> None:
+        self.add_messages(session_id, (role, content))
 
-        self.store.save(
-            self._session_key(session_id),
-            history.model_dump(mode="json"),
-        )
+    def clear_history(self, session_id: str) -> None:
+        self.store.delete(self._key(session_id))
 
-    def clear_history(
-        self,
-        session_id: str,
-    ) -> None:
-        self.store.delete(self._session_key(session_id))
-
-    def format_history(
-        self,
-        session_id: str,
-        limit: int = 10,
-    ) -> str:
-        history = self.get_history(session_id)
-
-        messages = history.messages[-limit:]
-
-        parts = []
-
-        for msg in messages:
-            parts.append(f"{msg.role.upper()}: {msg.content}")
-
-        return "\n".join(parts)
+    def format_history(self, session_id: str, limit: int = 6, max_chars: int = 1500) -> str:
+        messages = self.get_history(session_id).messages[-limit:]
+        return "\n".join(f"{m.role.upper()}: {m.content[:max_chars]}" for m in messages)

@@ -1,36 +1,21 @@
-from backend.generation.context.context_result import (
-    ContextResult,
-)
-
-from backend.generation.prompts.prompt_result import (
-    PromptResult,
-)
-
-from backend.generation.prompts.system_prompts import (
-    REPOSITORY_ASSISTANT_PROMPT,
-)
+from backend.generation.context.context_result import ContextResult
+from backend.generation.prompts.prompt_result import PromptResult
+from backend.generation.prompts.system_prompts import REPOSITORY_RULES, build_system_prompt
 
 
 class PromptBuilder:
-
     def build(
         self,
         context: ContextResult,
+        directive: str | None = None,
+        rules: str = REPOSITORY_RULES,
+        task: str = "Answer the user's request using the repository context above.",
     ) -> PromptResult:
-
-        user_prompt = f"""
-Repository Context:
-
-{context.context}
-
-Answer the user's question using the repository context above.
-""".strip()
-
-        full_prompt = REPOSITORY_ASSISTANT_PROMPT + "\n\n" + user_prompt
-
+        system_prompt = build_system_prompt(rules, directive)
+        user_prompt = f"{context.context}\n\n{task}"
         return PromptResult(
-            system_prompt=REPOSITORY_ASSISTANT_PROMPT,
+            system_prompt=system_prompt,
             user_prompt=user_prompt,
-            full_prompt=full_prompt,
-            prompt_size=len(full_prompt),
+            full_prompt=f"{system_prompt}\n\n{user_prompt}",
+            prompt_size=len(system_prompt) + len(user_prompt),
         )

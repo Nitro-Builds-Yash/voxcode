@@ -1,45 +1,43 @@
-version: '3.8'
-
 services:
-  voxcode-backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: voxcode-backend
+  voxcode:
+    build: .
+    container_name: voxcode
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
+    env_file:
+      - path: .env
+        required: false
     environment:
-      - HOST=0.0.0.0
-      - PORT=8000
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - QDRANT_HOST=qdrant
-      - QDRANT_PORT=6333
-      - OLLAMA_HOST=http://host.docker.internal:11434
+      HOST: 0.0.0.0
+      QDRANT_MODE: server
+      QDRANT_HOST: qdrant
+      MEMORY_BACKEND: redis
+      REDIS_HOST: redis
+      OLLAMA_HOST: http://host.docker.internal:11434
+      # Only folders under /workspace can be indexed from inside the container.
+      ALLOWED_REPO_ROOTS: /workspace
+    volumes:
+      - ${WORKSPACE_DIR:-./playground}:/workspace
+      - voxcode_storage:/app/storage
+      - hf_cache:/root/.cache/huggingface
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - redis
       - qdrant
-    volumes:
-      - .:/app
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
 
   qdrant:
-    image: qdrant/qdrant:latest
-    container_name: voxcode-qdrant
-    ports:
-      - "6333:6333"
+    image: qdrant/qdrant:v1.12.4
     volumes:
       - qdrant_data:/qdrant/storage
 
   redis:
     image: redis:7-alpine
-    container_name: voxcode-redis
-    ports:
-      - "6379:6379"
     volumes:
       - redis_data:/data
 
 volumes:
+  voxcode_storage:
+  hf_cache:
   qdrant_data:
   redis_data:

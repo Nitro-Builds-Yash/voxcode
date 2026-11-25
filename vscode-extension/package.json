@@ -1,71 +1,72 @@
 {
-  "name": "voice-assisted-coding-agent",
-  "displayName": "Voice Assisted Coding Agent",
-  "description": "Voice-driven AI coding assistant with local AST codebase indexing, hybrid retrieval, and real-time diff execution.",
-  "version": "1.0.0",
+  "name": "voxcode",
+  "displayName": "VoxCode",
+  "description": "Talk to your codebase: voice-driven questions and validated code patches, powered by a local VoxCode server.",
+  "version": "0.3.0",
   "publisher": "Nitro-Builds-Yash",
+  "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Nitro-Builds-Yash/Voice-Assisted-Coding-Agent"
+    "url": "https://github.com/Nitro-Builds-Yash/voxcode"
   },
   "engines": {
-    "vscode": "^1.75.0"
+    "vscode": "^1.85.0"
   },
-  "categories": [
-    "Programming Languages",
-    "Snippets",
-    "Other"
-  ],
+  "categories": ["Programming Languages", "Machine Learning", "Other"],
+  "activationEvents": ["onStartupFinished"],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
-      {
-        "command": "voiceCoding.startRecording",
-        "title": "Voice Coding: Start Dictation / Prompt",
-        "icon": "$(mic)"
-      },
-      {
-        "command": "voiceCoding.stopRecording",
-        "title": "Voice Coding: Stop Dictation & Execute",
-        "icon": "$(primitive-square)"
-      },
-      {
-        "command": "voiceCoding.indexWorkspace",
-        "title": "Voice Coding: Reindex Current Workspace",
-        "icon": "$(database)"
-      },
-      {
-        "command": "voiceCoding.openSettings",
-        "title": "Voice Coding: Open Configuration",
-        "icon": "$(gear)"
-      }
+      { "command": "voiceCoding.startRecording", "title": "VoxCode: Talk (start/stop recording)", "icon": "$(mic)" },
+      { "command": "voiceCoding.stopRecording", "title": "VoxCode: Stop Recording", "icon": "$(primitive-square)" },
+      { "command": "voiceCoding.typeInstruction", "title": "VoxCode: Type an Instruction" },
+      { "command": "voiceCoding.acceptPatch", "title": "VoxCode: Accept Pending Patch" },
+      { "command": "voiceCoding.rejectPatch", "title": "VoxCode: Reject Pending Patch" },
+      { "command": "voiceCoding.nextFile", "title": "VoxCode: Show Next File in Patch" },
+      { "command": "voiceCoding.undoPatch", "title": "VoxCode: Undo Last Applied Patch" },
+      { "command": "voiceCoding.runTests", "title": "VoxCode: Run Tests" },
+      { "command": "voiceCoding.indexWorkspace", "title": "VoxCode: Re-index Workspace", "icon": "$(database)" },
+      { "command": "voiceCoding.rebuildIndex", "title": "VoxCode: Rebuild Index From Scratch" },
+      { "command": "voiceCoding.openSettings", "title": "VoxCode: Open Settings", "icon": "$(gear)" }
     ],
     "configuration": {
-      "title": "Voice Assisted Coding Agent",
+      "title": "VoxCode",
       "properties": {
         "voiceCoding.backendUrl": {
           "type": "string",
           "default": "http://localhost:8000",
-          "description": "Backend API URL of the Voice-Assisted Coding Agent service"
+          "description": "URL of the VoxCode server."
         },
-        "voiceCoding.sampleRate": {
-          "type": "number",
-          "default": 16000,
-          "description": "Audio recording sample rate (Hz)"
+        "voiceCoding.apiToken": {
+          "type": "string",
+          "default": "",
+          "description": "Value of API_TOKEN if the server requires one."
         },
         "voiceCoding.autoApplyDiffs": {
           "type": "boolean",
           "default": false,
-          "description": "Automatically apply validated code patches without manual review"
+          "description": "Apply patches that passed validation and review without asking."
+        },
+        "voiceCoding.runTestsOnEdit": {
+          "type": "boolean",
+          "default": false,
+          "description": "Run the project's tests against each proposed patch (in a temporary copy) before showing it."
+        },
+        "voiceCoding.speakReplies": {
+          "type": "boolean",
+          "default": false,
+          "description": "Read answers aloud, sentence by sentence as they stream in."
+        },
+        "voiceCoding.watchWorkspace": {
+          "type": "boolean",
+          "default": true,
+          "description": "Re-index automatically when files change."
         }
       }
     },
     "keybindings": [
-      {
-        "command": "voiceCoding.startRecording",
-        "key": "ctrl+alt+v",
-        "mac": "cmd+alt+v"
-      }
+      { "command": "voiceCoding.startRecording", "key": "ctrl+alt+v", "mac": "cmd+alt+v" },
+      { "command": "voiceCoding.typeInstruction", "key": "ctrl+alt+t", "mac": "cmd+alt+t" }
     ]
   },
   "scripts": {
@@ -74,8 +75,8 @@
     "watch": "tsc -watch -p ./"
   },
   "devDependencies": {
-    "@types/node": "^18.0.0",
-    "@types/vscode": "^1.75.0",
-    "typescript": "^5.0.0"
+    "@types/node": "^20.0.0",
+    "@types/vscode": "~1.85.0",
+    "typescript": "^5.4.0"
   }
 }

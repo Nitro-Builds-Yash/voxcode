@@ -4,7 +4,6 @@ from typing import Any
 from backend.agent.executor.execution_context import (
     ExecutionContext,
 )
-
 from backend.agent.planner.planner_step import (
     PlannerStep,
 )

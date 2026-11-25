@@ -1,399 +1,105 @@
-from typing import Any
+"""Executes the steps of an ExecutionPlan against an ExecutionContext."""
 
-from backend.agent.executor.execution_context import (
-    ExecutionContext,
-)
+from __future__ import annotations
 
-from backend.agent.executor.execution_result import (
-    ExecutionResult,
-)
+import logging
 
-from backend.agent.planner.planner_step import (
-    PlannerStep,
-    StepType,
-)
-
-from backend.generation.context.context_builder import (
-    ContextBuilder,
-)
-
-from backend.generation.prompts.prompt_builder import (
-    PromptBuilder,
-)
-
+from backend.agent.executor.execution_context import ExecutionContext
+from backend.agent.executor.execution_result import ExecutionResult
+from backend.agent.planner.planner_step import PlannerStep, StepType
+from backend.config.settings import settings
+from backend.generation.context.context_builder import ContextBuilder
+from backend.generation.prompts.prompt_builder import PromptBuilder
 from backend.monitoring import Metrics
+
+logger = logging.getLogger(__name__)
 
 
 class StepExecutor:
-    """
-    Executes individual PlannerStep instances.
-
-    The StepExecutor owns the implementation details of execution
-    steps, while AgentPipeline remains responsible for orchestration.
-
-    Currently supported:
-
-        RETRIEVE
-        RERANK
-        BUILD_CONTEXT
-        BUILD_PROMPT
-        GENERATE
-
-    Future capabilities such as REVIEW, PATCH, and EXECUTE can be
-    added here without turning AgentPipeline into a large collection
-    of conditional branches.
-    """
-
-    def __init__(
-        self,
-        retriever: Any,
-        reranker: Any,
-        context_builder: ContextBuilder,
-        prompt_builder: PromptBuilder,
-        provider: Any,
-    ):
-
+    def __init__(self, retriever, reranker, provider, context_builder=None, prompt_builder=None):
         self.retriever = retriever
-
         self.reranker = reranker
-
-        self.context_builder = context_builder
-
-        self.prompt_builder = prompt_builder
-
         self.provider = provider
+        self.context_builder = context_builder or ContextBuilder()
+        self.prompt_builder = prompt_builder or PromptBuilder()
+        self._handlers = {
+            StepType.RETRIEVE: self._retrieve,
+            StepType.RERANK: self._rerank,
+            StepType.EXPAND_GRAPH: self._expand_graph,
+            StepType.BUILD_CONTEXT: self._build_context,
+            StepType.BUILD_PROMPT: self._build_prompt,
+            StepType.GENERATE: self._generate,
+        }
 
-    def execute_step(
-        self,
-        step: PlannerStep,
-        context: ExecutionContext,
-    ) -> None:
-        """
-        Execute one planner step against the supplied execution
-        context.
+    def execute_step(self, step: PlannerStep, context: ExecutionContext) -> None:
+        handler = self._handlers.get(step.step_type)
+        if handler is None:
+            raise NotImplementedError(f"Step '{step.step_type.value}' is not implemented")
+        handler(context)
 
-        The step modifies the ExecutionContext in place.
-
-        Raises:
-            NotImplementedError:
-                If the planner produces a step type that this executor
-                does not support yet.
-
-            RuntimeError:
-                If a step's required prerequisite is missing.
-        """
-
-        step_type = step.step_type
-
-        if step_type == StepType.RETRIEVE:
-
-            self._execute_retrieve(
-                context=context,
-            )
-
-            return
-
-        if step_type == StepType.RERANK:
-
-            self._execute_rerank(
-                context=context,
-            )
-
-            return
-
-        if step_type == StepType.BUILD_CONTEXT:
-
-            self._execute_build_context(
-                context=context,
-            )
-
-            return
-
-        if step_type == StepType.BUILD_PROMPT:
-
-            self._execute_build_prompt(
-                context=context,
-            )
-
-            return
-
-        if step_type == StepType.GENERATE:
-
-            self._execute_generate(
-                context=context,
-            )
-
-            return
-
-        raise NotImplementedError(
-            f"Planner step '{step_type.value}' is not " f"implemented by StepExecutor."
-        )
-
-    def execute_plan(
-        self,
-        context: ExecutionContext,
-    ) -> ExecutionResult:
-        """
-        Execute all steps in an ExecutionPlan in their declared order.
-
-        PlannerStep.order determines execution order.
-
-        Execution stops immediately when a step raises an exception.
-
-        The original exception is retained inside ExecutionResult so
-        AgentPipeline can re-raise it and preserve the existing
-        application error behavior.
-        """
-
-        executed_steps: list[PlannerStep] = []
-
-        ordered_steps = sorted(
-            context.plan.steps,
-            key=lambda step: step.order,
-        )
-
-        for step in ordered_steps:
-
+    def execute_plan(self, context: ExecutionContext, stop_before: StepType | None = None) -> ExecutionResult:
+        executed: list[PlannerStep] = []
+        for step in sorted(context.plan.steps, key=lambda s: s.order):
+            if step.step_type == stop_before:
+                break
             try:
-
-                self.execute_step(
-                    step=step,
-                    context=context,
-                )
-
-                executed_steps.append(step)
-
+                self.execute_step(step, context)
             except Exception as exc:
-
-                result = ExecutionResult(
-                    success=False,
-                    context=context,
-                    executed_steps=executed_steps,
-                    failed_step=step,
-                    error=exc,
+                return ExecutionResult(
+                    success=False, context=context, executed_steps=executed, failed_step=step, error=exc
                 )
+            executed.append(step)
+        return ExecutionResult(success=True, context=context, executed_steps=executed)
 
-                result.add_metadata(
-                    "failed_step_order",
-                    step.order,
-                )
-
-                result.add_metadata(
-                    "failed_step_type",
-                    step.step_type.value,
-                )
-
-                return result
-
-        result = ExecutionResult(
-            success=True,
-            context=context,
-            executed_steps=executed_steps,
-        )
-
-        result.add_metadata(
-            "executed_step_count",
-            len(executed_steps),
-        )
-
-        return result
-
-    # ============================================================
-    # RETRIEVE
-    # ============================================================
-
-    def _execute_retrieve(
-        self,
-        context: ExecutionContext,
-    ) -> None:
-        """
-        Execute hybrid repository retrieval.
-        """
-
-        request = context.request
-
+    # -------------------------------------------------------------- steps
+    def _retrieve(self, context: ExecutionContext) -> None:
         with Metrics.retrieval_timer():
+            context.retrieval_results = self.retriever.search(context.request.query)
+        context.set_metadata("retrieval_result_count", len(context.retrieval_results))
 
-            retrieval_results = self.retriever.search(
-                query=request.query,
-                top_k=20,
-            )
-
-        context.retrieval_results = retrieval_results
-
-        context.set_metadata(
-            "retrieval_top_k",
-            20,
-        )
-
-        context.set_metadata(
-            "retrieval_result_count",
-            len(retrieval_results),
-        )
-
-    # ============================================================
-    # RERANK
-    # ============================================================
-
-    def _execute_rerank(
-        self,
-        context: ExecutionContext,
-    ) -> None:
-        """
-        Execute cross-encoder reranking.
-
-        Reranking requires retrieval to have completed first.
-        """
-
+    def _rerank(self, context: ExecutionContext) -> None:
         if context.retrieval_results is None:
+            raise RuntimeError("RERANK requires RETRIEVE")
+        top_k = context.request.top_k
+        if self.reranker is None:
+            context.reranked_results = context.retrieval_results[:top_k]
+            return
+        try:
+            with Metrics.rerank_timer():
+                context.reranked_results = self.reranker.rerank(
+                    context.request.query, context.retrieval_results, top_k=top_k
+                )
+        except Exception as exc:  # e.g. GPU out of memory: fall back to fused order
+            logger.warning("Reranking failed, using retrieval order: %s", exc)
+            context.reranked_results = context.retrieval_results[:top_k]
 
-            raise RuntimeError("RERANK step requires RETRIEVE step to execute first.")
-
-        request = context.request
-
-        with Metrics.rerank_timer():
-
-            reranked = self.reranker.rerank(
-                query=request.query,
-                results=context.retrieval_results,
-                top_k=request.top_k,
-            )
-
-        context.reranked_results = reranked
-
-        context.set_metadata(
-            "rerank_top_k",
-            request.top_k,
-        )
-
-        context.set_metadata(
-            "reranked_result_count",
-            len(reranked),
-        )
-
-    # ============================================================
-    # BUILD CONTEXT
-    # ============================================================
-
-    def _execute_build_context(
-        self,
-        context: ExecutionContext,
-    ) -> None:
-        """
-        Build the LLM context from reranked repository results
-        and conversation history.
-        """
-
+    def _expand_graph(self, context: ExecutionContext) -> None:
         if context.reranked_results is None:
+            raise RuntimeError("EXPAND_GRAPH requires RERANK")
+        context.reranked_results = self.retriever.expand(context.reranked_results, settings.GRAPH_EXPANSION)
 
-            raise RuntimeError(
-                "BUILD_CONTEXT step requires RERANK step " "to execute first."
-            )
-
-        request = context.request
-
+    def _build_context(self, context: ExecutionContext) -> None:
+        if context.reranked_results is None:
+            raise RuntimeError("BUILD_CONTEXT requires RERANK")
         with Metrics.context_timer():
-
-            built_context = self.context_builder.build(
-                query=request.query,
+            built = self.context_builder.build(
+                query=context.request.query,
                 retrieved_chunks=context.reranked_results,
                 conversation_history=context.conversation_history,
             )
+        context.context = built
+        Metrics.record_context_size(built.context_size)
+        Metrics.record_retrieved_chunks(built.num_chunks)
 
-        context.context = built_context
-
-        Metrics.record_context_size(
-            built_context.context_size,
-        )
-
-        Metrics.record_retrieved_chunks(
-            built_context.num_chunks,
-        )
-
-        context.set_metadata(
-            "context_size",
-            built_context.context_size,
-        )
-
-        context.set_metadata(
-            "context_num_chunks",
-            built_context.num_chunks,
-        )
-
-    # ============================================================
-    # BUILD PROMPT
-    # ============================================================
-
-    def _execute_build_prompt(
-        self,
-        context: ExecutionContext,
-    ) -> None:
-        """
-        Build the LLM prompt from the generated context.
-        """
-
+    def _build_prompt(self, context: ExecutionContext) -> None:
         if context.context is None:
-
-            raise RuntimeError(
-                "BUILD_PROMPT step requires BUILD_CONTEXT step " "to execute first."
-            )
-
+            raise RuntimeError("BUILD_PROMPT requires BUILD_CONTEXT")
         with Metrics.prompt_timer():
+            context.prompt = self.prompt_builder.build(context.context, directive=context.request.directive)
+        Metrics.record_prompt_size(context.prompt.prompt_size)
 
-            prompt = self.prompt_builder.build(
-                context=context.context,
-            )
-
-        context.prompt = prompt
-
-        Metrics.record_prompt_size(
-            prompt.prompt_size,
-        )
-
-        context.set_metadata(
-            "prompt_size",
-            prompt.prompt_size,
-        )
-
-    # ============================================================
-    # GENERATE
-    # ============================================================
-
-    def _execute_generate(
-        self,
-        context: ExecutionContext,
-    ) -> None:
-        """
-        Generate the final LLM response.
-        """
-
+    def _generate(self, context: ExecutionContext) -> None:
         if context.prompt is None:
-
-            raise RuntimeError(
-                "GENERATE step requires BUILD_PROMPT step " "to execute first."
-            )
-
-        with Metrics.generation_timer(
-            provider=self.provider.provider_name,
-            model=self.provider.model,
-        ):
-            generation = self.provider.generate(
-                context.prompt,
-            )
-
-        context.generation = generation
-
-        context.set_metadata(
-            "provider",
-            self.provider.provider_name,
-        )
-
-        context.set_metadata(
-            "model",
-            self.provider.model,
-        )
-
-        context.set_metadata(
-            "generation_model",
-            generation.model_name,
-        )
+            raise RuntimeError("GENERATE requires BUILD_PROMPT")
+        with Metrics.generation_timer(self.provider.provider_name, self.provider.model):
+            context.generation = self.provider.generate(context.prompt)

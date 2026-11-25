@@ -1,5 +1,5 @@
 import re
-from typing import Dict, Any
+
 from pydantic import BaseModel
 
 
@@ -11,6 +11,11 @@ class EmotionProfile(BaseModel):
     vox_adaptation: str  # How Vox should tailor tone and engineering support
 
 
+def _hits(keywords: list[str], text: str) -> int:
+    """Count keywords that appear as whole words/phrases (not substrings)."""
+    return sum(1 for kw in keywords if re.search(rf"\b{re.escape(kw)}\b", text))
+
+
 class EmotionAnalyzer:
     """
     Analyzes natural speech transcripts and acoustic cues to determine:
@@ -20,40 +25,86 @@ class EmotionAnalyzer:
     """
 
     FRUSTRATION_KEYWORDS = [
-        "broken", "why does this fail", "failing", "error again", "not working",
-        "stupid", "damn", "argh", "hate this", "bug", "crash", "stuck", "what is wrong",
-        "keeps breaking", "fix this mess", "annoying", "garbage"
+        "broken",
+        "why does this fail",
+        "failing",
+        "error again",
+        "not working",
+        "stupid",
+        "damn",
+        "argh",
+        "hate this",
+        "crashes again",
+        "stuck",
+        "what is wrong",
+        "keeps breaking",
+        "fix this mess",
+        "annoying",
+        "garbage",
     ]
 
     URGENCY_KEYWORDS = [
-        "quick", "fast", "urgent", "asap", "production down", "emergency",
-        "right now", "hurry", "critical", "immediately", "deadline", "hotfix"
+        "quick",
+        "fast",
+        "urgent",
+        "asap",
+        "production down",
+        "emergency",
+        "right now",
+        "hurry",
+        "critical",
+        "immediately",
+        "deadline",
+        "hotfix",
     ]
 
     FATIGUE_KEYWORDS = [
-        "tired", "long day", "sleepy", "exhausted", "late night", "brain dead",
-        "cant think", "headache", "done for today"
+        "tired",
+        "long day",
+        "sleepy",
+        "exhausted",
+        "late night",
+        "brain dead",
+        "cant think",
+        "can't think",
+        "headache",
+        "done for today",
     ]
 
     CURIOSITY_KEYWORDS = [
-        "how does", "what if", "explain", "wondering", "why does", "tell me about",
-        "explore", "architecture", "understand", "walk me through"
+        "how does",
+        "what if",
+        "explain",
+        "wondering",
+        "why does",
+        "tell me about",
+        "explore",
+        "architecture",
+        "understand",
+        "walk me through",
     ]
 
     CONFIDENT_KEYWORDS = [
-        "deploy", "refactor", "ship it", "optimize", "benchmark", "let's build",
-        "implement", "generate patch", "execute"
+        "deploy",
+        "refactor",
+        "ship it",
+        "optimize",
+        "benchmark",
+        "let's build",
+        "implement",
+        "generate patch",
+        "execute",
     ]
 
     def analyze(self, text: str) -> EmotionProfile:
         text_lower = text.lower()
 
         # Check for emotion patterns
-        frustration_hits = sum(1 for kw in self.FRUSTRATION_KEYWORDS if kw in text_lower)
-        urgency_hits = sum(1 for kw in self.URGENCY_KEYWORDS if kw in text_lower)
-        fatigue_hits = sum(1 for kw in self.FATIGUE_KEYWORDS if kw in text_lower)
-        curiosity_hits = sum(1 for kw in self.CURIOSITY_KEYWORDS if kw in text_lower)
-        confident_hits = sum(1 for kw in self.CONFIDENT_KEYWORDS if kw in text_lower)
+        frustration_hits = _hits(self.FRUSTRATION_KEYWORDS, text_lower)
+        urgency_hits = _hits(self.URGENCY_KEYWORDS, text_lower)
+        fatigue_hits = _hits(self.FATIGUE_KEYWORDS, text_lower)
+        curiosity_hits = _hits(self.CURIOSITY_KEYWORDS, text_lower)
+        confident_hits = _hits(self.CONFIDENT_KEYWORDS, text_lower)
 
         exclamations = text.count("!")
         words = text.split()
@@ -108,8 +159,7 @@ class EmotionAnalyzer:
                 sentiment="positive",
                 tone_description="Exploration, learning, or architectural inquiry.",
                 vox_adaptation=(
-                    "Provide comprehensive architectural clarity, AST relationships, "
-                    "and design tradeoffs."
+                    "Provide comprehensive architectural clarity, AST relationships, and design tradeoffs."
                 ),
             )
 

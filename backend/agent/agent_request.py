@@ -2,14 +2,12 @@ from pydantic import BaseModel
 
 
 class AgentRequest(BaseModel):
-    """
-    Represents a single user request handled by the agent.
-    """
+    """A single user request handled by the agent."""
 
     session_id: str
-
-    repository_name: str
-
+    repository_key: str
     query: str
-
-    top_k: int = 5
+    top_k: int = 8
+    # Optional delivery hint (e.g. from tone analysis); goes into the system
+    # prompt only, never into the search query.
+    directive: str | None = None
