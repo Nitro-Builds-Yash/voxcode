@@ -2,7 +2,6 @@ from pydantic import BaseModel
 
 
 class ProviderResult(BaseModel):
-
     response: str
 
     model_name: str

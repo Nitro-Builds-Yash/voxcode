@@ -6,7 +6,6 @@ from backend.agent.planner.execution_plan import (
 
 
 class PlannerResult(BaseModel):
-
     query: str
 
     execution_plan: ExecutionPlan

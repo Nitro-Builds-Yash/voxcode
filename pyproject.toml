@@ -4,44 +4,73 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "voxcode"
-version = "0.1.0"
-description = "Voice-assisted AI coding agent with hybrid retrieval, AST code intelligence, and VS Code integration."
+version = "0.3.0"
+description = "Voice-driven coding agent with hybrid code search, validated patches and VS Code integration."
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = { text = "MIT" }
-authors = [
-    { name = "Athota Yashwanth" }
-]
+authors = [{ name = "Athota Yashwanth" }]
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
+# Core: API server, indexing, BM25 search, all LLM providers. Runs without
+# any ML models (BM25-only search) so it installs quickly anywhere.
 dependencies = [
-    "fastapi>=0.110.0",
-    "uvicorn[standard]>=0.28.0",
-    "pydantic>=2.7.0",
-    "pydantic-settings>=2.2.0",
-    "httpx>=0.27.0",
-    "qdrant-client>=1.8.0",
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.28",
+    "pydantic>=2.7,<3",
+    "pydantic-settings>=2.2,<3",
+    "httpx>=0.27",
+    "python-multipart>=0.0.9",
+    "numpy>=1.24",
     "rank-bm25>=0.2.2",
-    "sentence-transformers>=2.6.0",
-    "openai>=1.20.0",
+    "qdrant-client>=1.10",
+    "redis>=5.0",
+    "tree-sitter>=0.23",
+    "tree-sitter-language-pack>=0.6",
+    "watchdog>=4.0",
+    "prometheus-client>=0.20",
 ]
 
 [project.optional-dependencies]
-voice = [
-    "faster-whisper>=1.0.0",
-    "pyttsx3>=2.90",
-    "sounddevice>=0.4.6",
-]
-gpu = [
-    "torch>=2.4.0",
-    "accelerate>=0.30.0",
-]
-dev = [
-    "pytest>=8.0.0",
-]
+# Semantic search + reranking (downloads models from Hugging Face on first use).
+ml = ["sentence-transformers>=2.6", "transformers>=4.40", "torch>=2.2", "tiktoken>=0.7"]
+# Speech-to-text, push-to-talk and text-to-speech.
+voice = ["faster-whisper>=1.0", "sounddevice>=0.4.6", "pyttsx3>=2.90", "piper-tts>=1.2"]
+all = ["voxcode[ml,voice]"]
+dev = ["pytest>=8.0", "ruff>=0.5", "mypy>=1.10", "pre-commit>=3.7"]
 
 [project.scripts]
 voxcode = "backend.main:main"
+
+[tool.setuptools.packages.find]
+include = ["backend*"]
+
+[tool.setuptools.package-data]
+"backend.ui" = ["*.html"]
+"backend.evaluation" = ["*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+extend-exclude = ["scripts/generate_interview_pdf.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501", "B008", "SIM105"]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+check_untyped_defs = false
+files = ["backend"]
+
+[[tool.mypy.overrides]]
+module = ["numpy", "numpy.*"]
+follow_imports = "skip"

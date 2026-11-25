@@ -1,74 +1,97 @@
-import os
+"""FastAPI application entry point."""
+
+from __future__ import annotations
+
+import logging
+import threading
+from contextlib import asynccontextmanager
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 
-from backend.api.routes.health import (
-    router as health_router,
-)
-from backend.api.routes.agent import (
-    router as agent_router,
-)
-from backend.api.routes.voice import (
-    router as voice_router,
-)
-from backend.api.routes.index import (
-    router as index_router,
-)
-from backend.api.routes.config import (
-    router as config_router,
-)
-from backend.config.settings import (
-    settings,
-)
+from backend.api import services
+from backend.api.routes.agent import router as agent_router
+from backend.api.routes.config import router as config_router
+from backend.api.routes.health import router as health_router
+from backend.api.routes.index import router as index_router
+from backend.api.routes.voice import router as voice_router
+from backend.api.security import LocalSecurityMiddleware
+from backend.config.paths import ensure_storage_dirs
+from backend.config.settings import settings
 
-app = FastAPI(
-    title=settings.APP_NAME,
-    version=settings.APP_VERSION,
+logging.basicConfig(
+    level=logging.DEBUG if settings.DEBUG else logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
 )
+logger = logging.getLogger("voxcode")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+UI_DIR = Path(__file__).parent / "ui"
 
-# Include API Routers
+
+def _warm_up() -> None:
+    """Load heavy models in the background so the first request is fast."""
+    services.registry.get_embedder()
+    services.registry.get_reranker()
+    services.registry.get_stt()
+    services.memory()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    ensure_storage_dirs()
+    if settings.PRELOAD_MODELS:
+        threading.Thread(target=_warm_up, name="model-warmup", daemon=True).start()
+    yield
+    services.watcher.stop_all()
+    services.registry.unload()
+
+
+app = FastAPI(title=settings.APP_NAME, version=settings.APP_VERSION, lifespan=lifespan)
+
+if settings.allowed_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.allowed_origins,
+        allow_methods=["GET", "POST", "DELETE"],
+        allow_headers=["Content-Type", "X-VoxCode-Token"],
+    )
+app.add_middleware(LocalSecurityMiddleware)
+
 app.include_router(health_router)
 app.include_router(agent_router)
 app.include_router(voice_router)
 app.include_router(index_router)
 app.include_router(config_router)
 
-# Serve Web UI
-ui_dir = os.path.join(os.path.dirname(__file__), "ui")
-if os.path.exists(ui_dir):
-    app.mount("/static", StaticFiles(directory=ui_dir), name="static")
+try:
+    from prometheus_client import make_asgi_app
+
+    app.mount("/metrics", make_asgi_app())
+except ImportError:  # pragma: no cover
+    logger.info("prometheus-client not installed; /metrics disabled")
+
+if UI_DIR.exists():
+    app.mount("/static", StaticFiles(directory=UI_DIR), name="static")
 
 
-@app.get("/")
+@app.get("/", include_in_schema=False)
 def root():
-    index_file = os.path.join(ui_dir, "index.html")
-    if os.path.exists(index_file):
-        return FileResponse(index_file)
-    return {
-        "name": settings.APP_NAME,
-        "version": settings.APP_VERSION,
-        "docs_url": "/docs",
-    }
+    index_file = UI_DIR / "index.html"
+    if not index_file.exists():
+        return JSONResponse({"name": settings.APP_NAME, "version": settings.APP_VERSION, "docs_url": "/docs"})
+    html = index_file.read_text(encoding="utf-8")
+    # Same-origin page: other sites cannot read it, so it can carry the token.
+    token_script = f"<script>window.VOXCODE_TOKEN = {settings.API_TOKEN!r};</script>"
+    return HTMLResponse(html.replace("</head>", f"{token_script}\n</head>", 1))
 
 
-def main():
+def main() -> None:
     import uvicorn
-    uvicorn.run(
-        "backend.main:app",
-        host=settings.HOST,
-        port=settings.PORT,
-        reload=True,
-    )
+
+    uvicorn.run("backend.main:app", host=settings.HOST, port=settings.PORT, reload=settings.RELOAD)
 
 
 if __name__ == "__main__":

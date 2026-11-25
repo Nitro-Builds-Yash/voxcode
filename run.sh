@@ -1,18 +1,12 @@
 #!/usr/bin/env bash
-# voxcode launcher for Linux / macOS
-
+# VoxCode launcher for Linux / macOS
 set -e
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-cd "$DIR"
-
-echo "=========================================="
-echo "       Starting VoxCode Engine            "
-echo "=========================================="
+cd "$(dirname "${BASH_SOURCE[0]}")"
 
 if [ ! -f .env ] && [ -f .env.example ]; then
-    echo "Creating default .env from .env.example..."
+    echo "Creating .env from .env.example"
     cp .env.example .env
 fi
 
-echo "Launching FastAPI backend server at http://127.0.0.1:8000 ..."
-python -m backend.main
+echo "Starting VoxCode at http://127.0.0.1:${PORT:-8000}"
+exec python -m backend.main

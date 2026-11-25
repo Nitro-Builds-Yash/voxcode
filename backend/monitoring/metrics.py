@@ -1,6 +1,4 @@
-from prometheus_client import Counter
-from prometheus_client import Gauge
-from prometheus_client import Histogram
+from prometheus_client import Counter, Gauge, Histogram
 
 # ==========================================================
 # Requests

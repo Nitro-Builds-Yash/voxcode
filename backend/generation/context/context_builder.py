@@ -1,119 +1,80 @@
-from collections import defaultdict
-from typing import List
+"""Assembles the prompt context: request, conversation history, code."""
 
-from backend.generation.context.context_window import ContextWindow
+from __future__ import annotations
+
+from collections import OrderedDict
+
+from backend.config.settings import settings
 from backend.generation.context.context_result import ContextResult
+from backend.generation.context.context_window import ContextWindow
+from backend.models.retrieval_result import RetrievalResult
+
+
+def number_lines(content: str, first_line: int) -> str:
+    return "\n".join(f"{number:>4}| {line}" for number, line in enumerate(content.splitlines(), first_line))
 
 
 class ContextBuilder:
-    """
-    Builds repository context for LLM prompts.
-
-    Responsibilities:
-
-    - Deduplicate chunks
-    - Group chunks by file
-    - Add query metadata
-    - Add conversation history
-    - Respect context budget
-    """
-
-    def __init__(
-        self,
-        max_characters: int = 15000,
-    ):
-        self.window = ContextWindow(max_characters=max_characters)
+    def __init__(self, max_tokens: int | None = None):
+        self.max_tokens = max_tokens or settings.CONTEXT_MAX_TOKENS
 
     def build(
         self,
         query: str,
-        retrieved_chunks: list,
+        retrieved_chunks: list[RetrievalResult],
         conversation_history: str | None = None,
+        extra_sections: list[str] | None = None,
     ) -> ContextResult:
-
-        grouped = defaultdict(list)
-
-        seen_chunks = set()
-
-        for chunk in retrieved_chunks:
-
-            if chunk.chunk_id in seen_chunks:
-                continue
-
-            seen_chunks.add(chunk.chunk_id)
-
-            grouped[chunk.file_path].append(chunk)
-
-        sections = []
-
-        # --------------------------------------------------
-        # USER QUERY
-        # --------------------------------------------------
-
-        sections.append("USER QUERY\n" "==========\n" f"{query}\n")
-
-        # --------------------------------------------------
-        # CONVERSATION HISTORY
-        # --------------------------------------------------
+        window = ContextWindow(self.max_tokens)
+        header = f"USER REQUEST\n============\n{query}\n"
+        window.try_add(header)
+        sections = [header]
 
         if conversation_history:
+            history = f"CONVERSATION SO FAR\n===================\n{conversation_history}\n"
+            if window.try_add(history):
+                sections.append(history)
 
-            sections.append(
-                "\nCONVERSATION HISTORY\n"
-                "====================\n"
-                f"{conversation_history}\n"
-            )
+        for extra in extra_sections or []:
+            if window.try_add(extra):
+                sections.append(extra)
 
-        # --------------------------------------------------
-        # REPOSITORY CONTEXT
-        # --------------------------------------------------
+        # Keep retrieval order (best first) but group chunks under their file.
+        by_file: OrderedDict[str, list[RetrievalResult]] = OrderedDict()
+        seen: set[str] = set()
+        for chunk in retrieved_chunks:
+            if chunk.chunk_id not in seen:
+                seen.add(chunk.chunk_id)
+                by_file.setdefault(chunk.file_path, []).append(chunk)
 
-        sections.append("\nREPOSITORY CONTEXT\n" "==================\n")
-
-        context = "\n".join(sections)
-
-        current_size = len(context)
-
-        for file_path, chunks in grouped.items():
-
-            file_section = f"\nFILE: {file_path}\n" f"{'-' * 80}\n"
-
-            if not self.window.fits(
-                current_size,
-                file_section,
-            ):
-                break
-
-            context += file_section
-            current_size = len(context)
-
-            for chunk in chunks:
-
-                symbol_section = (
-                    f"\nSYMBOL: {chunk.symbol_name}\n"
-                    f"{'~' * 40}\n"
-                    f"{chunk.content}\n"
+        code_sections: list[str] = []
+        included = 0
+        files: list[str] = []
+        for file_path, chunks in by_file.items():
+            parts = []
+            for chunk in sorted(chunks, key=lambda c: c.start_line):
+                block = (
+                    f"--- {chunk.symbol_name} ({chunk.chunk_type}, lines "
+                    f"{chunk.start_line}-{chunk.end_line})\n"
+                    f"{number_lines(chunk.content, chunk.start_line)}\n"
                 )
+                if not window.try_add(block):
+                    break
+                parts.append(block)
+                included += 1
+            if parts:
+                files.append(file_path)
+                code_sections.append(f"FILE: {file_path}\n" + "".join(parts))
 
-                if not self.window.fits(
-                    current_size,
-                    symbol_section,
-                ):
-                    return ContextResult(
-                        context=context,
-                        query=query,
-                        num_chunks=len(seen_chunks),
-                        num_files=len(grouped),
-                        context_size=current_size,
-                    )
-
-                context += symbol_section
-                current_size = len(context)
-
+        sections.append(
+            "REPOSITORY CONTEXT\n==================\n"
+            + ("\n".join(code_sections) if code_sections else "(no matching code found)\n")
+        )
         return ContextResult(
-            context=context,
+            context="\n".join(sections),
             query=query,
-            num_chunks=len(seen_chunks),
-            num_files=len(grouped),
-            context_size=current_size,
+            num_chunks=included,
+            num_files=len(files),
+            context_size=window.used,
+            files=files,
         )

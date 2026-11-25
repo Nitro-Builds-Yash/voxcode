@@ -2,18 +2,17 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    git \
-    ffmpeg \
-    libasound2-dev \
+RUN apt-get update && apt-get install -y --no-install-recommends git ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Install dependencies first for better layer caching.
+COPY pyproject.toml README.md ./
+COPY backend ./backend
+RUN pip install --no-cache-dir ".[ml]" faster-whisper
 
 COPY . .
 
+ENV HOST=0.0.0.0 PORT=8000 PYTHONUNBUFFERED=1
 EXPOSE 8000
-
+HEALTHCHECK --interval=30s --timeout=5s CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
 CMD ["python", "-m", "backend.main"]

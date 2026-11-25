@@ -1,0 +1,9 @@
+.git
+**/__pycache__
+.venv
+venv
+storage/*
+local_models/*
+vscode-extension/node_modules
+vscode-extension/out
+*.pdf

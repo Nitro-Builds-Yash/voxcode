@@ -1,5 +1,4 @@
 class UserService:
-
     def create_user(self):
         pass
 

@@ -1,95 +1,65 @@
-from backend.agent.planner.execution_plan import (
-    TaskType,
-)
+"""Rule-based intent classification on whole words (so "show" is not "how")."""
+
+from __future__ import annotations
+
+import re
+
+from backend.agent.planner.execution_plan import TaskType
+
+# Checked in order; the first matching group wins. Questions are checked
+# first so "how do I add a route?" is an explanation, not an edit.
+_RULES: list[tuple[TaskType, tuple[str, ...]]] = [
+    (
+        TaskType.EXPLAIN,
+        (
+            "explain",
+            "describe",
+            "how does",
+            "how do",
+            "how is",
+            "why",
+            "what does",
+            "what is",
+            "walk me through",
+            "understand",
+            "tell me about",
+        ),
+    ),
+    (TaskType.SEARCH, ("find", "locate", "search", "where", "which file", "show me", "list")),
+    (TaskType.TEST, ("write tests?", "add tests?", "unit tests?", "test cases?", "pytest", "test coverage")),
+    (TaskType.FIX, ("fix", "debug", "resolve", "repair", "handle the error", "bug")),
+    (
+        TaskType.REFACTOR,
+        ("refactor", "rename", "clean ?up", "simplify", "extract", "restructure", "optimi[sz]e", "improve"),
+    ),
+    (TaskType.EXECUTE, ("run the", "run all", "run tests?", "execute", "install")),
+    (
+        TaskType.GENERATE,
+        (
+            "add",
+            "create",
+            "implement",
+            "generate",
+            "write",
+            "build",
+            "make",
+            "update",
+            "change",
+            "replace",
+            "remove",
+            "delete",
+            "insert",
+            "docstrings?",
+        ),
+    ),
+]
+
+_COMPILED = [(task, re.compile(r"\b(?:" + "|".join(words) + r")\b", re.IGNORECASE)) for task, words in _RULES]
 
 
 class TaskClassifier:
-
-    EXPLAIN = {
-        "explain",
-        "describe",
-        "how",
-        "why",
-        "understand",
-    }
-
-    SEARCH = {
-        "find",
-        "locate",
-        "search",
-        "where",
-    }
-
-    GENERATE = {
-        "generate",
-        "create",
-        "implement",
-        "add",
-        "write",
-    }
-
-    REFACTOR = {
-        "refactor",
-        "rename",
-        "improve",
-        "cleanup",
-    }
-
-    TEST = {
-        "test",
-        "pytest",
-        "unit test",
-        "integration",
-    }
-
-    EXECUTE = {
-        "run",
-        "execute",
-        "build",
-        "install",
-    }
-
-    def classify(
-        self,
-        query: str,
-    ) -> TaskType:
-
-        query = query.lower()
-
-        for word in self.EXPLAIN:
-
-            if word in query:
-
-                return TaskType.EXPLAIN
-
-        for word in self.SEARCH:
-
-            if word in query:
-
-                return TaskType.SEARCH
-
-        for word in self.GENERATE:
-
-            if word in query:
-
-                return TaskType.GENERATE
-
-        for word in self.REFACTOR:
-
-            if word in query:
-
-                return TaskType.REFACTOR
-
-        for word in self.TEST:
-
-            if word in query:
-
-                return TaskType.TEST
-
-        for word in self.EXECUTE:
-
-            if word in query:
-
-                return TaskType.EXECUTE
-
+    def classify(self, query: str) -> TaskType:
+        for task, pattern in _COMPILED:
+            if pattern.search(query):
+                return task
         return TaskType.CHAT

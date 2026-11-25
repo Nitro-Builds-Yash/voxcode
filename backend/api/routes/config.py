@@ -1,132 +1,100 @@
-from fastapi import APIRouter
+"""Runtime AI provider configuration."""
+
+from __future__ import annotations
+
+from typing import Any
+from urllib.parse import urlparse
+
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Optional, Dict, Any
 
+from backend.api import services
 from backend.config.settings import settings
-from backend.core.model_registry import ModelRegistry
+from backend.core.model_registry import PROVIDER_NAMES
 
-router = APIRouter(
-    prefix="/config",
-    tags=["config"],
-)
+router = APIRouter(prefix="/config", tags=["config"])
 
-registry = ModelRegistry()
+_LABELS = {
+    "gemini": "Google Gemini",
+    "groq": "Groq",
+    "ollama": "Ollama (local)",
+    "anthropic": "Anthropic Claude",
+    "openai": "OpenAI",
+    "openrouter": "OpenRouter",
+}
 
 
 class AIConfigUpdate(BaseModel):
-    default_provider: Optional[str] = None
-    ollama_model: Optional[str] = None
-    ollama_host: Optional[str] = None
-    gemini_api_key: Optional[str] = None
-    gemini_model: Optional[str] = None
-    groq_api_key: Optional[str] = None
-    groq_model: Optional[str] = None
-    anthropic_api_key: Optional[str] = None
-    anthropic_model: Optional[str] = None
-    openai_api_key: Optional[str] = None
-    openai_model: Optional[str] = None
-    openrouter_api_key: Optional[str] = None
-    openrouter_model: Optional[str] = None
+    default_provider: str | None = None
+    ollama_model: str | None = None
+    ollama_host: str | None = None
+    gemini_api_key: str | None = None
+    gemini_model: str | None = None
+    groq_api_key: str | None = None
+    groq_model: str | None = None
+    anthropic_api_key: str | None = None
+    anthropic_model: str | None = None
+    openai_api_key: str | None = None
+    openai_model: str | None = None
+    openrouter_api_key: str | None = None
+    openrouter_model: str | None = None
 
 
 @router.get("/")
-def get_ai_config() -> Dict[str, Any]:
-    """
-    Returns current active providers, selected models, and connection status.
-    Masks secrets for security.
-    """
+def get_ai_config() -> dict[str, Any]:
+    """Active provider, models and whether keys are set (keys never returned)."""
+    providers = {}
+    for name in PROVIDER_NAMES:
+        upper = name.upper()
+        providers[name] = {
+            "name": _LABELS[name],
+            "model": getattr(settings, f"{upper}_MODEL"),
+            "configured": True if name == "ollama" else bool(getattr(settings, f"{upper}_API_KEY")),
+            "is_active": name == settings.DEFAULT_PROVIDER,
+        }
+    providers["ollama"]["host"] = settings.OLLAMA_HOST
     return {
         "active_provider": settings.DEFAULT_PROVIDER,
-        "providers": {
-            "gemini": {
-                "name": "Google Gemini",
-                "model": settings.GEMINI_MODEL,
-                "configured": bool(settings.GEMINI_API_KEY),
-                "is_active": settings.DEFAULT_PROVIDER == "gemini",
-            },
-            "groq": {
-                "name": "Groq LPU (Ultra-Fast)",
-                "model": settings.GROQ_MODEL,
-                "configured": bool(settings.GROQ_API_KEY),
-                "is_active": settings.DEFAULT_PROVIDER == "groq",
-            },
-            "ollama": {
-                "name": "Ollama (Local)",
-                "model": settings.OLLAMA_MODEL,
-                "host": settings.OLLAMA_HOST,
-                "configured": True,
-                "is_active": settings.DEFAULT_PROVIDER == "ollama",
-            },
-            "anthropic": {
-                "name": "Anthropic Claude",
-                "model": settings.ANTHROPIC_MODEL,
-                "configured": bool(settings.ANTHROPIC_API_KEY),
-                "is_active": settings.DEFAULT_PROVIDER == "anthropic",
-            },
-            "openai": {
-                "name": "OpenAI",
-                "model": settings.OPENAI_MODEL,
-                "configured": bool(settings.OPENAI_API_KEY),
-                "is_active": settings.DEFAULT_PROVIDER == "openai",
-            },
-            "openrouter": {
-                "name": "OpenRouter",
-                "model": settings.OPENROUTER_MODEL,
-                "configured": bool(settings.OPENROUTER_API_KEY),
-                "is_active": settings.DEFAULT_PROVIDER == "openrouter",
-            },
-        },
+        "providers": providers,
         "retrieval": {
             "embedding_model": settings.EMBEDDING_MODEL,
-            "rerank_model": settings.RERANK_MODEL,
+            "embedder_loaded": services.registry.get_embedder() is not None
+            if settings.PRELOAD_MODELS
+            else None,
+            "rerank_model": settings.RERANK_MODEL if settings.RERANK_ENABLED else None,
             "top_k": settings.DEFAULT_TOP_K,
         },
+        "emotion_enabled": settings.EMOTION_ENABLED,
     }
 
 
 @router.post("/update")
-def update_ai_config(payload: AIConfigUpdate):
-    """
-    Updates AI provider configuration at runtime without needing a server restart.
-    """
+def update_ai_config(payload: AIConfigUpdate) -> dict:
+    """Change providers, models or keys at runtime (no restart needed)."""
     if payload.default_provider:
-        settings.DEFAULT_PROVIDER = payload.default_provider.lower()
+        name = payload.default_provider.lower()
+        if name not in PROVIDER_NAMES:
+            raise HTTPException(status_code=400, detail=f"Unknown provider '{name}'")
+        settings.DEFAULT_PROVIDER = name
 
-    if payload.gemini_api_key is not None:
-        settings.GEMINI_API_KEY = payload.gemini_api_key
-    if payload.gemini_model:
-        settings.GEMINI_MODEL = payload.gemini_model
-
-    if payload.groq_api_key is not None:
-        settings.GROQ_API_KEY = payload.groq_api_key
-    if payload.groq_model:
-        settings.GROQ_MODEL = payload.groq_model
-
-    if payload.anthropic_api_key is not None:
-        settings.ANTHROPIC_API_KEY = payload.anthropic_api_key
-    if payload.anthropic_model:
-        settings.ANTHROPIC_MODEL = payload.anthropic_model
-
-    if payload.ollama_model:
-        settings.OLLAMA_MODEL = payload.ollama_model
     if payload.ollama_host:
-        settings.OLLAMA_HOST = payload.ollama_host
+        parsed = urlparse(payload.ollama_host)
+        if parsed.scheme not in ("http", "https") or not parsed.netloc:
+            raise HTTPException(status_code=400, detail="ollama_host must be an http(s) URL")
+        settings.OLLAMA_HOST = payload.ollama_host.rstrip("/")
 
-    if payload.openai_api_key is not None:
-        settings.OPENAI_API_KEY = payload.openai_api_key
-    if payload.openai_model:
-        settings.OPENAI_MODEL = payload.openai_model
+    for name in PROVIDER_NAMES:
+        model = getattr(payload, f"{name}_model", None)
+        if model:
+            setattr(settings, f"{name.upper()}_MODEL", model.strip())
+        key = getattr(payload, f"{name}_api_key", None)
+        if key is not None:
+            setattr(settings, f"{name.upper()}_API_KEY", key.strip())
 
-    if payload.openrouter_api_key is not None:
-        settings.OPENROUTER_API_KEY = payload.openrouter_api_key
-    if payload.openrouter_model:
-        settings.OPENROUTER_MODEL = payload.openrouter_model
-
-    # Clear cached instances so updated credentials take effect
-    registry.unload()
-
+    # Provider clients are keyed by their config, so the change applies on the
+    # next request without unloading the embedding/reranker models.
     return {
         "status": "updated",
         "active_provider": settings.DEFAULT_PROVIDER,
-        "message": f"Active AI Provider is now {settings.DEFAULT_PROVIDER.upper()}",
+        "message": f"Active AI provider is now {settings.DEFAULT_PROVIDER.upper()}",
     }

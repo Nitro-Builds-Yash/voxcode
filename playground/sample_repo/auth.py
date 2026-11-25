@@ -1,5 +1,4 @@
 class AuthService:
-
     def login(self):
         pass
 

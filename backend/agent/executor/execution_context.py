@@ -4,7 +4,6 @@ from typing import Any
 from backend.agent.agent_request import (
     AgentRequest,
 )
-
 from backend.agent.planner.execution_plan import (
     ExecutionPlan,
 )

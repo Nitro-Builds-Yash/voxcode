@@ -1,67 +1,121 @@
+"""Text-to-speech: Piper (neural, offline) when configured, else pyttsx3.
+
+`synthesize_wav` returns audio bytes so clients (browser UI, VS Code) can
+play the reply themselves; `speak` plays it on the backend machine.
+"""
+
+from __future__ import annotations
+
+import io
 import logging
+import os
+import tempfile
 import threading
-from typing import Optional
+import wave
+
+from backend.config.settings import settings
 
 logger = logging.getLogger(__name__)
 
+# Speaking rate per detected state (1.0 = normal).
+_SPEED = {"urgent": 1.15, "frustrated": 0.9, "fatigued": 0.92}
+
 
 class TTSService:
-    """
-    Local Text-To-Speech service for VoxCode voice feedback.
-    Modulates speech rate, pitch, and voice cadence based on detected emotional context.
-    """
-
-    def __init__(self, engine_name: str = "pyttsx3"):
-        self.engine_name = engine_name
+    def __init__(self):
         self._lock = threading.Lock()
+        self._piper = None
+        self._piper_failed = False
 
-    def speak(
-        self,
-        text: str,
-        emotion: str = "calm",
-        intensity: float = 0.5,
-        async_mode: bool = True,
-    ) -> None:
-        """
-        Synthesizes and speaks text to audio output with emotion-based pacing.
-        """
+    @property
+    def engine(self) -> str:
+        choice = settings.TTS_ENGINE.lower()
+        if choice == "auto":
+            return "piper" if settings.PIPER_MODEL else "pyttsx3"
+        return choice
+
+    # ------------------------------------------------------------ public
+    def synthesize_wav(self, text: str, emotion: str = "calm") -> bytes | None:
         if not text:
-            return
-
-        def _run_speak():
+            return None
+        speed = _SPEED.get(emotion, 1.0)
+        try:
             with self._lock:
-                try:
-                    import pyttsx3
-                    engine = pyttsx3.init()
+                if self.engine == "piper":
+                    return self._piper_wav(text, speed)
+                if self.engine == "pyttsx3":
+                    return self._pyttsx3_wav(text, speed)
+        except Exception as exc:
+            logger.warning("TTS synthesis failed (%s): %s", self.engine, exc)
+        return None
 
-                    # Speech rate modulation based on user emotional state
-                    rate = 175
-                    if emotion == "urgent":
-                        rate = 205
-                    elif emotion == "frustrated":
-                        rate = 155
-                    elif emotion == "fatigued":
-                        rate = 160
-                    elif emotion == "curious":
-                        rate = 175
+    def speak(self, text: str, emotion: str = "calm") -> None:
+        """Play speech on the backend machine without blocking the caller."""
+        threading.Thread(target=self._speak_blocking, args=(text, emotion), daemon=True).start()
 
-                    engine.setProperty("rate", rate)
-
-                    # Prefer a clear natural voice if present
-                    voices = engine.getProperty("voices")
-                    for v in voices:
-                        name_lower = v.name.lower()
-                        if "natural" in name_lower or "english" in name_lower or "david" in name_lower or "zira" in name_lower:
-                            engine.setProperty("voice", v.id)
-                            break
-
+    # ----------------------------------------------------------- engines
+    def _speak_blocking(self, text: str, emotion: str) -> None:
+        if self.engine == "pyttsx3":
+            try:
+                with self._lock:
+                    engine = self._pyttsx3_engine(_SPEED.get(emotion, 1.0))
                     engine.say(text)
                     engine.runAndWait()
-                except Exception as e:
-                    logger.warning(f"TTS output failed or pyttsx3 is unavailable: {e}")
+                return
+            except Exception as exc:
+                logger.warning("pyttsx3 playback failed: %s", exc)
+                return
+        audio = self.synthesize_wav(text, emotion)
+        if audio:
+            try:
+                import numpy as np
+                import sounddevice as sd
 
-        if async_mode:
-            thread = threading.Thread(target=_run_speak, daemon=True)
-            thread.start()
-        else:
-            _run_speak()
+                with wave.open(io.BytesIO(audio)) as wav:
+                    frames: np.ndarray = np.frombuffer(wav.readframes(wav.getnframes()), dtype=np.int16)
+                    sd.play(frames, wav.getframerate(), blocking=True)
+            except Exception as exc:
+                logger.warning("Audio playback failed: %s", exc)
+
+    def _piper_wav(self, text: str, speed: float) -> bytes:
+        if self._piper is None:
+            if self._piper_failed:
+                raise RuntimeError("Piper unavailable")
+            try:
+                from piper import PiperVoice
+
+                self._piper = PiperVoice.load(settings.PIPER_MODEL)
+            except Exception:
+                self._piper_failed = True
+                raise
+        buffer = io.BytesIO()
+        with wave.open(buffer, "wb") as wav:
+            try:  # piper-tts >= 1.3
+                from piper import SynthesisConfig
+
+                self._piper.synthesize_wav(text, wav, syn_config=SynthesisConfig(length_scale=1 / speed))
+            except ImportError:  # piper-tts 1.2
+                self._piper.synthesize(text, wav, length_scale=1 / speed)
+        return buffer.getvalue()
+
+    def _pyttsx3_engine(self, speed: float):
+        import pyttsx3
+
+        engine = pyttsx3.init()
+        engine.setProperty("rate", int(175 * speed))
+        return engine
+
+    def _pyttsx3_wav(self, text: str, speed: float) -> bytes:
+        engine = self._pyttsx3_engine(speed)
+        fd, path = tempfile.mkstemp(suffix=".wav")
+        os.close(fd)
+        try:
+            engine.save_to_file(text, path)
+            engine.runAndWait()
+            with open(path, "rb") as handle:
+                return handle.read()
+        finally:
+            os.unlink(path)
+
+
+tts_service = TTSService()
