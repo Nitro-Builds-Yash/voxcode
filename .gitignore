@@ -1,196 +1,56 @@
-# ============================================================
-# 🔐 Secrets & Environment
-# ============================================================
+# Secrets
 .env
 .env.*
 !.env.example
 *.env
-*.secrets
-secrets.*
-*.key
 *.pem
+*.key
 credentials.json
-.credentials
 
-# API Keys
-openai_key.txt
-anthropic_key.txt
-gemini_key.txt
-
-# ============================================================
-# 🐍 Python
-# ============================================================
+# Python
 __pycache__/
 *.py[cod]
-*.pyo
-*.pyd
-.Python
-
+*.egg-info/
+.eggs/
+build/
+dist/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
-
 .coverage
 .coverage.*
 htmlcov/
 
-# ============================================================
-# 🧪 Virtual Environments
-# ============================================================
+# Virtual environments
 .venv/
 venv/
 env/
-ENV/
 
-# Conda
-conda-meta/
-.envrc
+# VoxCode runtime data (default lives in ~/.voxcode; these cover VOXCODE_HOME=./...)
+.voxcode/
+storage/
+local_models/
 
-# ============================================================
-# 📓 Jupyter
-# ============================================================
-notebooks/
-.ipynb_checkpoints/
-
-# ============================================================
-# 📄 Logs & Temp Files
-# ============================================================
-*.log
-logs/
-
-*.out
-*.err
-
-tmp/
-temp/
-
-*.tmp
-*.swp
-
-# ============================================================
-# 💻 OS / Editor
-# ============================================================
-.DS_Store
-Thumbs.db
-
+# Editors / OS
 .vscode/
 .idea/
+.DS_Store
+Thumbs.db
+*.swp
 
-# ============================================================
-# 🏗️ Backend Build / Artifacts
-# ============================================================
-build/
-dist/
+# Logs and temp files
+*.log
+logs/
+tmp/
+*.tmp
 
-*.egg-info/
-.eggs/
-*.whl
-
-pip-wheel-metadata/
-
-# ============================================================
-# 🤖 AI Models
-# ============================================================
-local_models/embeddings/*
-!local_models/embeddings/.gitkeep
-
-local_models/reranker/*
-!local_models/reranker/.gitkeep
-
-local_models/whisper/*
-!local_models/whisper/.gitkeep
-
-# ============================================================
-# 🗄️ Vector Databases
-# ============================================================
-storage/qdrant/*
-!storage/qdrant/.gitkeep
-
-storage/indexes/*
-!storage/indexes/.gitkeep
-
-# ============================================================
-# 🧠 Generated Embeddings
-# ============================================================
-storage/embeddings/*
-!storage/embeddings/.gitkeep
-
-# ============================================================
-# 📚 BM25 Indexes
-# ============================================================
-storage/bm25/*
-!storage/bm25/.gitkeep
-
-# ============================================================
-# 🕸️ Repository Graphs
-# ============================================================
-storage/graphs/*
-!storage/graphs/.gitkeep
-
-# ============================================================
-# ⚡ Cache
-# ============================================================
-storage/cache/*
-!storage/cache/.gitkeep
-
-# ============================================================
-# 💬 Sessions & Conversations
-# ============================================================
-storage/sessions/*
-!storage/sessions/.gitkeep
-
-# ============================================================
-# 📦 User Indexed Repositories
-# ============================================================
-repositories/
-
-# ============================================================
-# 🎤 Voice Recordings
-# ============================================================
+# Audio recordings
 *.wav
 *.mp3
 *.flac
 *.m4a
 
-recordings/
-
-# ============================================================
-# 🧪 Playground Artifacts
-# ============================================================
-playground/generated/
-playground/output/
-playground/tourism-website-main
-
-# ============================================================
-# 🚀 VS Code Extension
-# ============================================================
+# VS Code extension build output
 vscode-extension/node_modules/
 vscode-extension/out/
-vscode-extension/dist/
-
-# ============================================================
-# 🔥 Local Runtime Config
-# ============================================================
-settings.local.json
-config.local.yaml
-config.local.yml
-
-# ============================================================
-# 🐳 Docker
-# ============================================================
-.docker/
-docker-data/
-
-# ============================================================
-# 📈 Profiling
-# ============================================================
-.prof
-.profraw
-.profdata
-
-# ============================================================
-# 🔒 SQLite / Local Databases
-# ============================================================
-*.db
-*.sqlite
-*.sqlite3*.vsix
+*.vsix
