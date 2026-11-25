@@ -58,10 +58,9 @@ def get_ai_config() -> dict[str, Any]:
         "providers": providers,
         "retrieval": {
             "embedding_model": settings.EMBEDDING_MODEL,
-            "embedder_loaded": services.registry.get_embedder() is not None
-            if settings.PRELOAD_MODELS
-            else None,
+            "embedder_status": services.registry.model_status(f"embedder:{settings.EMBEDDING_MODEL}"),
             "rerank_model": settings.RERANK_MODEL if settings.RERANK_ENABLED else None,
+            "reranker_status": services.registry.model_status(f"reranker:{settings.RERANK_MODEL}"),
             "top_k": settings.DEFAULT_TOP_K,
         },
         "emotion_enabled": settings.EMOTION_ENABLED,

@@ -87,7 +87,10 @@ class EditAgent:
             attempt = Attempt(number, ok, check_output)
             attempts.append(attempt)
             if not ok:
-                feedback = f"`git apply --check` failed:\n{check_output}"
+                feedback = (
+                    f"`git apply --check` failed:\n{check_output}\n\nThe rejected patch was:\n"
+                    f"```diff\n{output.diff}```\nCopy context lines exactly from the FULL FILE sections."
+                )
                 continue
             best = (output.diff, output.explanation)
 
@@ -110,7 +113,9 @@ class EditAgent:
             problems = list(review.issues)
             if attempt.tests_passed is False:
                 problems.insert(0, f"Tests failed:\n{attempt.test_output}")
-            feedback = "\n".join(f"- {p}" for p in problems) or "Reviewer rejected the patch."
+            feedback = (
+                "\n".join(f"- {p}" for p in problems) or "Reviewer rejected the patch."
+            ) + f"\n\nThe rejected patch was:\n```diff\n{output.diff}```"
 
         if best:
             return self._result("needs_review", best[1], best[0], repo, attempts, test_command, request)
@@ -123,9 +128,15 @@ class EditAgent:
         retriever = self.runtimes.retriever(request.repository_key)
         results = retriever.search(request.query)
         reranker = self.registry.get_reranker()
-        results = (
-            reranker.rerank(request.query, results, request.top_k) if reranker else results[: request.top_k]
-        )
+        try:
+            results = (
+                reranker.rerank(request.query, results, request.top_k)
+                if reranker
+                else results[: request.top_k]
+            )
+        except Exception as exc:
+            logger.warning("Reranking failed, using retrieval order: %s", exc)
+            results = results[: request.top_k]
         results = retriever.expand(results)
 
         # Diffs need exact surrounding lines, so include the most relevant
@@ -142,6 +153,9 @@ class EditAgent:
             if len(lines) <= FULL_FILE_MAX_LINES:
                 full_files.append(f"FULL FILE: {path}\n{number_lines(chr(10).join(lines), 1)}\n")
 
+        # Chunks from files already included in full would only repeat code.
+        full_paths = {section.split("\n", 1)[0].removeprefix("FULL FILE: ") for section in full_files}
+        results = [r for r in results if r.file_path not in full_paths]
         history = self.memory.format_history(request.session_id)
         return ContextBuilder().build(request.query, results, history, extra_sections=full_files)
 

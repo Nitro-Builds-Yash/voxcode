@@ -60,3 +60,15 @@ def test_tests_run_against_patch_in_sandbox(sample_repo):
     report = run_tests_with_patch(sample_repo, DIFF, timeout=120)
     assert report.passed, report.output
     assert not (sample_repo / "app/new.py").exists()
+
+
+def test_sandbox_links_nested_dependency_folders(sample_repo, tmp_path):
+    from backend.execution.testing.test_runner import _copy_repo
+
+    (sample_repo / "packages/web/node_modules/lib").mkdir(parents=True)
+    (sample_repo / "packages/web/node_modules/lib/index.js").write_text("module.exports = 1\n")
+    target = tmp_path / "copy"
+    _copy_repo(sample_repo, target)
+    linked = target / "packages/web/node_modules"
+    assert linked.is_symlink() and (linked / "lib/index.js").exists()
+    assert (target / "node_modules").is_symlink()

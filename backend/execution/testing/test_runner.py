@@ -54,24 +54,30 @@ def detect_test_command(repo: Path) -> list[str] | None:
 
 
 def _copy_repo(repo: Path, target: Path) -> None:
+    """Copy the repo, linking (not copying) dependency folders at any depth."""
     total = 0
+    links: list[Path] = []
 
     def ignore(directory: str, names: list[str]) -> set[str]:
         nonlocal total
-        skipped = {n for n in names if n in IGNORED_DIRS or n in _LINKED}
+        here = Path(directory)
+        skipped: set[str] = set()
         for name in names:
-            if name not in skipped:
-                path = Path(directory) / name
-                if path.is_file():
-                    total += path.stat().st_size
+            path = here / name
+            if name in _LINKED and path.is_dir():
+                links.append(path.relative_to(repo))
+                skipped.add(name)
+            elif name in IGNORED_DIRS:
+                skipped.add(name)
+            elif path.is_file():
+                total += path.stat().st_size
         if total > _MAX_COPY_BYTES:
             raise RuntimeError("Repository too large to copy for a sandboxed test run")
         return skipped
 
     shutil.copytree(repo, target, ignore=ignore, symlinks=True)
-    for name in _LINKED:
-        if (repo / name).is_dir():
-            os.symlink(repo / name, target / name)
+    for rel in links:
+        os.symlink(repo / rel, target / rel, target_is_directory=True)
 
 
 def run_tests_with_patch(repo: Path, diff: str, timeout: int) -> TestReport | None:

@@ -59,8 +59,19 @@ def test_memory_caps_and_expires():
 
 def test_parse_review():
     assert parse_review('{"approved": true, "issues": []}').approved
-    verdict = parse_review('Sure: {"approved": false, "issues": ["breaks login"]}')
+    verdict = parse_review('Sure: {"approved": false, "issues": ["breaks login"]} {"x": 1}')
     assert not verdict.approved and verdict.issues == ["breaks login"]
+    # Unparseable or non-boolean verdicts must never count as approval.
+    assert not parse_review("approved").approved
+    assert not parse_review('{"approved": "yes"}').approved
+
+
+def test_registry_status_does_not_load_models():
+    from backend.core.model_registry import ModelRegistry
+
+    registry = ModelRegistry()
+    assert registry.model_status("embedder:never-requested") == "not_loaded"
+    assert "embedder:never-requested" not in registry._models
 
 
 def _setup(sample_repo, tmp_path, replies):

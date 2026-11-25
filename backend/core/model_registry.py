@@ -26,6 +26,7 @@ class ModelRegistry:
     _instance_lock = threading.Lock()
     _lock: threading.RLock
     _models: dict[str, Any]
+    _model_locks: dict[str, threading.Lock]
     _providers: dict[str, tuple[str, Any]]
 
     def __new__(cls):
@@ -33,6 +34,7 @@ class ModelRegistry:
             if cls._instance is None:
                 instance = super().__new__(cls)
                 instance._lock = threading.RLock()
+                instance._model_locks = {}
                 instance._models = {}
                 instance._providers = {}
                 cls._instance = instance
@@ -40,17 +42,35 @@ class ModelRegistry:
 
     # -------------------------------------------------------------- models
     def _load(self, key: str, factory):
+        # One lock per model: loading the embedder (possibly a long download)
+        # must not block provider lookups or other models.
         with self._lock:
-            value = self._models.get(key)
-            if value is None:
-                try:
-                    value = factory()
-                    logger.info("Loaded %s", key)
-                except Exception as exc:  # missing package, no network, bad model
-                    logger.warning("%s unavailable (%s); continuing without it", key, exc)
-                    value = _UNAVAILABLE
+            if key in self._models:
+                value = self._models[key]
+                return None if value is _UNAVAILABLE else value
+            model_lock = self._model_locks.setdefault(key, threading.Lock())
+
+        with model_lock:
+            with self._lock:
+                if key in self._models:
+                    value = self._models[key]
+                    return None if value is _UNAVAILABLE else value
+            try:
+                value = factory()
+                logger.info("Loaded %s", key)
+            except Exception as exc:  # missing package, no network, bad model
+                logger.warning("%s unavailable (%s); continuing without it", key, exc)
+                value = _UNAVAILABLE
+            with self._lock:
                 self._models[key] = value
         return None if value is _UNAVAILABLE else value
+
+    def model_status(self, key: str) -> str:
+        """`loaded`, `unavailable` or `not_loaded`, without triggering a load."""
+        with self._lock:
+            if key not in self._models:
+                return "not_loaded"
+            return "unavailable" if self._models[key] is _UNAVAILABLE else "loaded"
 
     def get_embedder(self):
         from backend.retrieval.semantic.embedder import Embedder
@@ -95,8 +115,8 @@ class ModelRegistry:
             cached = self._providers.get(name)
             if cached and cached[0] == fingerprint:
                 return cached[1]
-            if cached:
-                cached[1].close()
+            # The old client is not closed here: a request may still be
+            # streaming from it. It is garbage-collected when done.
             provider = create_provider(name)
             self._providers[name] = (fingerprint, provider)
             return provider

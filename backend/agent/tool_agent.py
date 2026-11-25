@@ -16,6 +16,7 @@ from pathlib import Path
 from backend.agent.agent_request import AgentRequest
 from backend.agent.memory.memory_manager import MemoryManager
 from backend.agent.runtime import RuntimeCache, runtime_cache
+from backend.core.json_extract import first_json_with
 from backend.core.model_registry import ModelRegistry
 from backend.generation.context.context_builder import number_lines
 from backend.generation.prompts.prompt_result import PromptResult
@@ -23,7 +24,6 @@ from backend.generation.prompts.system_prompts import build_system_prompt
 
 MAX_STEPS = 6
 MAX_OBSERVATION_CHARS = 6000
-_JSON_RE = re.compile(r"\{.*\}", re.DOTALL)
 
 TOOL_RULES = """
 You can investigate the repository with tools before answering.
@@ -97,14 +97,7 @@ class ToolAgent:
 
 
 def _parse(reply: str) -> dict | None:
-    match = _JSON_RE.search(reply)
-    if not match:
-        return None
-    try:
-        data = json.loads(match.group(0))
-    except ValueError:
-        return None
-    return data if isinstance(data, dict) and ("tool" in data or "final" in data) else None
+    return first_json_with(reply, "tool", "final")
 
 
 class _Tools:

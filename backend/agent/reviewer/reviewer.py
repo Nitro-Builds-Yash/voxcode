@@ -2,14 +2,11 @@
 
 from __future__ import annotations
 
-import json
-import re
 from dataclasses import dataclass, field
 
+from backend.core.json_extract import first_json_with
 from backend.generation.prompts.prompt_result import PromptResult
 from backend.generation.prompts.system_prompts import REVIEWER_RULES, build_system_prompt
-
-_JSON_RE = re.compile(r"\{.*\}", re.DOTALL)
 
 
 @dataclass
@@ -40,14 +37,11 @@ class Reviewer:
 
 
 def parse_review(raw: str) -> ReviewResult:
-    match = _JSON_RE.search(raw)
-    if match:
-        try:
-            data = json.loads(match.group(0))
-            issues = [str(i) for i in data.get("issues", []) if str(i).strip()]
-            return ReviewResult(bool(data.get("approved")), issues)
-        except (ValueError, AttributeError):
-            pass
-    lowered = raw.lower()
-    approved = "approved" in lowered and "not approved" not in lowered
-    return ReviewResult(approved, [] if approved else [raw.strip()[:500]])
+    """Parse the reviewer's verdict. Anything unparseable counts as a rejection."""
+    verdict = first_json_with(raw, "approved")
+    if verdict is None:
+        return ReviewResult(False, [f"Reviewer reply was not valid JSON: {raw.strip()[:300]}"])
+    issues = verdict.get("issues") or []
+    if not isinstance(issues, list):
+        issues = [issues]
+    return ReviewResult(verdict.get("approved") is True, [str(i) for i in issues if str(i).strip()])

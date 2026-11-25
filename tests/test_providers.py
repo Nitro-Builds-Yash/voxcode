@@ -31,7 +31,7 @@ def test_openai_compatible_streaming():
         return httpx.Response(200, text=body)
 
     provider = _with_transport(OpenAICompatibleProvider("m", "k", "https://x/v1"), handler)
-    assert list(provider.stream(PROMPT)) == ["Hel", "lo"]
+    assert "".join(provider.stream(PROMPT)) == "Hello"
     assert provider.generate(PROMPT).response == "Hello"
 
 
@@ -77,3 +77,44 @@ def test_errors_raise_instead_of_pretending_success():
         provider.generate(PROMPT)
     with pytest.raises(ProviderError, match="API key"):
         AnthropicProvider("m", "", "https://x").generate(PROMPT)
+
+
+def test_think_blocks_are_stripped_across_chunks():
+    from backend.generation.providers.providers import strip_think_blocks
+
+    def run(chunks):
+        return "".join(strip_think_blocks(iter(chunks)))
+
+    assert run(["<thi", "nk>secret", " plan</th", "ink>\n\nAnswer"]) == "Answer"
+    assert run(["a<think>x</think>b", "c"]) == "abc"
+    assert run(["x < y and ", "z <"]) == "x < y and z <"
+
+    def handler(request):
+        lines = [{"message": {"content": "<think>hmm"}}, {"message": {"content": "</think>Hi"}}]
+        return httpx.Response(200, text="\n".join(json.dumps(line) for line in lines))
+
+    provider = _with_transport(OllamaProvider("q", base_url="http://o"), handler)
+    assert provider.generate(PROMPT).response == "Hi"
+
+
+def test_openai_does_not_send_temperature_but_groq_does():
+    from backend.generation.providers.providers import GroqProvider
+
+    sent = {}
+
+    def handler(request):
+        sent[str(request.url.host)] = json.loads(request.content)
+        return httpx.Response(200, text=_sse({"choices": [{"delta": {"content": "ok"}}]}))
+
+    _with_transport(OpenAICompatibleProvider("o", "k", "https://openai"), handler).generate(PROMPT)
+    _with_transport(GroqProvider("g", "k", "https://groq"), handler).generate(PROMPT)
+    assert "temperature" not in sent["openai"] and sent["groq"]["temperature"] == 0.2
+
+
+def test_error_event_mid_stream_raises():
+    provider = _with_transport(
+        OpenAICompatibleProvider("m", "k", "https://x"),
+        lambda r: httpx.Response(200, text=_sse({"error": {"message": "overloaded"}})),
+    )
+    with pytest.raises(ProviderError, match="overloaded"):
+        provider.generate(PROMPT)

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 from backend.agent.executor.execution_context import ExecutionContext
 from backend.agent.executor.execution_result import ExecutionResult
 from backend.agent.planner.planner_step import PlannerStep, StepType
@@ -9,6 +11,8 @@ from backend.config.settings import settings
 from backend.generation.context.context_builder import ContextBuilder
 from backend.generation.prompts.prompt_builder import PromptBuilder
 from backend.monitoring import Metrics
+
+logger = logging.getLogger(__name__)
 
 
 class StepExecutor:
@@ -60,10 +64,14 @@ class StepExecutor:
         if self.reranker is None:
             context.reranked_results = context.retrieval_results[:top_k]
             return
-        with Metrics.rerank_timer():
-            context.reranked_results = self.reranker.rerank(
-                context.request.query, context.retrieval_results, top_k=top_k
-            )
+        try:
+            with Metrics.rerank_timer():
+                context.reranked_results = self.reranker.rerank(
+                    context.request.query, context.retrieval_results, top_k=top_k
+                )
+        except Exception as exc:  # e.g. GPU out of memory: fall back to fused order
+            logger.warning("Reranking failed, using retrieval order: %s", exc)
+            context.reranked_results = context.retrieval_results[:top_k]
 
     def _expand_graph(self, context: ExecutionContext) -> None:
         if context.reranked_results is None:

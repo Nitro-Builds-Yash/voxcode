@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import threading
 from contextlib import asynccontextmanager
@@ -84,7 +85,8 @@ def root():
         return JSONResponse({"name": settings.APP_NAME, "version": settings.APP_VERSION, "docs_url": "/docs"})
     html = index_file.read_text(encoding="utf-8")
     # Same-origin page: other sites cannot read it, so it can carry the token.
-    token_script = f"<script>window.VOXCODE_TOKEN = {settings.API_TOKEN!r};</script>"
+    token_json = json.dumps(settings.API_TOKEN).replace("<", "\\u003c")
+    token_script = f"<script>window.VOXCODE_TOKEN = {token_json};</script>"
     return HTMLResponse(html.replace("</head>", f"{token_script}\n</head>", 1))
 
 

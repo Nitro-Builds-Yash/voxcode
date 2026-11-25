@@ -55,14 +55,17 @@ python scripts/voxcode_cli.py edit   . "add a docstring to reciprocal_rank_fusio
 | `pip install -e ".[voice]"` | + Whisper speech-to-text, microphone capture, Piper / pyttsx3 speech |
 | `pip install -r requirements-cuda.txt` | Everything with CUDA PyTorch |
 
-Redis and a Qdrant server are optional: by default conversation memory is kept in-process and vectors are stored in `storage/qdrant`. `docker compose up` runs the server with Redis and Qdrant; put the code you want to index under `./playground` or set `WORKSPACE_DIR`.
+Redis and a Qdrant server are optional: by default conversation memory is kept in-process and vectors are stored in `storage/qdrant`. `docker compose up` runs the server with Redis and Qdrant (CPU PyTorch by default); put the code you want to index under `./playground` or set `WORKSPACE_DIR`, and index it by its container path, e.g. `/workspace/my-project`. Microphone capture and local speech playback need the server running directly on your machine, not in Docker.
 
 ## VS Code extension
 
 ```bash
 cd vscode-extension && npm install && npm run compile
-# then "Developer: Install Extension from Location..." and pick this folder
+npx @vscode/vsce package --allow-missing-repository   # builds voxcode-0.3.0.vsix
+code --install-extension voxcode-0.3.0.vsix
 ```
+
+The server must be running (`python -m backend.main`); the extension talks to it at `voiceCoding.backendUrl`.
 
 * **Ctrl+Alt+V** starts/stops recording (the server records from your microphone); **Ctrl+Alt+T** types an instruction instead.
 * Questions stream into the *VoxCode* output panel. Change requests open a side-by-side diff; say or click **accept**, **reject**, or **next file**. **undo** reverts the last applied patch.
@@ -120,8 +123,8 @@ voice ─► Whisper ─► command? ──yes──► editor action (accept / 
 
 | Search | recall@5 | MRR@10 |
 |---|---|---|
-| BM25, whitespace tokens (previous version) | 0.50 | 0.42 |
-| BM25, code-aware tokens | 0.77 | 0.58 |
+| BM25, whitespace tokens (previous version) | 0.50 | 0.40 |
+| BM25, code-aware tokens | 0.73 | 0.56 |
 
 With the `ml` extra installed the script also reports semantic, hybrid, and hybrid + rerank rows. The questions were written by the developers, so treat these numbers as a regression check, not a general benchmark.
 

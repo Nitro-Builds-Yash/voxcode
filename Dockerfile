@@ -8,7 +8,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends git ffmpeg \
 # Install dependencies first for better layer caching.
 COPY pyproject.toml README.md ./
 COPY backend ./backend
-RUN pip install --no-cache-dir ".[ml]" faster-whisper
+# CPU-only PyTorch keeps the image much smaller (no CUDA libraries); build with
+# --build-arg TORCH_INDEX=https://download.pytorch.org/whl/cu128 for CUDA.
+ARG TORCH_INDEX=https://download.pytorch.org/whl/cpu
+RUN pip install --no-cache-dir torch --index-url ${TORCH_INDEX} \
+    && pip install --no-cache-dir ".[ml]" faster-whisper
 
 COPY . .
 

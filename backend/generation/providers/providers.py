@@ -10,12 +10,48 @@ from backend.generation.prompts.prompt_result import PromptResult
 from backend.generation.providers.base_provider import BaseProvider, ProviderError
 
 
+def strip_think_blocks(chunks: Iterator[str]) -> Iterator[str]:
+    """Remove `<think>...</think>` reasoning that some local models (e.g.
+    qwen3, deepseek-r1) emit inline, so it is never shown, spoken, or
+    mistaken for the answer."""
+    buffer = ""
+    inside = False
+    for chunk in chunks:
+        buffer += chunk
+        while True:
+            if inside:
+                end = buffer.find("</think>")
+                if end == -1:
+                    buffer = buffer[-len("</think>") :]  # keep a possible partial tag
+                    break
+                buffer = buffer[end + len("</think>") :].lstrip()
+                inside = False
+            else:
+                start = buffer.find("<think>")
+                if start == -1:
+                    # Hold back a possible partial "<think" at the end.
+                    safe = len(buffer) - (len("<think>") - 1)
+                    if safe > 0:
+                        yield buffer[:safe]
+                        buffer = buffer[safe:]
+                    break
+                if start:
+                    yield buffer[:start]
+                buffer = buffer[start + len("<think>") :]
+                inside = True
+    if buffer and not inside:
+        yield buffer
+
+
 class OllamaProvider(BaseProvider):
     """Local models through the Ollama HTTP API (no extra package needed)."""
 
     provider_name = "ollama"
 
     def stream(self, prompt: PromptResult) -> Iterator[str]:
+        return strip_think_blocks(self._raw_stream(prompt))
+
+    def _raw_stream(self, prompt: PromptResult) -> Iterator[str]:
         payload = {
             "model": self.model,
             "stream": True,
@@ -39,13 +75,19 @@ class OpenAICompatibleProvider(BaseProvider):
     """OpenAI chat-completions API; also used by Groq and OpenRouter."""
 
     provider_name = "openai"
+    # Newer OpenAI reasoning models reject a custom temperature, so it is only
+    # sent to the providers that accept it.
+    extra_payload: dict = {}
 
     def stream(self, prompt: PromptResult) -> Iterator[str]:
+        return strip_think_blocks(self._raw_stream(prompt))
+
+    def _raw_stream(self, prompt: PromptResult) -> Iterator[str]:
         self._require_key()
         payload = {
             "model": self.model,
             "stream": True,
-            "temperature": 0.2,
+            **self.extra_payload,
             "messages": [
                 {"role": "system", "content": prompt.system_prompt},
                 {"role": "user", "content": prompt.user_prompt},
@@ -53,6 +95,8 @@ class OpenAICompatibleProvider(BaseProvider):
         }
         headers = {"Authorization": f"Bearer {self.api_key}"}
         for event in self._sse_json(f"{self.base_url}/chat/completions", payload, headers):
+            if event.get("error"):
+                raise ProviderError(f"{self.provider_name}: {event['error']}")
             for choice in event.get("choices", []):
                 text = (choice.get("delta") or {}).get("content")
                 if text:
@@ -61,10 +105,12 @@ class OpenAICompatibleProvider(BaseProvider):
 
 class GroqProvider(OpenAICompatibleProvider):
     provider_name = "groq"
+    extra_payload = {"temperature": 0.2}
 
 
 class OpenRouterProvider(OpenAICompatibleProvider):
     provider_name = "openrouter"
+    extra_payload = {"temperature": 0.2}
 
 
 class AnthropicProvider(BaseProvider):

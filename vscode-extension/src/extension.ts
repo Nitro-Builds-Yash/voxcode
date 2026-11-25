@@ -306,16 +306,25 @@ async function acceptEdit() {
         vscode.window.setStatusBarMessage('VoxCode: no pending patch', 3000);
         return;
     }
+    const edit = pending;
+    let applied: string[];
     try {
-        const result = await api('/agent/apply', { repository_path: pending.repo, diff: pending.diff });
-        vscode.window.showInformationMessage(`VoxCode applied changes to ${result.files_modified.join(', ')}. Say "undo" to revert.`);
-        const first = vscode.Uri.file(`${pending.repo}/${result.files_modified[0]}`);
-        pending = undefined;
-        await vscode.window.showTextDocument(first);
+        applied = (await api('/agent/apply', { repository_path: edit.repo, diff: edit.diff })).files_modified;
     } catch (err: any) {
         vscode.window.showErrorMessage(`Apply failed: ${err.message}`);
-    } finally {
         idle();
+        return;
+    }
+    pending = undefined;
+    previews.clear();
+    idle();
+    vscode.window.showInformationMessage(`VoxCode applied changes to ${applied.join(', ')}. Say "undo" to revert.`);
+    const opened = edit.files.find((f) => f.status !== 'deleted');
+    if (opened) {
+        await vscode.window.showTextDocument(vscode.Uri.file(`${edit.repo}/${opened.path}`)).then(
+            undefined,
+            () => undefined
+        );
     }
 }
 
@@ -356,10 +365,10 @@ async function runTests() {
 }
 
 // ---------------------------------------------------------------- indexing
-async function indexWorkspace(full = false) {
+async function indexWorkspace(full = false, quiet = false) {
     const repo = workspaceRoot();
     if (!repo) {
-        vscode.window.showWarningMessage('No workspace open to index.');
+        if (!quiet) vscode.window.showWarningMessage('No workspace open to index.');
         return;
     }
     setStatus('$(sync~spin) Indexing…');
@@ -372,7 +381,12 @@ async function indexWorkspace(full = false) {
             6000
         );
     } catch (err: any) {
-        vscode.window.showErrorMessage(`Indexing failed: ${err.message}`);
+        if (quiet) {
+            // Server not started yet: stay out of the way on VS Code startup.
+            output.appendLine(`Startup indexing skipped: ${err.message}`);
+        } else {
+            vscode.window.showErrorMessage(`Indexing failed: ${err.message}`);
+        }
     } finally {
         idle();
     }
@@ -410,7 +424,7 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
     // Index (and start watching) the workspace in the background on startup.
-    if (workspaceRoot()) void indexWorkspace(false);
+    if (workspaceRoot()) void indexWorkspace(false, true);
 }
 
 export function deactivate() {

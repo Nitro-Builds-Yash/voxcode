@@ -10,12 +10,16 @@ import hashlib
 import logging
 import threading
 import time
-from collections import defaultdict
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
 from backend.codebase.chunker.chunker import build_chunks
-from backend.codebase.indexer.index_store import FileEntry, IndexStore, RepositoryIndex
+from backend.codebase.indexer.index_store import (
+    INDEX_FORMAT_VERSION,
+    FileEntry,
+    IndexStore,
+    RepositoryIndex,
+)
 from backend.codebase.indexer.scanner import scan_repository
 from backend.codebase.parser.languages import detect_language
 from backend.config.settings import settings
@@ -24,7 +28,13 @@ from backend.retrieval.semantic.vector_store import VectorStore
 
 logger = logging.getLogger(__name__)
 
-_repo_locks: dict[str, threading.Lock] = defaultdict(threading.Lock)
+_repo_locks: dict[str, threading.Lock] = {}
+_repo_locks_guard = threading.Lock()
+
+
+def _repo_lock(key: str) -> threading.Lock:
+    with _repo_locks_guard:
+        return _repo_locks.setdefault(key, threading.Lock())
 
 
 @dataclass
@@ -54,9 +64,16 @@ class RepositoryIndexer:
         repo_path = repo_path.resolve()
         key = repository_key(repo_path)
 
-        with _repo_locks[key]:
+        with _repo_lock(key):
             previous = None if full else self.store.load(key)
-            index = RepositoryIndex(repo_key=key, repo_path=str(repo_path))
+            if previous and (
+                previous.format_version != INDEX_FORMAT_VERSION
+                or previous.chunk_max_lines != settings.MAX_CHUNK_LINES
+            ):
+                previous = None  # chunking changed: rebuild everything
+            index = RepositoryIndex(
+                repo_key=key, repo_path=str(repo_path), chunk_max_lines=settings.MAX_CHUNK_LINES
+            )
             old_chunks = {c.chunk_id: c for c in previous.chunks} if previous else {}
 
             changed: list[str] = []

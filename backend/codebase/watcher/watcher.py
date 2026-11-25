@@ -8,7 +8,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from backend.codebase.indexer.scanner import IGNORED_DIRS
+from backend.codebase.indexer.scanner import IGNORED_DIRS, ROOT_IGNORED_DIRS
 from backend.codebase.parser.languages import detect_language
 
 logger = logging.getLogger(__name__)
@@ -75,7 +75,10 @@ class WatchManager:
             parts = path.relative_to(repo).parts
         except ValueError:
             return False
-        return not any(p in IGNORED_DIRS for p in parts[:-1]) and detect_language(path) is not None
+        dirs = parts[:-1]
+        if dirs and dirs[0] in ROOT_IGNORED_DIRS:
+            return False
+        return not any(p in IGNORED_DIRS for p in dirs) and detect_language(path) is not None
 
     def _schedule(self, repo: Path, on_change: Callable[[Path], object]) -> None:
         key = str(repo)

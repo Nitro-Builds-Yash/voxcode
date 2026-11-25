@@ -51,7 +51,7 @@ class Settings(BaseSettings):
     # ------------------------------------------------------------ provider
     DEFAULT_PROVIDER: str = "ollama"
     PROVIDER_TIMEOUT_SECONDS: float = 120.0
-    MAX_OUTPUT_TOKENS: int = 4096
+    MAX_OUTPUT_TOKENS: int = 8192
 
     OLLAMA_HOST: str = "http://localhost:11434"
     OLLAMA_MODEL: str = "qwen3:8b"

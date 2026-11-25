@@ -92,3 +92,31 @@ def test_index_store_round_trip(tmp_path, sample_repo):
     store = IndexStore(tmp_path)
     stats = RepositoryIndexer(store).index(Path(sample_repo))
     assert store.list()[0]["chunks"] == stats.chunks_created
+
+
+def test_ambiguous_folder_names_only_skipped_at_root(tmp_path):
+    (tmp_path / "build").mkdir()
+    (tmp_path / "build" / "gen.py").write_text("x = 1\n")
+    (tmp_path / "src" / "storage").mkdir(parents=True)
+    (tmp_path / "src" / "storage" / "blobs.py").write_text("def save():\n    pass\n")
+    (tmp_path / "myenv").mkdir()
+    (tmp_path / "myenv" / "pyvenv.cfg").write_text("home = /usr\n")
+    (tmp_path / "myenv" / "lib.py").write_text("x = 1\n")
+    files = {p.relative_to(tmp_path).as_posix() for p in scan_repository(tmp_path)}
+    assert files == {"src/storage/blobs.py"}
+
+
+def test_index_rebuilds_when_format_changes(sample_repo, tmp_path, monkeypatch):
+    from backend.config.settings import settings
+
+    indexer = RepositoryIndexer(IndexStore(tmp_path / "idx"))
+    assert indexer.index(sample_repo).files_changed == 3
+    assert indexer.index(sample_repo).files_changed == 0
+    monkeypatch.setattr(settings, "MAX_CHUNK_LINES", 50)
+    assert indexer.index(sample_repo).files_changed == 3
+
+
+def test_corrupt_index_is_ignored(tmp_path):
+    store = IndexStore(tmp_path)
+    store.path("broken").write_text("{not json")
+    assert store.load("broken") is None
