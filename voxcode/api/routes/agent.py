@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 import logging
+import queue
+import threading
 from typing import Any, Literal
 
 from fastapi import APIRouter, HTTPException
@@ -20,6 +22,8 @@ from voxcode.execution.diff.diff_utils import UnsafeDiffError
 from voxcode.execution.patch import patch_service
 from voxcode.execution.testing.test_runner import run_tests
 from voxcode.generation.providers import ProviderError
+from voxcode.integrations.github import GitError, commit_on_branch
+from voxcode.monitoring.registry import collect_timings
 from voxcode.voice.tts.tts_service import tts_service
 
 logger = logging.getLogger(__name__)
@@ -37,11 +41,22 @@ class AgentQueryRequest(BaseModel):
     run_tests: bool = False
     auto_tts: bool = False
     top_k: int = Field(default=settings.DEFAULT_TOP_K, ge=1, le=30)
+    # Edits: stop after drafting a plan, or execute an approved (edited) plan.
+    plan_only: bool = False
+    plan: str | None = Field(default=None, max_length=8000)
 
 
 class PatchRequest(BaseModel):
     repository_path: str
     diff: str = Field(min_length=1)
+
+
+class ApplyRequest(PatchRequest):
+    # working_tree: edit files in place (undoable); branch: commit on a new
+    # branch via a temporary worktree; pull_request: branch + push + GitHub PR.
+    target: Literal["working_tree", "branch", "pull_request"] = "working_tree"
+    title: str = Field(default="VoxCode change", max_length=200)
+    description: str = Field(default="", max_length=10000)
 
 
 class RepoRequest(BaseModel):
@@ -82,6 +97,19 @@ def _voice_line(summary: str, emotion, files: int) -> str:
 
 
 def _run_query(payload: AgentQueryRequest) -> dict:
+    with collect_timings() as timings:
+        result = _answer(payload)
+    result["timings_ms"] = timings
+    return result
+
+
+def _edit(payload: AgentQueryRequest, repo, request):
+    return services.edit_agent().run(
+        request, repo, run_tests=payload.run_tests, plan=payload.plan, plan_only=payload.plan_only
+    )
+
+
+def _answer(payload: AgentQueryRequest) -> dict:
     repo, request, emotion = _prepare(payload)
     mode = payload.mode
     body: dict[str, Any]
@@ -90,8 +118,9 @@ def _run_query(payload: AgentQueryRequest) -> dict:
 
     try:
         if mode == "edit":
-            result = services.edit_agent().run(request, repo, run_tests=payload.run_tests)
+            result = _edit(payload, repo, request)
             body = {
+                "plan": result.plan,
                 "summary": result.summary,
                 "diff": result.diff,
                 "files": result.files,
@@ -117,6 +146,7 @@ def _run_query(payload: AgentQueryRequest) -> dict:
                 "task": response.task,
                 "model_name": response.model_name,
                 "provider": response.provider,
+                "usage": response.usage,
             }
     except ProviderError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
@@ -162,21 +192,39 @@ async def stream_agent(payload: AgentQueryRequest) -> StreamingResponse:
 
     def generator():
         if mode == "edit":
-            result = services.edit_agent().run(request, repo, run_tests=payload.run_tests)
+            result = _edit(payload, repo, request)
             yield {"type": "edit", **result.to_dict()}
         elif mode == "agentic":
             yield from services.tool_agent().run(request, repo)
         else:
             yield from services.pipeline().stream(request)
 
+    events_queue: queue.Queue = queue.Queue()
+    _END = object()
+
+    def worker():
+        # The whole run happens on one thread so per-stage timings (kept in a
+        # context variable) are collected for the request.
+        with collect_timings() as timings:
+            try:
+                for event in generator():
+                    if event.get("type") == "done":
+                        event = {**event, "timings_ms": dict(timings)}
+                    events_queue.put(event)
+            except Exception as exc:  # surface errors to the client mid-stream
+                logger.warning("Stream failed: %s", exc)
+                events_queue.put({"type": "error", "detail": str(exc)})
+            finally:
+                if mode == "edit":
+                    events_queue.put({"type": "timings", "timings_ms": dict(timings)})
+                events_queue.put(_END)
+
+    threading.Thread(target=worker, name="voxcode-stream", daemon=True).start()
+
     def events():
         yield _sse({"type": "start", "mode": mode, "emotion": emotion.model_dump() if emotion else None})
-        try:
-            for event in generator():
-                yield _sse(event)
-        except Exception as exc:  # surface errors to the client mid-stream
-            logger.warning("Stream failed: %s", exc)
-            yield _sse({"type": "error", "detail": str(exc)})
+        while (event := events_queue.get()) is not _END:
+            yield _sse(event)
 
     return StreamingResponse(events(), media_type="text/event-stream", headers={"Cache-Control": "no-cache"})
 
@@ -203,9 +251,23 @@ def preview_patch(payload: PatchRequest) -> dict:
 
 
 @router.post("/apply")
-def apply_patch(payload: PatchRequest) -> dict:
-    """Apply a patch to the working tree (keeps it for /agent/undo)."""
+def apply_patch(payload: ApplyRequest) -> dict:
+    """Apply a patch to the working tree (undo with /agent/undo), or commit it
+    on a new branch and optionally open a GitHub pull request."""
     repo = _resolve(payload.repository_path)
+    if payload.target != "working_tree":
+        try:
+            result = commit_on_branch(
+                repo,
+                payload.diff,
+                payload.title,
+                payload.description,
+                push=payload.target == "pull_request",
+                create_pr=payload.target == "pull_request",
+            )
+        except (UnsafeDiffError, GitError) as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        return {"status": "committed", "files_modified": result.files, **result.to_dict()}
     try:
         files = patch_service.apply(repo, payload.diff)
     except (UnsafeDiffError, patch_service.PatchError) as exc:

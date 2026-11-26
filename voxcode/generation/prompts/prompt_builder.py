@@ -18,4 +18,6 @@ class PromptBuilder:
             user_prompt=user_prompt,
             full_prompt=f"{system_prompt}\n\n{user_prompt}",
             prompt_size=len(system_prompt) + len(user_prompt),
+            context=context.context,
+            task=task,
         )

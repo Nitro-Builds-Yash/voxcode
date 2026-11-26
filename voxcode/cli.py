@@ -5,7 +5,9 @@ voxcode index  [PATH] [--full]        index a repository (default: current folde
 voxcode search "query" [--repo PATH]  show matching code
 voxcode ask    "question" [--repo PATH]       streamed answer
 voxcode edit   "instruction" [--repo PATH] [--tests]   propose a validated patch
-voxcode eval   [--repo PATH]          retrieval quality benchmark
+voxcode eval   [--repo PATH] [--answers]  retrieval (or answer) quality benchmark
+voxcode mcp    [--repo PATH]          run as an MCP server (Claude, Cursor, ...)
+voxcode swebench INSTANCES.jsonl      SWE-bench style evaluation
 """
 
 from __future__ import annotations
@@ -37,8 +39,25 @@ def main(argv: list[str] | None = None) -> None:
         if name == "edit":
             command.add_argument("--tests", action="store_true", help="run tests against the patch")
 
-    evaluate = sub.add_parser("eval", help="retrieval quality benchmark")
+    evaluate = sub.add_parser("eval", help="retrieval or answer quality benchmark")
     evaluate.add_argument("--repo", default=".")
+    evaluate.add_argument(
+        "--answers", action="store_true", help="LLM-judged answer quality instead of retrieval"
+    )
+    evaluate.add_argument("--embedding-models", default="", help="comma-separated models to compare")
+
+    mcp = sub.add_parser("mcp", help="run as a Model Context Protocol server")
+    mcp.add_argument("--repo", default=None, help="default repository (default: current folder)")
+    mcp.add_argument("--transport", choices=["stdio", "streamable-http", "sse"], default="stdio")
+    mcp.add_argument("--host", default="127.0.0.1")
+    mcp.add_argument("--port", type=int, default=8765)
+
+    swe = sub.add_parser("swebench", help="SWE-bench style evaluation (localization and resolve rate)")
+    swe.add_argument("instances", help="JSONL file of SWE-bench instances")
+    swe.add_argument("--limit", type=int, default=0)
+    swe.add_argument("--workdir", default="", help="where to clone repositories")
+    swe.add_argument("--resolve", action="store_true", help="also generate patches and run the tests")
+    swe.add_argument("--output", default="swebench_results.jsonl")
 
     args = parser.parse_args(argv)
 
@@ -49,9 +68,36 @@ def main(argv: list[str] | None = None) -> None:
         return
 
     if args.command == "eval":
-        from voxcode.evaluation import retrieval_eval
+        if args.answers:
+            from voxcode.evaluation import answer_eval
 
-        retrieval_eval.main(["--repo", args.repo])
+            answer_eval.main(["--repo", args.repo])
+        else:
+            from voxcode.evaluation import retrieval_eval
+
+            extra = ["--embedding-models", args.embedding_models] if args.embedding_models else []
+            retrieval_eval.main(["--repo", args.repo, *extra])
+        return
+
+    if args.command == "mcp":
+        try:
+            from voxcode.integrations.mcp_server import run
+        except ImportError:
+            parser.exit(1, "voxcode: the MCP server needs the 'mcp' extra: pip install 'voxcode[mcp]'\n")
+        run(args.repo, args.transport, args.host, args.port)
+        return
+
+    if args.command == "swebench":
+        from voxcode.evaluation import swebench
+
+        argv = [args.instances, "--output", args.output]
+        if args.limit:
+            argv += ["--limit", str(args.limit)]
+        if args.workdir:
+            argv += ["--workdir", args.workdir]
+        if args.resolve:
+            argv.append("--resolve")
+        swebench.main(argv)
         return
 
     from voxcode.agent.agent_request import AgentRequest

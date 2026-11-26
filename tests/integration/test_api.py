@@ -21,6 +21,7 @@ def _replies(prompt):
 def client(isolated_storage, monkeypatch):
     monkeypatch.setattr(settings, "PRELOAD_MODELS", False)
     monkeypatch.setattr(settings, "RERANK_ENABLED", False)
+    monkeypatch.setattr(settings, "PLAN_EDITS", False)
     monkeypatch.setattr(settings, "DEFAULT_PROVIDER", "scripted")
     monkeypatch.setattr(settings, "API_TOKEN", "")
     services.registry.set_model(f"embedder:{settings.EMBEDDING_MODEL}", None)
@@ -76,6 +77,46 @@ def test_stream_emits_tokens(client, sample_repo):
     assert '"type": "sources"' in events[1]
     assert any('"type": "token"' in e for e in events)
     assert '"type": "done"' in events[-1]
+
+
+def test_timings_and_usage_are_reported(client, sample_repo):
+    body = client.post(
+        "/agent/query", json={"query": "where is logout handled", "repository_path": str(sample_repo)}
+    ).json()
+    assert {"retrieval", "context", "generation"} <= set(body["timings_ms"])
+    assert body["usage"]["output_tokens"] > 0
+
+    events = client.post(
+        "/agent/stream", json={"query": "where is logout", "repository_path": str(sample_repo)}
+    ).text
+    done = [line for line in events.splitlines() if '"type": "done"' in line][0]
+    assert '"first_token"' in done and '"timings_ms"' in done and '"usage"' in done
+
+
+def test_apply_on_branch(client, sample_repo):
+    import subprocess
+
+    subprocess.run(["git", "init", "-q", "-b", "main"], cwd=sample_repo, check=True)
+    subprocess.run(["git", "add", "-A"], cwd=sample_repo, check=True)
+    subprocess.run(
+        ["git", "-c", "user.name=T", "-c", "user.email=t@x", "commit", "-qm", "init"],
+        cwd=sample_repo,
+        check=True,
+    )
+    edit = client.post(
+        "/agent/edit", json={"query": "add a docstring to logout", "repository_path": str(sample_repo)}
+    ).json()
+    result = client.post(
+        "/agent/apply",
+        json={
+            "repository_path": str(sample_repo),
+            "diff": edit["diff"],
+            "target": "branch",
+            "title": "Docstring",
+        },
+    ).json()
+    assert result["status"] == "committed" and result["branch"].startswith("voxcode/docstring-")
+    assert "End the user" not in (sample_repo / "app/auth.py").read_text()
 
 
 def test_stream_edit_event(client, sample_repo):

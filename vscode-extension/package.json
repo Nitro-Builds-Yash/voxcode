@@ -2,7 +2,7 @@
   "name": "voxcode",
   "displayName": "VoxCode",
   "description": "Talk to your codebase: voice-driven questions and validated code patches, powered by a local VoxCode server.",
-  "version": "0.3.0",
+  "version": "0.5.0",
   "publisher": "Nitro-Builds-Yash",
   "license": "MIT",
   "repository": {
@@ -10,24 +10,86 @@
     "url": "https://github.com/Nitro-Builds-Yash/voxcode"
   },
   "engines": {
-    "vscode": "^1.85.0"
+    "vscode": "^1.90.0"
   },
-  "categories": ["Programming Languages", "Machine Learning", "Other"],
-  "activationEvents": ["onStartupFinished"],
+  "categories": [
+    "AI",
+    "Chat",
+    "Machine Learning",
+    "Other",
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
-      { "command": "voiceCoding.startRecording", "title": "VoxCode: Talk (start/stop recording)", "icon": "$(mic)" },
-      { "command": "voiceCoding.stopRecording", "title": "VoxCode: Stop Recording", "icon": "$(primitive-square)" },
-      { "command": "voiceCoding.typeInstruction", "title": "VoxCode: Type an Instruction" },
-      { "command": "voiceCoding.acceptPatch", "title": "VoxCode: Accept Pending Patch" },
-      { "command": "voiceCoding.rejectPatch", "title": "VoxCode: Reject Pending Patch" },
-      { "command": "voiceCoding.nextFile", "title": "VoxCode: Show Next File in Patch" },
-      { "command": "voiceCoding.undoPatch", "title": "VoxCode: Undo Last Applied Patch" },
-      { "command": "voiceCoding.runTests", "title": "VoxCode: Run Tests" },
-      { "command": "voiceCoding.indexWorkspace", "title": "VoxCode: Re-index Workspace", "icon": "$(database)" },
-      { "command": "voiceCoding.rebuildIndex", "title": "VoxCode: Rebuild Index From Scratch" },
-      { "command": "voiceCoding.openSettings", "title": "VoxCode: Open Settings", "icon": "$(gear)" }
+      {
+        "command": "voiceCoding.startRecording",
+        "title": "VoxCode: Talk (start/stop recording)",
+        "icon": "$(mic)"
+      },
+      {
+        "command": "voiceCoding.stopRecording",
+        "title": "VoxCode: Stop Recording",
+        "icon": "$(primitive-square)"
+      },
+      {
+        "command": "voiceCoding.typeInstruction",
+        "title": "VoxCode: Type an Instruction"
+      },
+      {
+        "command": "voiceCoding.acceptPatch",
+        "title": "VoxCode: Accept Pending Patch"
+      },
+      {
+        "command": "voiceCoding.rejectPatch",
+        "title": "VoxCode: Reject Pending Patch"
+      },
+      {
+        "command": "voiceCoding.nextFile",
+        "title": "VoxCode: Show Next File in Patch"
+      },
+      {
+        "command": "voiceCoding.undoPatch",
+        "title": "VoxCode: Undo Last Applied Patch"
+      },
+      {
+        "command": "voiceCoding.runTests",
+        "title": "VoxCode: Run Tests"
+      },
+      {
+        "command": "voiceCoding.indexWorkspace",
+        "title": "VoxCode: Re-index Workspace",
+        "icon": "$(database)"
+      },
+      {
+        "command": "voiceCoding.rebuildIndex",
+        "title": "VoxCode: Rebuild Index From Scratch"
+      },
+      {
+        "command": "voiceCoding.openSettings",
+        "title": "VoxCode: Open Settings",
+        "icon": "$(gear)"
+      },
+      {
+        "command": "voiceCoding.toggleHandsFree",
+        "title": "VoxCode: Toggle Hands-Free Listening",
+        "icon": "$(radio-tower)"
+      },
+      {
+        "command": "voiceCoding.acceptAsPullRequest",
+        "title": "VoxCode: Accept Patch as Pull Request"
+      },
+      {
+        "command": "voiceCoding.acceptAsBranch",
+        "title": "VoxCode: Accept Patch on a New Branch"
+      },
+      {
+        "command": "voiceCoding.reviewPatch",
+        "title": "VoxCode: Review Pending Patch"
+      }
     ],
     "configuration": {
       "title": "VoxCode",
@@ -61,12 +123,69 @@
           "type": "boolean",
           "default": true,
           "description": "Re-index automatically when files change."
+        },
+        "voiceCoding.reviewPlans": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show the plan for a code change and wait for approval before the patch is written."
+        },
+        "voiceCoding.applyTarget": {
+          "type": "string",
+          "enum": [
+            "working_tree",
+            "branch",
+            "pull_request"
+          ],
+          "default": "working_tree",
+          "enumDescriptions": [
+            "Edit files in place (undo with \"undo\")",
+            "Commit on a new branch; working files unchanged",
+            "New branch, push, and open a GitHub pull request (server needs GITHUB_TOKEN)"
+          ],
+          "description": "What \"accept\" does with a patch."
+        },
+        "voiceCoding.showTimings": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show per-stage latency and token usage after each reply."
         }
       }
     },
     "keybindings": [
-      { "command": "voiceCoding.startRecording", "key": "ctrl+alt+v", "mac": "cmd+alt+v" },
-      { "command": "voiceCoding.typeInstruction", "key": "ctrl+alt+t", "mac": "cmd+alt+t" }
+      {
+        "command": "voiceCoding.startRecording",
+        "key": "ctrl+alt+v",
+        "mac": "cmd+alt+v"
+      },
+      {
+        "command": "voiceCoding.typeInstruction",
+        "key": "ctrl+alt+t",
+        "mac": "cmd+alt+t"
+      },
+      {
+        "command": "voiceCoding.toggleHandsFree",
+        "key": "ctrl+alt+h",
+        "mac": "cmd+alt+h"
+      }
+    ],
+    "chatParticipants": [
+      {
+        "id": "voxcode.vox",
+        "name": "vox",
+        "fullName": "VoxCode",
+        "description": "Ask about this codebase or request a change",
+        "isSticky": true,
+        "commands": [
+          {
+            "name": "edit",
+            "description": "Write, test and review a patch"
+          },
+          {
+            "name": "agent",
+            "description": "Let the model search and read files before answering"
+          }
+        ]
+      }
     ]
   },
   "scripts": {
@@ -76,7 +195,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
-    "@types/vscode": "~1.85.0",
+    "@types/vscode": "~1.90.0",
     "typescript": "^5.4.0"
   }
 }
