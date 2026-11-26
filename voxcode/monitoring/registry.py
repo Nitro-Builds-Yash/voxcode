@@ -12,6 +12,8 @@ from functools import lru_cache
 from voxcode.monitoring import tracing
 from voxcode.monitoring.metrics import (
     ACTIVE_SESSIONS,
+    ANSWER_CACHE_HITS_TOTAL,
+    CASCADE_ROUTES_TOTAL,
     CONTEXT_DURATION,
     CONTEXT_SIZE_BYTES,
     GENERATION_DURATION,
@@ -182,3 +184,11 @@ class Metrics:
     @staticmethod
     def record_redactions(count: int) -> None:
         SECRETS_REDACTED_TOTAL.inc(count)
+
+    @staticmethod
+    def record_cache_hit() -> None:
+        ANSWER_CACHE_HITS_TOTAL.inc()
+
+    @staticmethod
+    def record_route(tier: str) -> None:
+        CASCADE_ROUTES_TOTAL.labels(tier=tier).inc()

@@ -1,0 +1,240 @@
+explain	explain how the indexer works
+explain	how does incremental indexing decide what to re-embed
+explain	what does reciprocal_rank_fusion do
+explain	why do we strip think blocks from the model output
+explain	walk me through the edit loop
+explain	what is the purpose of the runtime cache
+explain	tell me about the voice pipeline
+explain	describe the call graph expansion step
+explain	how is the context window budget enforced
+explain	what happens when a patch fails to apply
+explain	can you help me understand the tool agent
+explain	what's the difference between the bm25 and semantic retrievers
+explain	how do the providers stream tokens
+explain	why is the sandbox network disabled during tests
+explain	give me an overview of the architecture
+explain	what does this module export
+explain	how are secrets redacted before sending prompts
+explain	what role does the planner play
+explain	how come the reranker is optional
+explain	summarise what the mcp server exposes
+explain	i don't get how prosody changes the tone, can you clarify
+explain	break down how hybrid search scores results
+explain	what is chunk_max_lines used for
+explain	how does the wake word detection work
+explain	what would happen if qdrant is down
+explain	how are git commits indexed and searched
+explain	whats going on in the pipeline stream method
+explain	how do we decide between answering and editing
+explain	what are the main components of voxcode
+explain	how does the learned ranker get trained
+search	where is the login handled
+search	find the function that validates patches
+search	which file defines the settings
+search	show me where tokens are counted
+search	locate the websocket endpoint for voice
+search	where do we call git apply
+search	list all the api routes
+search	search for uses of the embedder
+search	find every place we read environment variables
+search	where's the code that parses diffs
+search	which module handles text to speech
+search	show me the reranker class
+search	where are prometheus metrics defined
+search	find the docker sandbox code
+search	where does the vs code extension call the server
+search	show me all callers of build_chunks
+search	which files import the model registry
+search	where is the index stored on disk
+search	locate the cli entry point
+search	find references to settings.LOCAL_ONLY
+search	point me to the redaction patterns
+search	in which file is the emotion analyzer
+search	where do we create the fastapi app
+search	get me the definition of AgentPipeline
+search	where's the tokenizer for bm25
+search	show the tests for the patch service
+search	open the file with the provider factory
+search	where is the grafana dashboard
+search	where do we handle the mcp tools list
+search	jump to the code that loads the index
+fix	fix the bug in the login handler
+fix	the login is broken when the password has spaces
+fix	resolve the crash when the index file is missing
+fix	debug why streaming stops after the first token
+fix	the tests fail with a keyerror in config, sort it out
+fix	something is wrong with undo, it reverts the wrong file
+fix	search returns nothing for camelcase queries, please repair it
+fix	handle the error when ollama is not running
+fix	the extension throws when no workspace is open
+fix	there's an off by one error in the chunker
+fix	patch apply fails on windows line endings, fix that
+fix	stop the server from crashing on empty audio
+fix	the cache never invalidates after reindexing
+fix	correct the wrong status code returned by apply
+fix	voice commands are not recognised anymore
+fix	why does it crash on startup, fix it please
+fix	the anthropic provider ignores the system prompt
+fix	reindexing leaks memory, can you fix it
+fix	timeouts are not respected by the test runner
+fix	the docker sandbox leaves containers running
+fix	unicode file names break the scanner
+fix	the ranker throws a division by zero on tiny repos
+fix	repair the broken import in cli.py
+fix	the health endpoint reports the wrong version
+fix	duplicate results show up in hybrid search
+fix	token counts are negative sometimes
+fix	the diff viewer shows the old file twice
+fix	it hangs when the provider returns an error
+fix	sort out the failing type check in providers
+fix	git history search crashes on repos without commits
+generate	add a docstring to reciprocal_rank_fusion
+generate	create an endpoint that returns the index stats
+generate	implement retry with backoff for provider calls
+generate	write a function that lists indexed repositories
+generate	add a --json flag to the search command
+generate	generate a config option for the cache size
+generate	build a small cli command to clear the cache
+generate	add logging to the patch service
+generate	make a new provider for mistral
+generate	add type hints to the memory manager
+generate	insert a timeout parameter into run_tests
+generate	add support for kotlin files
+generate	create a dataclass for search options
+generate	update the readme section on docker
+generate	change the default model to qwen3
+generate	replace print statements with logger calls
+generate	remove the unused imports in pipeline
+generate	add a health check for redis
+generate	introduce a rate limiter on the api
+generate	wire up a new route for feedback
+generate	add an option to skip tests in edit mode
+generate	support streaming in the tool agent
+generate	expose the cache stats in the metrics endpoint
+generate	let users pick the embedding model from the ui
+generate	add a keyboard shortcut for hands free mode
+generate	put a progress bar on indexing
+generate	add a new setting for max file size
+generate	write a migration that bumps the index format
+generate	include the commit hash in the version endpoint
+generate	add comments explaining the fusion formula
+refactor	refactor the step executor into smaller functions
+refactor	rename get_provider to provider_for
+refactor	clean up the agent routes module
+refactor	simplify the context builder
+refactor	extract the json parsing into a helper
+refactor	make the parser faster
+refactor	optimize the bm25 search for big repos
+refactor	reduce duplication between ask and stream
+refactor	split edit_agent into planner and executor parts
+refactor	tidy up the settings file
+refactor	improve the structure of the voice package
+refactor	move the docker helpers into their own module
+refactor	the tool agent is too long, break it up
+refactor	restructure the tests folder
+refactor	this function is messy, can you make it cleaner
+refactor	convert the callbacks to async
+refactor	use a dataclass instead of the tuple here
+refactor	speed up indexing of large files
+refactor	reorganize the providers into one file per vendor
+refactor	decouple the pipeline from the registry
+refactor	inline the tiny helper functions in grounding
+refactor	replace the manual loop with a comprehension
+refactor	make the retriever code more readable
+refactor	consolidate the duplicate settings validation
+refactor	modernise the typing to python 3.10 syntax
+refactor	lower the memory use of the index store
+refactor	make the cache thread safe without the global lock
+refactor	rewrite the scanner without os.walk
+refactor	deduplicate the error handling in routes
+refactor	pull the constants out into a config module
+test	write tests for the patch service
+test	add unit tests for the tokenizer
+test	increase test coverage of the cascade
+test	add a regression test for the camelcase bug
+test	create pytest fixtures for a sample repo
+test	write an integration test for the feedback endpoint
+test	cover the error path of apply with a test
+test	add test cases for empty queries
+test	we need tests for the rust resolver
+test	generate property based tests for redaction
+test	test the answer cache expiry
+test	write a test that the ranker beats bm25
+test	add a smoke test for the cli
+test	make sure the grounding checker is tested
+test	write tests for unicode file names
+test	add tests that cover the docker sandbox fallback
+test	unit test the intent classifier
+test	add an end to end test for voice transcription
+test	mock the provider and test escalation
+test	verify with tests that undo restores files
+test	add a benchmark test for search latency
+test	write a failing test reproducing the crash
+test	check the config parsing with tests
+test	add parametrized tests for each provider
+test	test that secrets never reach remote models
+test	add tests for git history search
+test	test coverage for the mcp server is low, add some
+test	add snapshot tests for the readme art generator
+test	write a test for the websocket listener
+test	cover the planner with tests
+execute	run the tests
+execute	run the test suite
+execute	run all tests
+execute	execute the benchmark
+execute	install the dependencies
+execute	run pytest on the agent folder
+execute	start the server
+execute	run the linter
+execute	rebuild the index
+execute	run the evaluation
+execute	kick off the swebench run
+execute	run cargo test
+execute	execute the migration script
+execute	run mypy
+execute	launch the mcp server
+execute	run the formatter on everything
+execute	reindex the repository now
+execute	run the native benchmark
+execute	install the rust extension
+execute	run the integration tests only
+execute	execute npm run compile
+execute	start hands free listening
+execute	run the training for the ranker
+execute	run the docker compose stack
+execute	rerun the failed tests
+execute	run tests for the voice package
+execute	go ahead and run everything
+execute	run the answer quality eval
+execute	execute the release workflow locally
+execute	run the scripts run sh launcher
+chat	hello
+chat	thanks that was helpful
+chat	good morning
+chat	who are you
+chat	ok
+chat	never mind
+chat	that's great
+chat	can you hear me
+chat	stop
+chat	what can you do
+chat	cool thanks
+chat	hmm let me think
+chat	yes
+chat	no not that one
+chat	you there
+chat	awesome work
+chat	sorry wrong window
+chat	how are you today
+chat	just testing the microphone
+chat	hey vox
+chat	nice
+chat	tell me a joke
+chat	bye for now
+chat	what time is it
+chat	thank you so much
+chat	repeat that please
+chat	louder please
+chat	i'll be back in a minute
+chat	that's all for today
+chat	goodbye

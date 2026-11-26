@@ -13,7 +13,12 @@ class CodeChunk(BaseModel):
     end_line: int
     content: str
     calls: list[str] = Field(default_factory=list)
+    # One LLM-written sentence about what the chunk does (contextual retrieval).
+    context: str = ""
 
     def embedding_text(self) -> str:
-        """Text sent to the embedding model: location + kind + code."""
-        return f"{self.language} {self.chunk_type} {self.symbol_name} in {self.file_path}\n{self.content}"
+        """Text sent to the embedding model: location + kind (+ context) + code."""
+        about = f"\n{self.context}" if self.context else ""
+        return (
+            f"{self.language} {self.chunk_type} {self.symbol_name} in {self.file_path}{about}\n{self.content}"
+        )

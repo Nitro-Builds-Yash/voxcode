@@ -61,7 +61,7 @@ class RepositoryIndexer:
         self.store = store or IndexStore()
         self.vector_store_factory = vector_store_factory
 
-    def index(self, repo_path: Path, embedder=None, full: bool = False) -> IndexStats:
+    def index(self, repo_path: Path, embedder=None, full: bool = False, contextualizer=None) -> IndexStats:
         started = time.perf_counter()
         repo_path = repo_path.resolve()
         key = repository_key(repo_path)
@@ -71,10 +71,14 @@ class RepositoryIndexer:
             if previous and (
                 previous.format_version != INDEX_FORMAT_VERSION
                 or previous.chunk_max_lines != settings.MAX_CHUNK_LINES
+                or previous.contextual_model != (contextualizer.provider.model if contextualizer else None)
             ):
                 previous = None  # chunking changed: rebuild everything
             index = RepositoryIndex(
-                repo_key=key, repo_path=str(repo_path), chunk_max_lines=settings.MAX_CHUNK_LINES
+                repo_key=key,
+                repo_path=str(repo_path),
+                chunk_max_lines=settings.MAX_CHUNK_LINES,
+                contextual_model=contextualizer.provider.model if contextualizer else None,
             )
             old_chunks = {c.chunk_id: c for c in previous.chunks} if previous else {}
 
@@ -95,12 +99,10 @@ class RepositoryIndexer:
                     index.chunks.extend(kept)
                     continue
 
-                chunks = build_chunks(
-                    rel,
-                    raw.decode("utf-8", errors="replace"),
-                    detect_language(rel) or "text",
-                    settings.MAX_CHUNK_LINES,
-                )
+                text = raw.decode("utf-8", errors="replace")
+                chunks = build_chunks(rel, text, detect_language(rel) or "text", settings.MAX_CHUNK_LINES)
+                if contextualizer is not None:
+                    contextualizer.annotate(rel, text, chunks)
                 index.files[rel] = FileEntry(sha1=sha1, chunk_ids=[c.chunk_id for c in chunks])
                 index.chunks.extend(chunks)
                 new_chunks.extend(chunks)

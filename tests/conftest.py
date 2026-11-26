@@ -153,6 +153,11 @@ def isolated_storage(tmp_path, monkeypatch):
     runtime.runtime_cache._cache.clear()
     monkeypatch.setattr(patch_service, "CACHE_DIR", tmp_path / "cache")
     monkeypatch.setattr(vector_store, "_client", QdrantClient(":memory:"))
+    from voxcode.agent.answer_cache import answer_cache
+    from voxcode.config import paths
+
+    monkeypatch.setattr(paths, "LEARNING_DIR", tmp_path / "learning")
+    answer_cache.clear()
     return store
 
 

@@ -165,3 +165,47 @@ def test_rust_repository_end_to_end(client, rust_repo, monkeypatch):
         "/agent/query", json={"query": "where are item names normalized", "repository_path": str(rust_repo)}
     ).json()
     assert "src/util.rs" in {s["file_path"] for s in body["sources"]}
+
+
+def test_feedback_and_patch_acceptance_train_the_ranker(client, sample_repo, monkeypatch):
+    from voxcode.core.repository import repository_key
+    from voxcode.learning import feedback
+
+    monkeypatch.setattr(settings, "RANKER_MIN_FEEDBACK", 2)
+    key = repository_key(sample_repo.resolve())
+    body = client.post(
+        "/agent/feedback",
+        json={"repository_path": str(sample_repo), "query": "where is logout", "files": ["app/auth.py"]},
+    ).json()
+    assert body == {"recorded": True, "feedback_entries": 1, "min_for_training": 2}
+    assert not client.post(
+        "/agent/feedback", json={"repository_path": str(sample_repo), "query": "x", "helpful": False}
+    ).json()["recorded"]
+
+    edit = client.post(
+        "/agent/edit", json={"query": "add a docstring to logout", "repository_path": str(sample_repo)}
+    ).json()
+    client.post(
+        "/agent/apply",
+        json={
+            "repository_path": str(sample_repo),
+            "diff": edit["diff"],
+            "query": "add a docstring to logout",
+        },
+    )
+    kinds = [e["kind"] for e in feedback.load(key)]
+    assert kinds == ["vote", "accepted_patch"]
+
+
+def test_answers_carry_quality_routing_and_cache_flags(client, sample_repo):
+    first = client.post(
+        "/agent/query",
+        json={"query": "where is logout", "repository_path": str(sample_repo), "session_id": "cache-a"},
+    ).json()
+    assert first["quality"]["groundedness"] == 1.0 and first["quality"]["citations"] == 1
+    assert first["routing"]["tier"] == "main" and first["cached"] is False
+    again = client.post(
+        "/agent/query",
+        json={"query": "where is the logout", "repository_path": str(sample_repo), "session_id": "cache-b"},
+    ).json()
+    assert again["cached"] is True and again["summary"] == first["summary"]

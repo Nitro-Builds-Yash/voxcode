@@ -15,6 +15,7 @@ DATA_DIR = Path(settings.VOXCODE_HOME).expanduser()
 INDEXES_DIR = DATA_DIR / "indexes"
 QDRANT_DIR = DATA_DIR / "qdrant"
 CACHE_DIR = DATA_DIR / "cache"
+LEARNING_DIR = DATA_DIR / "learning"  # trained rankers, feedback logs, answer cache
 
 
 def ensure_storage_dirs() -> None:

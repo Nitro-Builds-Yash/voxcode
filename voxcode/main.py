@@ -44,6 +44,10 @@ def _warm_up() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     ensure_storage_dirs()
+    if settings.INTENT_MODEL:  # cheap; trains once per install, then loads from cache
+        from voxcode.agent.planner.intent_model import default_model
+
+        threading.Thread(target=default_model, name="intent-warmup", daemon=True).start()
     if settings.PRELOAD_MODELS:
         threading.Thread(target=_warm_up, name="model-warmup", daemon=True).start()
     yield

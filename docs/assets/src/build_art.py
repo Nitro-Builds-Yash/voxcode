@@ -63,7 +63,7 @@ class Fonts:
         for (family, weight), chars in sorted(used.items()):
             if not chars:
                 continue
-            font = TTFont(self._path(FONT_FILES[(family, weight)]))
+            font = TTFont(self._path(FONT_FILES[(family, weight)]), recalcTimestamp=False)
             options = subset.Options()
             options.flavor = "woff2"
             options.layout_features = ["kern", "liga", "calt"]
@@ -71,6 +71,7 @@ class Fonts:
             subsetter.populate(text="".join(sorted(chars | set(" "))))
             subsetter.subset(font)
             buffer = io.BytesIO()
+            font["head"].modified = font["head"].created  # no build timestamp: reproducible output
             font.flavor = "woff2"
             font.save(buffer)
             data = base64.b64encode(buffer.getvalue()).decode()
@@ -245,6 +246,7 @@ SECTIONS = [
     ("quick-start", "Quick start", "running in a minute"),
     ("integrations", "Use it anywhere", "editor · MCP · terminal · HTTP"),
     ("how-it-works", "How it works", "from voice to verified patch"),
+    ("learning", "It learns from you", "ranking · routing · grounding"),
     ("rust-core", "Rust core", "same results, much faster"),
     ("benchmarks", "Measured, not guessed", "benchmarks you can rerun"),
     ("layout", "Project layout", "where things live"),
@@ -267,13 +269,13 @@ def features() -> Svg:
         ),
         (
             "🔎",
-            "Search that reads code",
+            "Search that learns",
             CORAL,
             [
-                "tree-sitter symbols for 6 languages.",
-                "BM25 + vectors, fused and reranked,",
-                "expanded through a precise call",
-                "graph and your git history.",
+                "BM25 + vectors, a call graph and git",
+                "history, re-ranked by a model that",
+                "trains on your docstrings and every",
+                "accepted patch or thumbs-up.",
             ],
         ),
         (
@@ -300,13 +302,13 @@ def features() -> Svg:
         ),
         (
             "🔌",
-            "Any model",
+            "Any model, used wisely",
             MAGENTA,
             [
-                "Ollama (fully local), Anthropic,",
-                "OpenAI, Gemini, Groq, OpenRouter.",
-                "Tool calling, prompt caching,",
-                "token and cost tracking.",
+                "Easy questions go to a small model,",
+                "hard ones to the big one. Answers",
+                "are checked for invented names;",
+                "repeated questions cost nothing.",
             ],
         ),
         (

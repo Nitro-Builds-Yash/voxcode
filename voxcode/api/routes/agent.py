@@ -57,6 +57,18 @@ class ApplyRequest(PatchRequest):
     target: Literal["working_tree", "branch", "pull_request"] = "working_tree"
     title: str = Field(default="VoxCode change", max_length=200)
     description: str = Field(default="", max_length=10000)
+    # The request that produced the patch; the files it changes become
+    # relevance feedback for the learned ranker.
+    query: str = Field(default="", max_length=4000)
+
+
+class FeedbackRequest(BaseModel):
+    repository_path: str
+    query: str = Field(min_length=1, max_length=4000)
+    helpful: bool = True
+    # Files / chunks that answered the question (usually the response's sources).
+    files: list[str] = Field(default_factory=list, max_length=50)
+    chunk_ids: list[str] = Field(default_factory=list, max_length=50)
 
 
 class RepoRequest(BaseModel):
@@ -147,6 +159,9 @@ def _answer(payload: AgentQueryRequest) -> dict:
                 "model_name": response.model_name,
                 "provider": response.provider,
                 "usage": response.usage,
+                "quality": response.quality,
+                "routing": response.routing,
+                "cached": response.cached,
             }
     except ProviderError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
@@ -267,13 +282,48 @@ def apply_patch(payload: ApplyRequest) -> dict:
             )
         except (UnsafeDiffError, GitError) as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
+        _learn_from_patch(repo, payload.query, result.files)
         return {"status": "committed", "files_modified": result.files, **result.to_dict()}
     try:
         files = patch_service.apply(repo, payload.diff)
     except (UnsafeDiffError, patch_service.PatchError) as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+    _learn_from_patch(repo, payload.query, files)
     services.index_repository(repo)
     return {"status": "applied", "files_modified": files}
+
+
+def _learn_from_patch(repo, query: str, files: list[str]) -> None:
+    if query and settings.LEARNED_RANKER:
+        from voxcode.core.repository import repository_key
+        from voxcode.learning import feedback
+
+        feedback.record(repository_key(repo), query, positive_files=files, kind="accepted_patch")
+
+
+@router.post("/feedback")
+def record_feedback(payload: FeedbackRequest) -> dict:
+    """Thumbs up on an answer: its sources were the right code for the question.
+
+    Feeds the learned ranker, which retrains in the background once enough
+    feedback has been collected. A thumbs down is acknowledged but not used
+    as a label (it doesn't say which code *would* have been right)."""
+    from voxcode.core.repository import repository_key
+    from voxcode.learning import feedback
+
+    repo = _resolve(payload.repository_path)
+    key = repository_key(repo)
+    recorded = payload.helpful and feedback.record(
+        key, payload.query, positive_files=payload.files, positive_chunks=payload.chunk_ids
+    )
+    count = len(feedback.load(key))
+    if recorded and count >= settings.RANKER_MIN_FEEDBACK:
+        threading.Thread(target=services.retrain_ranker, args=(key,), daemon=True).start()
+    return {
+        "recorded": bool(recorded),
+        "feedback_entries": count,
+        "min_for_training": settings.RANKER_MIN_FEEDBACK,
+    }
 
 
 @router.post("/undo")

@@ -29,6 +29,8 @@ INDEX_FORMAT_VERSION = 2
 
 class RepositoryIndex(BaseModel):
     format_version: int = INDEX_FORMAT_VERSION
+    # Model that wrote chunk contexts (contextual retrieval), or None.
+    contextual_model: str | None = None
     chunk_max_lines: int = 0
     repo_key: str
     repo_path: str
