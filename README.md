@@ -7,6 +7,7 @@
   <img alt="Python 3.10+" src="https://img.shields.io/badge/python-3.10%2B-fbbf24?style=for-the-badge&logo=python&logoColor=fbbf24&labelColor=1a1310">
   <img alt="Rust core" src="https://img.shields.io/badge/core-rust-fb923c?style=for-the-badge&logo=rust&logoColor=fb923c&labelColor=1a1310">
   <img alt="MCP server" src="https://img.shields.io/badge/MCP-server-fb7185?style=for-the-badge&labelColor=1a1310">
+  <a href="https://github.com/Nitro-Builds-Yash/voxcode/pkgs/container/voxcode"><img alt="Docker image" src="https://img.shields.io/badge/ghcr.io-voxcode-7dd3fc?style=for-the-badge&logo=docker&logoColor=7dd3fc&labelColor=1a1310"></a>
   <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-e879f9?style=for-the-badge&labelColor=1a1310"></a>
 </p>
 
@@ -81,6 +82,10 @@ Needs a Rust toolchain ([rustup.rs](https://rustup.rs)). Everything works withou
 <details>
 <summary><b>🐳 Docker</b></summary>
 <br>
+
+```bash
+docker pull ghcr.io/nitro-builds-yash/voxcode:latest      # prebuilt image (server + Rust core)
+```
 
 ```bash
 WORKSPACE_DIR=~/code docker compose -f deploy/docker-compose.yml up                          # VoxCode + Redis + Qdrant
