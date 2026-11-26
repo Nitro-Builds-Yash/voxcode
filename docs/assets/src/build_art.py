@@ -246,6 +246,7 @@ SECTIONS = [
     ("quick-start", "Quick start", "running in a minute"),
     ("integrations", "Use it anywhere", "editor · MCP · terminal · HTTP"),
     ("how-it-works", "How it works", "from voice to verified patch"),
+    ("review", "Review before it runs", "annotate plans and patches"),
     ("learning", "It learns from you", "ranking · routing · grounding"),
     ("rust-core", "Rust core", "same results, much faster"),
     ("benchmarks", "Measured, not guessed", "benchmarks you can rerun"),

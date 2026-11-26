@@ -73,3 +73,7 @@ Recognised voice commands: `accept`, `reject`, `undo`, `next file`, `previous fi
   - `quality`: `{groundedness, checked, unsupported, citations, bad_citations}`
   - `routing`: `{difficulty, tier: small|main, escalated, reason}`
   - `cached`: `true` when served from the answer cache
+
+## v0.8 additions
+
+Plan and patch review endpoints (`/reviews…`) are documented in [review.md](review.md#api).

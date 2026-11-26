@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VoxCode Review</title>
+<style>
+  :root {
+    --bg0: #120d0b; --bg1: #1a1310; --card: #1f1714; --card2: #261c17; --border: #3a2a22;
+    --text: #fff7ed; --muted: #d6c4b8; --faint: #9a8579;
+    --amber: #fbbf24; --coral: #fb7185; --magenta: #e879f9; --mint: #6ee7b7; --sky: #7dd3fc; --red: #f87171;
+    --grad: linear-gradient(90deg, var(--amber), var(--coral) 50%, var(--magenta));
+    --head: 'Space Grotesk', 'Inter', ui-sans-serif, system-ui, sans-serif;
+    --sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: radial-gradient(circle at 80% -10%, #3a1d1f 0%, var(--bg0) 55%) fixed; color: var(--text); font: 15px/1.6 var(--sans); }
+  a { color: var(--amber); }
+  header { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 14px; padding: 12px 22px; background: rgba(18,13,11,.86); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); }
+  .brand { font: 700 20px var(--head); letter-spacing: -.5px; text-decoration: none; color: var(--text); }
+  .brand span { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .title { font: 600 16px var(--head); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+  .chip { font: 700 11px var(--mono); letter-spacing: .8px; text-transform: uppercase; padding: 3px 9px; border-radius: 99px; border: 1px solid var(--border); color: var(--faint); white-space: nowrap; }
+  .chip.pending { color: var(--amber); border-color: #7a5a1a; } .chip.approved { color: var(--mint); border-color: #2c6b55; }
+  .chip.denied { color: var(--coral); border-color: #7c2f3a; } .chip.revising { color: var(--sky); border-color: #29566b; }
+  button { font: 600 13px var(--sans); color: var(--text); background: var(--card2); border: 1px solid var(--border); border-radius: 9px; padding: 7px 12px; cursor: pointer; }
+  button:hover { border-color: var(--faint); } button:disabled { opacity: .45; cursor: default; }
+  button.primary { background: var(--grad); color: #1a0f0c; border: 0; }
+  button.danger { color: var(--coral); border-color: #7c2f3a; }
+  button.icon { padding: 7px 10px; }
+  button.rec { background: var(--coral); color: #1a0f0c; animation: pulse 1.1s infinite; }
+  @keyframes pulse { 50% { box-shadow: 0 0 0 6px rgba(251,113,133,.25); } }
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 22px; padding: 22px; max-width: 1440px; margin: 0 auto; }
+  main.with-tree { grid-template-columns: 240px minmax(0, 1fr) 360px; }
+  .panel { background: rgba(31,23,20,.82); border: 1px solid var(--border); border-radius: 16px; }
+  #doc { padding: 34px 44px; min-height: 60vh; }
+  #doc.diffdoc { padding: 0; }
+  #doc h1, #doc h2, #doc h3, #doc h4 { font-family: var(--head); letter-spacing: -.4px; line-height: 1.25; }
+  #doc h1 { font-size: 30px; margin-top: 0; } #doc h2 { font-size: 22px; border-bottom: 1px solid var(--border); padding-bottom: 6px; } #doc h3 { font-size: 18px; }
+  #doc code { font: 13px var(--mono); background: #2a1e18; border: 1px solid var(--border); padding: 1px 5px; border-radius: 5px; color: #fed7aa; }
+  #doc pre { background: #160f0c; border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; overflow-x: auto; }
+  #doc pre code { background: none; border: 0; padding: 0; color: var(--muted); }
+  #doc blockquote { margin: 0; padding: 4px 16px; border-left: 3px solid var(--coral); color: var(--muted); }
+  #doc table { border-collapse: collapse; } #doc td, #doc th { border: 1px solid var(--border); padding: 5px 10px; }
+  #doc li { margin: 3px 0; } #doc ::selection { background: rgba(251,191,36,.35); }
+  mark.ann { color: inherit; border-radius: 3px; padding: 0 1px; cursor: pointer; }
+  mark.ann.comment { background: rgba(251,191,36,.22); border-bottom: 2px solid var(--amber); }
+  mark.ann.delete { background: rgba(248,113,113,.18); text-decoration: line-through; text-decoration-color: var(--red); }
+  mark.ann.replace, mark.ann.insert { background: rgba(232,121,249,.18); border-bottom: 2px solid var(--magenta); }
+  mark.ann.flash { outline: 2px solid var(--amber); }
+  .changes .add { background: rgba(110,231,183,.12); border-left: 3px solid var(--mint); padding-left: 10px; }
+  .changes .remove { background: rgba(248,113,113,.10); border-left: 3px solid var(--red); padding-left: 10px; color: var(--faint); text-decoration: line-through; }
+  .changes div { white-space: pre-wrap; font: 13px/1.7 var(--mono); padding: 0 8px; }
+  aside { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 76px; align-self: start; max-height: calc(100vh - 96px); overflow: auto; }
+  aside .panel { padding: 16px; }
+  h3.side { font: 700 12px var(--mono); letter-spacing: 1.4px; text-transform: uppercase; color: var(--faint); margin: 0 0 10px; }
+  .ann-item { border: 1px solid var(--border); background: var(--card2); border-radius: 10px; padding: 9px 11px; margin-bottom: 8px; font-size: 13.5px; cursor: pointer; }
+  .ann-item .q { color: var(--faint); font: 12px var(--mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ann-item .k { font: 700 10px var(--mono); text-transform: uppercase; letter-spacing: 1px; }
+  .k.comment, .k.line { color: var(--amber); } .k.delete { color: var(--red); } .k.replace, .k.insert { color: var(--magenta); }
+  .ann-item .x { float: right; border: 0; background: none; color: var(--faint); padding: 0 2px; }
+  textarea, input[type=text] { width: 100%; background: #160f0c; color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 9px 11px; font: 14px var(--sans); resize: vertical; }
+  textarea:focus, input:focus { outline: 1px solid var(--amber); }
+  .row { display: flex; gap: 8px; align-items: center; } .row.end { justify-content: flex-end; } .grow { flex: 1; }
+  .decide { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+  .decide button { padding: 11px; font-size: 14px; }
+  .note { font-size: 13px; color: var(--muted); } .faint { color: var(--faint); font-size: 12.5px; }
+  .banner { border-radius: 12px; padding: 12px 14px; font-size: 14px; border: 1px solid var(--border); }
+  .banner.ok { border-color: #2c6b55; background: rgba(110,231,183,.08); } .banner.err { border-color: #7c2f3a; background: rgba(248,113,113,.08); }
+  .banner.info { border-color: #29566b; background: rgba(125,211,252,.07); }
+  #toolbar { position: absolute; z-index: 40; display: none; gap: 4px; padding: 5px; background: #241a15; border: 1px solid var(--faint); border-radius: 11px; box-shadow: 0 12px 30px rgba(0,0,0,.5); }
+  #toolbar button { padding: 6px 9px; font-size: 12.5px; }
+  #pop { position: absolute; z-index: 41; display: none; width: 340px; padding: 10px; background: #241a15; border: 1px solid var(--faint); border-radius: 12px; box-shadow: 0 12px 30px rgba(0,0,0,.5); }
+  #pop textarea { min-height: 70px; margin-bottom: 8px; }
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tabs button.on { border-color: var(--amber); color: var(--amber); }
+  /* diff */
+  #tree { padding: 12px; position: sticky; top: 76px; align-self: start; max-height: calc(100vh - 96px); overflow: auto; }
+  #tree a { display: block; color: var(--muted); text-decoration: none; font: 12.5px var(--mono); padding: 4px 8px; border-radius: 7px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #tree a:hover { background: var(--card2); color: var(--text); }
+  #tree .st { float: right; font-size: 11px; } .st .a { color: var(--mint); } .st .r { color: var(--red); }
+  .file { margin-bottom: 18px; overflow: hidden; } .file h4 { margin: 0; padding: 10px 14px; font: 600 13.5px var(--mono); background: var(--card2); border-bottom: 1px solid var(--border); }
+  table.diff { width: 100%; border-collapse: collapse; font: 12.5px/1.6 var(--mono); }
+  table.diff td { padding: 0 8px; vertical-align: top; white-space: pre-wrap; word-break: break-word; }
+  table.diff td.n { width: 46px; color: var(--faint); text-align: right; user-select: none; } table.diff td.n.c { cursor: pointer; }
+  table.diff td.n.c:hover::before { content: "+ "; color: var(--amber); font-weight: 700; }
+  table.diff tr.add td.code { background: rgba(110,231,183,.10); } table.diff tr.del td.code { background: rgba(248,113,113,.10); color: var(--muted); }
+  table.diff tr.hunk td { background: #1a2330; color: var(--sky); padding: 3px 8px; }
+  table.diff tr.cmt td { background: rgba(251,191,36,.08); border-left: 3px solid var(--amber); font-family: var(--sans); padding: 6px 12px; color: var(--text); }
+  .list { padding: 8px 0; } .list a.item { display: grid; grid-template-columns: 1fr auto auto; gap: 14px; align-items: center; padding: 12px 18px; text-decoration: none; color: var(--text); border-bottom: 1px solid var(--border); }
+  .list a.item:hover { background: var(--card2); } .list .meta { color: var(--faint); font-size: 12.5px; }
+  #toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); background: #241a15; border: 1px solid var(--faint); padding: 10px 16px; border-radius: 12px; display: none; z-index: 60; max-width: 80vw; }
+  .kbd { font: 11px var(--mono); border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 5px; padding: 0 5px; color: var(--muted); }
+  @media (max-width: 1000px) { main, main.with-tree { grid-template-columns: 1fr; } aside, #tree { position: static; max-height: none; } #doc { padding: 22px; } }
+</style>
+</head>
+<body>
+<header>
+  <a class="brand" href="/review">vox<span>code</span></a>
+  <span class="chip" id="kind">review</span>
+  <div class="title" id="title"></div>
+  <span class="chip" id="status"></span>
+  <button class="icon" id="mic" title="Voice: dictate a comment, or say “approve” / “deny …” (hold V)">🎙</button>
+  <button class="icon" id="share" title="Copy a share link (content travels in the link)">Share</button>
+</header>
+<div id="app"></div>
+<div id="toolbar">
+  <button data-act="comment">💬 Comment</button>
+  <button data-act="delete">✂ Delete</button>
+  <button data-act="replace">↻ Replace</button>
+  <button data-act="voice">🎙</button>
+</div>
+<div id="pop">
+  <div class="faint" id="pop-label"></div>
+  <textarea id="pop-text" placeholder="Your comment…"></textarea>
+  <input type="text" id="pop-repl" placeholder="Replace with…" style="display:none;margin-bottom:8px">
+  <div class="row end"><button id="pop-cancel">Cancel</button><button class="primary" id="pop-save">Add</button></div>
+</div>
+<div id="toast"></div>
+<script>
+'use strict';
+const TOKEN = window.VOXCODE_TOKEN || '';
+const $ = (s, r = document) => r.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+let draft = null; // unsent overall comment, kept across re-renders
+let review = null, readOnly = false, showChanges = false, viewRevision = null, pending = null, pollTimer = null;
+
+async function api(path, options = {}) {
+  const res = await fetch(path, {
+    ...options,
+    headers: { ...(options.body && !(options.body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}), ...(TOKEN ? { 'X-VoxCode-Token': TOKEN } : {}), ...(options.headers || {}) },
+  });
+  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || res.statusText);
+  return res.json();
+}
+function toast(text, ms = 2600) { const t = $('#toast'); t.textContent = text; t.style.display = 'block'; clearTimeout(t._h); t._h = setTimeout(() => (t.style.display = 'none'), ms); }
+
+// ------------------------------------------------------------ markdown
+function inline(s) {
+  return esc(s)
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[^*])\*([^*\s][^*]*)\*/g, '$1<em>$2</em>')
+    .replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+}
+function markdown(src) {
+  const lines = src.replace(/\r/g, '').split('\n'); let html = '', i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    if (/^```/.test(line)) { const buf = []; i++; while (i < lines.length && !/^```/.test(lines[i])) buf.push(lines[i++]); i++; html += `<pre><code>${esc(buf.join('\n'))}</code></pre>`; continue; }
+    let m;
+    if ((m = line.match(/^(#{1,4})\s+(.*)/))) { html += `<h${m[1].length}>${inline(m[2])}</h${m[1].length}>`; i++; continue; }
+    if (/^\s*([-*_])\s*\1\s*\1[\s\-*_]*$/.test(line)) { html += '<hr>'; i++; continue; }
+    if (/^>\s?/.test(line)) { const buf = []; while (i < lines.length && /^>\s?/.test(lines[i])) buf.push(lines[i++].replace(/^>\s?/, '')); html += `<blockquote>${markdown(buf.join('\n'))}</blockquote>`; continue; }
+    if (/^\|.*\|\s*$/.test(line) && i + 1 < lines.length && /^\|[\s:|-]+\|\s*$/.test(lines[i + 1])) {
+      const row = (l) => l.trim().slice(1, -1).split('|').map((c) => c.trim());
+      html += '<table><tr>' + row(line).map((c) => `<th>${inline(c)}</th>`).join('') + '</tr>'; i += 2;
+      while (i < lines.length && /^\|.*\|\s*$/.test(lines[i])) html += '<tr>' + row(lines[i++]).map((c) => `<td>${inline(c)}</td>`).join('') + '</tr>';
+      html += '</table>'; continue;
+    }
+    if ((m = line.match(/^(\s*)([-*+]|\d+[.)])\s+(.*)/))) {
+      const ordered = /\d/.test(m[2]); const items = [];
+      while (i < lines.length && (m = lines[i].match(/^(\s*)([-*+]|\d+[.)])\s+(.*)/))) {
+        let text = m[3]; i++;
+        while (i < lines.length && /^\s{2,}\S/.test(lines[i]) && !/^\s*([-*+]|\d+[.)])\s+/.test(lines[i])) text += ' ' + lines[i++].trim();
+        items.push(text.replace(/^\[( |x)\]\s*/i, (_, c) => (c.trim() ? '☑ ' : '☐ ')));
+      }
+      html += `<${ordered ? 'ol' : 'ul'}>` + items.map((t) => `<li>${inline(t)}</li>`).join('') + `</${ordered ? 'ol' : 'ul'}>`; continue;
+    }
+    if (!line.trim()) { i++; continue; }
+    const buf = [line]; i++;
+    while (i < lines.length && lines[i].trim() && !/^(#{1,4}\s|```|>|\s*([-*+]|\d+[.)])\s)/.test(lines[i])) buf.push(lines[i++]);
+    html += `<p>${inline(buf.join(' '))}</p>`;
+  }
+  return html;
+}
+
+// Wrap the first occurrence of `quote` in the rendered text (may span nodes in one block).
+function highlight(root, quote, cls, id) {
+  const needle = quote.replace(/\s+/g, ' ').trim(); if (!needle) return false;
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const nodes = []; let text = '';
+  while (walker.nextNode()) { const n = walker.currentNode; if (n.parentElement.closest('mark')) continue; nodes.push([n, text.length]); text += n.data; }
+  const flat = text.replace(/\s/g, ' ');
+  let start = flat.indexOf(needle); if (start < 0) start = flat.replace(/ +/g, ' ').indexOf(needle) >= 0 ? flat.indexOf(needle.split(' ')[0]) : -1;
+  if (start < 0) return false;
+  const end = start + needle.length;
+  for (const [node, offset] of nodes) {
+    const s = Math.max(start, offset), e = Math.min(end, offset + node.data.length);
+    if (s >= e) continue;
+    const range = document.createRange(); range.setStart(node, s - offset); range.setEnd(node, e - offset);
+    const mark = document.createElement('mark'); mark.className = `ann ${cls}`; mark.dataset.id = id;
+    try { range.surroundContents(mark); } catch { /* crosses an element boundary: skip this piece */ }
+  }
+  return true;
+}
+
+// ------------------------------------------------------------ diff
+function parseDiff(diff) {
+  const files = []; let file = null, oldNo = 0, newNo = 0;
+  for (const line of diff.replace(/\r/g, '').split('\n')) {
+    if (line.startsWith('diff --git')) { file = null; continue; }
+    if (line.startsWith('--- ')) { file = { path: '', old: line.slice(4).replace(/^a\//, ''), rows: [], add: 0, del: 0 }; continue; }
+    if (line.startsWith('+++ ')) { if (!file) file = { rows: [], add: 0, del: 0 }; file.path = line.slice(4).replace(/^b\//, ''); if (file.path === '/dev/null') file.path = file.old; files.push(file); continue; }
+    if (!file) continue;
+    const h = line.match(/^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@(.*)/);
+    if (h) { oldNo = +h[1]; newNo = +h[2]; file.rows.push({ type: 'hunk', text: line }); continue; }
+    if (line.startsWith('+')) { file.rows.push({ type: 'add', text: line.slice(1), n: newNo++ }); file.add++; }
+    else if (line.startsWith('-')) { file.rows.push({ type: 'del', text: line.slice(1), o: oldNo++ }); file.del++; }
+    else if (line.startsWith(' ') || line === '') { file.rows.push({ type: 'ctx', text: line.slice(1), o: oldNo++, n: newNo++ }); }
+  }
+  return files;
+}
+
+// ------------------------------------------------------------ views
+function setHeader(kind, title, status) {
+  $('#kind').textContent = kind; $('#title').textContent = title; document.title = `${title} · VoxCode Review`;
+  const st = $('#status'); st.textContent = status || ''; st.className = `chip ${status || ''}`; st.style.display = status ? '' : 'none';
+}
+
+async function showArchive() {
+  setHeader('archive', 'All reviews', ''); $('#share').style.display = 'none';
+  let items = [];
+  try { items = await api('/reviews'); } catch (e) { $('#app').innerHTML = `<main><div class="panel banner err">${esc(e.message)}</div></main>`; return; }
+  $('#app').innerHTML = `<main style="grid-template-columns:1fr"><div class="panel list">${items.length ? items.map((r) => `
+    <a class="item" href="/review/${r.id}"><div><b>${esc(r.title)}</b><div class="meta">${esc(r.kind)} · ${esc(r.source)} · ${r.revisions} revision${r.revisions === 1 ? '' : 's'} · ${new Date(r.updated * 1000).toLocaleString()}</div></div>
+    <span class="faint">${esc((r.repository_path || '').split(/[\\/]/).pop())}</span><span class="chip ${r.status}">${r.status}</span></a>`).join('')
+    : '<div style="padding:30px" class="note">No reviews yet. Plans from Claude Code (<code>voxcode hook install claude</code>) and VoxCode edits appear here.</div>'}</div></main>`;
+}
+
+function renderDocument(content, container) {
+  container.innerHTML = markdown(content);
+  if (readOnly && !review.annotations) return;
+  for (const a of currentAnnotations()) if (a.quote) highlight(container, a.quote, a.kind, a.id);
+}
+
+function currentAnnotations() { return (review.annotations || []).filter((a) => a.revision === (viewRevision ?? review.revision)); }
+
+function render() {
+  clearInterval(pollTimer);
+  const latest = viewRevision === null || viewRevision === review.revision;
+  const content = review.revisions[viewRevision ?? review.revision];
+  setHeader(review.kind, review.title, readOnly ? 'shared' : review.status);
+  const isDiff = review.kind === 'diff';
+  const files = isDiff ? parseDiff(content) : [];
+  $('#app').innerHTML = `
+    <main class="${isDiff ? 'with-tree' : ''}">
+      ${isDiff ? `<nav class="panel" id="tree"><h3 class="side">Files · ${files.length}</h3>${files.map((f, i) => `<a href="#f${i}">${esc(f.path)}<span class="st"><span class="a">+${f.add}</span> <span class="r">−${f.del}</span></span></a>`).join('')}</nav>` : ''}
+      <section>
+        ${review.revisions.length > 1 ? `<div class="row" style="margin-bottom:12px"><div class="tabs">${review.revisions.map((_, i) => `<button data-rev="${i}" class="${i === (viewRevision ?? review.revision) ? 'on' : ''}">v${i + 1}</button>`).join('')}</div><span class="grow"></span>${!isDiff && latest ? `<button id="changes">${showChanges ? 'Hide changes' : 'Show changes since v' + review.revision}</button>` : ''}</div>` : ''}
+        ${review.meta && review.meta.summary && isDiff ? `<div class="panel" style="padding:14px 18px;margin-bottom:14px"><div class="note">${esc(review.meta.summary)}</div></div>` : ''}
+        <div class="${isDiff ? 'diffdoc' : 'panel'}" id="doc"></div>
+      </section>
+      ${readOnly ? '' : `<aside>
+        <div id="state"></div>
+        <div class="panel"><h3 class="side">Annotations</h3><div id="anns"></div>
+          <div class="faint">${isDiff ? 'Click a line number to comment on it.' : 'Select text to comment, delete or replace it.'} <span class="kbd">V</span> hold to talk.</div></div>
+        <div class="panel"><h3 class="side">Overall feedback</h3>
+          <textarea id="general" rows="4" placeholder="Anything else the agent should know…">${esc(draft ?? review.general_comment ?? '')}</textarea>
+          <div class="decide"><button class="danger" id="deny" title="Ctrl+Shift+Enter">Deny &amp; send feedback</button><button class="primary" id="approve" title="Ctrl+Enter">${isDiff && review.meta && review.meta.flow === 'voxcode-edit' ? 'Approve &amp; apply' : 'Approve'}</button></div>
+          <div class="faint" style="margin-top:8px" id="decide-note"></div>
+        </div>
+      </aside>`}
+    </main>`;
+  const doc = $('#doc');
+  if (isDiff) renderDiff(doc, files);
+  else if (showChanges && latest && review.changes && review.changes.length) {
+    doc.innerHTML = `<div class="changes">${review.changes.map((c) => `<div class="${c.op === 'equal' ? '' : c.op}">${esc(c.text) || '&nbsp;'}</div>`).join('')}</div>`;
+  } else renderDocument(content, doc);
+  document.querySelectorAll('[data-rev]').forEach((b) => (b.onclick = () => { viewRevision = +b.dataset.rev; if (viewRevision === review.revision) viewRevision = null; render(); }));
+  const ch = $('#changes'); if (ch) ch.onclick = () => { showChanges = !showChanges; render(); };
+  doc.querySelectorAll('mark.ann').forEach((m) => (m.onclick = () => focusAnnotation(m.dataset.id)));
+  if (readOnly) return;
+  renderAnnotations(); renderState(latest);
+  $('#approve').onclick = () => decide('approve'); $('#deny').onclick = () => decide('deny');
+  $('#general').oninput = () => (draft = $('#general').value);
+}
+
+function renderDiff(doc, files) {
+  const byLine = {};
+  for (const a of currentAnnotations()) if (a.file) (byLine[`${a.file}:${a.line}`] ||= []).push(a);
+  doc.innerHTML = files.map((f, i) => `<div class="panel file" id="f${i}"><h4>${esc(f.path)}</h4><table class="diff">${f.rows.map((r) => {
+    if (r.type === 'hunk') return `<tr class="hunk"><td colspan="3">${esc(r.text)}</td></tr>`;
+    const cls = r.type === 'add' ? 'add' : r.type === 'del' ? 'del' : '';
+    const commentable = r.n !== undefined;
+    const notes = commentable ? (byLine[`${f.path}:${r.n}`] || []).map((a) => `<tr class="cmt"><td colspan="3">💬 ${esc(a.comment)}${a.via_voice ? ' <span class="faint">(voice)</span>' : ''}</td></tr>`).join('') : '';
+    return `<tr class="${cls}"><td class="n">${r.o ?? ''}</td><td class="n ${commentable ? 'c' : ''}" data-file="${esc(f.path)}" data-line="${r.n ?? ''}" data-text="${esc(r.text)}">${r.n ?? ''}</td><td class="code">${r.type === 'add' ? '+' : r.type === 'del' ? '−' : ' '}${esc(r.text)}</td></tr>${notes}`;
+  }).join('')}</table></div>`).join('') || '<div class="panel banner info">This patch is empty.</div>';
+  if (readOnly) return;
+  doc.querySelectorAll('td.n.c').forEach((td) => (td.onclick = (ev) => {
+    pending = { kind: 'line', file: td.dataset.file, line: +td.dataset.line, quote: td.dataset.text };
+    openPop(ev.pageX, ev.pageY, `${td.dataset.file}:${td.dataset.line}`, false);
+  }));
+}
+
+function renderAnnotations() {
+  const list = currentAnnotations();
+  $('#anns').innerHTML = list.length ? list.map((a) => `<div class="ann-item" data-id="${a.id}"><button class="x" data-del="${a.id}" title="Remove">✕</button>
+    <div class="k ${a.kind}">${a.kind}${a.via_voice ? ' · 🎙' : ''}${a.file ? ' · ' + esc(a.file.split('/').pop()) + ':' + a.line : ''}</div>
+    ${a.quote ? `<div class="q">“${esc(a.quote)}”</div>` : ''}${a.replacement ? `<div>→ ${esc(a.replacement)}</div>` : ''}${a.comment ? `<div>${esc(a.comment)}</div>` : ''}</div>`).join('')
+    : '<div class="faint" style="margin-bottom:8px">None yet.</div>';
+  document.querySelectorAll('[data-del]').forEach((b) => (b.onclick = async (e) => { e.stopPropagation(); await api(`/reviews/${review.id}/annotations/${b.dataset.del}`, { method: 'DELETE' }); await load(review.id); }));
+  document.querySelectorAll('.ann-item').forEach((el) => (el.onclick = () => focusAnnotation(el.dataset.id)));
+}
+
+function focusAnnotation(id) {
+  document.querySelectorAll('mark.flash').forEach((m) => m.classList.remove('flash'));
+  const mark = document.querySelector(`mark[data-id="${id}"]`); if (mark) { mark.classList.add('flash'); mark.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+  const item = document.querySelector(`.ann-item[data-id="${id}"]`); if (item) item.scrollIntoView({ block: 'nearest' });
+}
+
+function renderState(latest) {
+  const m = review.meta || {}, el = $('#state'), decided = review.status !== 'pending';
+  let html = '';
+  if (!latest) html = `<div class="panel banner info">You are viewing an older version. <a href="#" id="tolatest">Back to the latest</a>.</div>`;
+  else if (m.error) html = `<div class="panel banner err">${esc(m.error)}</div>`;
+  else if (review.status === 'revising') html = `<div class="panel banner info">⏳ The agent is revising with your feedback…</div>`;
+  else if (review.status === 'denied') html = `<div class="panel banner err">Feedback sent. ${review.source === 'claude-code' ? 'Claude will revise the plan; the new version appears here.' : 'Waiting for a revision.'}</div>`;
+  else if (review.status === 'approved') {
+    if (m.applied) html = `<div class="panel banner ok">✅ Applied to ${m.applied.map(esc).join(', ')}.</div>`;
+    else if (m.next) html = `<div class="panel banner ok">✅ Approved. <a href="/review/${m.next}">Review the code changes →</a></div>`;
+    else if (m.implementing) html = `<div class="panel banner info">✅ Approved. ⏳ Writing and testing the patch…</div>`;
+    else html = `<div class="panel banner ok">✅ Approved${review.source === 'claude-code' ? ': Claude is implementing it.' : '.'}</div>`;
+  }
+  el.innerHTML = html;
+  const tl = $('#tolatest'); if (tl) tl.onclick = (e) => { e.preventDefault(); viewRevision = null; render(); };
+  for (const id of ['approve', 'deny']) $('#' + id).disabled = decided || !latest;
+  $('#decide-note').innerHTML = decided ? '' : `<span class="kbd">Ctrl</span>+<span class="kbd">Enter</span> approve · <span class="kbd">Ctrl</span>+<span class="kbd">⇧</span>+<span class="kbd">Enter</span> deny`;
+  if (['revising'].includes(review.status) || (review.status === 'approved' && m.implementing && !m.next && !m.error) || review.status === 'denied') {
+    pollTimer = setInterval(async () => {
+      const fresh = await api(`/reviews/${review.id}`).catch(() => null);
+      if (!fresh) return;
+      if (fresh.meta && fresh.meta.next && !m.next) { location.href = `/review/${fresh.meta.next}`; return; }
+      if (fresh.updated !== review.updated) { review = fresh; viewRevision = null; showChanges = fresh.revisions.length > 1; render(); }
+    }, 2000);
+  }
+}
+
+async function decide(kind) {
+  const comment = $('#general').value;
+  if (kind === 'deny' && !currentAnnotations().length && !comment.trim() && !confirm('Deny without any comments?')) return;
+  try { await api(`/reviews/${review.id}/decision`, { method: 'POST', body: JSON.stringify({ decision: kind, comment }) }); }
+  catch (e) { toast(e.message); return; }
+  draft = null;
+  toast(kind === 'approve' ? 'Approved' : 'Feedback sent to the agent');
+  await load(review.id);
+}
+
+// ------------------------------------------------------------ annotating
+function selectionInDoc() {
+  const sel = getSelection(); if (!sel.rangeCount || sel.isCollapsed) return null;
+  const range = sel.getRangeAt(0); const doc = $('#doc');
+  if (!doc || !doc.contains(range.commonAncestorContainer) || review.kind === 'diff') return null;
+  const text = sel.toString().trim(); return text ? { text, rect: range.getBoundingClientRect() } : null;
+}
+document.addEventListener('mouseup', (e) => {
+  if (readOnly || !review || (e.target instanceof Element && e.target.closest('#toolbar, #pop'))) return;
+  setTimeout(() => {
+    const s = selectionInDoc(); const tb = $('#toolbar');
+    if (!s || review.status !== 'pending' || viewRevision !== null || showChanges) { tb.style.display = 'none'; return; }
+    pending = { quote: s.text };
+    tb.style.display = 'flex'; tb.style.left = `${Math.max(8, s.rect.left + scrollX)}px`; tb.style.top = `${s.rect.top + scrollY - 46}px`;
+  }, 0);
+});
+$('#toolbar').addEventListener('click', async (e) => {
+  const act = e.target.closest('button')?.dataset.act; if (!act || !pending) return;
+  const r = $('#toolbar').getBoundingClientRect(); $('#toolbar').style.display = 'none';
+  if (act === 'delete') { await addAnnotation({ ...pending, kind: 'delete' }); return; }
+  if (act === 'voice') { startVoice('selection'); return; }
+  pending.kind = act; openPop(r.left + scrollX, r.bottom + scrollY + 6, act === 'replace' ? 'Replace selection with' : `“${pending.quote.slice(0, 60)}”`, act === 'replace');
+});
+function openPop(x, y, label, replace) {
+  const pop = $('#pop'); pop.style.display = 'block';
+  pop.style.left = `${Math.min(x, innerWidth + scrollX - 360)}px`; pop.style.top = `${y}px`;
+  $('#pop-label').textContent = label; $('#pop-repl').style.display = replace ? 'block' : 'none';
+  $('#pop-text').value = ''; $('#pop-repl').value = ''; $('#pop-text').placeholder = replace ? 'Why? (optional)' : 'Your comment…';
+  (replace ? $('#pop-repl') : $('#pop-text')).focus();
+}
+$('#pop-cancel').onclick = () => ($('#pop').style.display = 'none');
+$('#pop-save').onclick = async () => {
+  const comment = $('#pop-text').value.trim(), replacement = $('#pop-repl').value.trim();
+  if (pending.kind === 'replace' ? !replacement : !comment) return;
+  $('#pop').style.display = 'none';
+  await addAnnotation({ ...pending, comment, replacement });
+};
+$('#pop-text').addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) $('#pop-save').click(); });
+async function addAnnotation(a) {
+  try { await api(`/reviews/${review.id}/annotations`, { method: 'POST', body: JSON.stringify(a) }); }
+  catch (e) { toast(e.message); return; }
+  getSelection().removeAllRanges(); pending = null; await load(review.id);
+}
+
+// ------------------------------------------------------------ voice
+let recorder = null, voiceTarget = null;
+async function startVoice(target) {
+  if (recorder) return stopVoice();
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const chunks = []; recorder = new MediaRecorder(stream); voiceTarget = target;
+    recorder.ondataavailable = (e) => chunks.push(e.data);
+    recorder.onstop = async () => {
+      stream.getTracks().forEach((t) => t.stop()); $('#mic').classList.remove('rec');
+      const form = new FormData(); form.append('file', new Blob(chunks, { type: recorder.mimeType || 'audio/webm' }), 'voice.webm');
+      recorder = null; toast('Transcribing…', 8000);
+      try { const r = await api('/voice/transcribe', { method: 'POST', body: form }); await handleSpeech((r.transcription || r.text || '').trim()); }
+      catch (e) { toast(`Voice failed: ${e.message}`); }
+    };
+    recorder.start(); $('#mic').classList.add('rec'); toast('Listening… click 🎙 again (or release V) to stop', 4000);
+  } catch (e) { recorder = null; toast(`Microphone unavailable: ${e.message}`); }
+}
+function stopVoice() { if (recorder && recorder.state === 'recording') recorder.stop(); }
+async function handleSpeech(text) {
+  if (!text) { toast('Heard nothing'); return; }
+  toast(`“${text}”`, 4000);
+  if (!review || readOnly || review.status !== 'pending') return;
+  const lower = text.toLowerCase().replace(/[.!]+$/, '');
+  if (/^(approve|approved|looks good|lgtm|ship it|go ahead)\b/.test(lower)) return decide('approve');
+  const deny = lower.match(/^(deny|reject|request changes)[,:]?\s*(.*)$/);
+  if (deny) { if (deny[2]) draft = $('#general').value = ($('#general').value + '\n' + text.slice(text.length - deny[2].length)).trim(); return decide('deny'); }
+  if (voiceTarget === 'selection' && pending) return addAnnotation({ ...pending, kind: 'comment', comment: text, via_voice: true });
+  draft = $('#general').value = ($('#general').value + '\n' + text).trim();
+}
+$('#mic').onclick = () => startVoice(pending && pending.quote ? 'selection' : 'general');
+document.addEventListener('keydown', (e) => {
+  const typing = /^(TEXTAREA|INPUT)$/.test(document.activeElement.tagName);
+  if (e.key.toLowerCase() === 'v' && !typing && !e.repeat && !e.ctrlKey && !e.metaKey && review && !readOnly) startVoice(pending && pending.quote ? 'selection' : 'general');
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && review && !readOnly && !$('#approve')?.disabled && document.activeElement !== $('#pop-text')) { e.preventDefault(); decide(e.shiftKey ? 'deny' : 'approve'); }
+  if (e.key === 'Escape') { $('#pop').style.display = 'none'; $('#toolbar').style.display = 'none'; }
+});
+document.addEventListener('keyup', (e) => { if (e.key.toLowerCase() === 'v' && recorder) stopVoice(); });
+
+// ------------------------------------------------------------ sharing (content lives in the URL fragment)
+async function pack(obj) {
+  const stream = new Blob([JSON.stringify(obj)]).stream().pipeThrough(new CompressionStream('deflate-raw'));
+  const bytes = new Uint8Array(await new Response(stream).arrayBuffer()); let bin = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+async function unpack(data) {
+  const bin = atob(data.replace(/-/g, '+').replace(/_/g, '/')); const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
+  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+  return JSON.parse(await new Response(stream).text());
+}
+$('#share').onclick = async () => {
+  if (!review) return;
+  const data = await pack({ v: 1, kind: review.kind, title: review.title, content: review.revisions[viewRevision ?? review.revision], annotations: currentAnnotations().map(({ kind, quote, comment, replacement, file, line }) => ({ kind, quote, comment, replacement, file, line, revision: 0 })) });
+  const url = `${location.origin}/review/share#v1.${data}`;
+  try { await navigator.clipboard.writeText(url); toast('Share link copied. The content is in the link (compressed, not encrypted).', 4500); }
+  catch { prompt('Copy this link:', url); }
+};
+
+// ------------------------------------------------------------ boot
+async function load(id) {
+  try { review = await api(`/reviews/${id}`); }
+  catch (e) { setHeader('review', 'Not found', ''); $('#app').innerHTML = `<main style="grid-template-columns:1fr"><div class="panel banner err">${esc(e.message)}</div></main>`; return; }
+  if (review.revisions.length > 1 && review.status === 'pending' && !load.seen?.[id + review.revision]) { showChanges = review.kind !== 'diff'; (load.seen ||= {})[id + review.revision] = true; }
+  render();
+}
+(async () => {
+  const parts = location.pathname.replace(/\/+$/, '').split('/');
+  if (parts[2] === 'share') {
+    readOnly = true;
+    try {
+      const shared = await unpack(location.hash.replace(/^#v1\./, ''));
+      review = { id: 'shared', kind: shared.kind, title: shared.title, revisions: [shared.content], revision: 0, annotations: shared.annotations || [], status: 'shared', meta: {} };
+      render();
+    } catch { setHeader('share', 'Broken share link', ''); $('#app').innerHTML = '<main style="grid-template-columns:1fr"><div class="panel banner err">This share link is incomplete or damaged.</div></main>'; }
+    return;
+  }
+  if (parts[2]) await load(parts[2]); else await showArchive();
+})();
+</script>
+</body>
+</html>

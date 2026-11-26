@@ -18,6 +18,7 @@
   <a href="#features"><b>Features</b></a> &nbsp;•&nbsp;
   <a href="#integrations"><b>Integrations</b></a> &nbsp;•&nbsp;
   <a href="#how-it-works"><b>How it works</b></a> &nbsp;•&nbsp;
+  <a href="#review"><b>Review</b></a> &nbsp;•&nbsp;
   <a href="#learning"><b>Learning</b></a> &nbsp;•&nbsp;
   <a href="#rust-core"><b>Rust core</b></a> &nbsp;•&nbsp;
   <a href="docs/"><b>Docs</b></a> &nbsp;•&nbsp;
@@ -100,7 +101,7 @@ Index projects by their container path, e.g. `/workspace/my-project`. The image 
 | | Where | How |
 |:---:|---|---|
 | <img src="https://cdn.simpleicons.org/visualstudiocode/007ACC" width="22"> | **VS Code** | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>V</kbd> to talk, <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>H</kbd> for hands-free, or `@vox` in Chat. The diff opens side by side; say **“accept”**. ([extension](vscode-extension/README.md)) |
-| <img src="https://cdn.simpleicons.org/anthropic/D97757" width="22"> | **Claude Desktop · Claude Code · Cursor** | `voxcode mcp --repo .` exposes search, read, references, git history, propose-edit and apply-patch as MCP tools |
+| <img src="https://cdn.simpleicons.org/anthropic/D97757" width="22"> | **Claude Desktop · Claude Code · Cursor** | `voxcode mcp --repo .` exposes search, read, references, git history, propose-edit and apply-patch as MCP tools · `voxcode hook install claude` reviews Claude Code plans in VoxCode |
 | <img src="https://cdn.simpleicons.org/gnubash/4EAA25" width="22"> | **Terminal** | `voxcode index · search · ask · edit · eval · swebench` |
 | <img src="https://cdn.simpleicons.org/fastapi/009688" width="22"> | **HTTP / web UI** | REST + SSE streaming + WebSocket voice; see [docs/api.md](docs/api.md) |
 | <img src="https://cdn.simpleicons.org/github/white" width="22"> | **GitHub** | Apply a change as a new branch or open a pull request directly |
@@ -146,6 +147,36 @@ flowchart LR
 5. **You decide.** Accept it into your working tree, a new branch or a pull request. Undo any time.
 
 More in [architecture.md](docs/architecture.md).
+
+<a id="review"></a>
+<p align="center"><img src="docs/assets/section-review.svg" alt="Review before it runs" width="100%"></p>
+
+Before anything touches your code, you review it in the browser: **select text in a plan to comment on it, delete it or replace it, comment on any line of a patch**, then approve or deny. A denial goes back to the agent as structured feedback, and the next version shows exactly what changed. You can also review **by voice**: hold <kbd>V</kbd> and talk, or just say *"approve"*.
+
+<p align="center"><img src="docs/assets/review-plan.png" alt="Annotating a plan: a replacement and a comment, plus overall feedback" width="100%"></p>
+
+It works for **Claude Code's plans too**. One command adds a plan-mode hook, and every plan Claude writes opens here instead of the terminal prompt:
+
+```bash
+voxcode hook install claude        # PermissionRequest hook on ExitPlanMode (~/.claude/settings.json)
+voxcode review PLAN.md             # annotate any markdown file or .diff; the feedback is printed when you decide
+```
+
+| | |
+|---|---|
+| 📝 **Plan review** | Comment, delete, replace; versions v1…vN with a "what changed" diff; overall feedback |
+| 🧾 **Code review** | File tree, line-numbered diff, line comments; approving applies the patch (VoxCode's own edits) |
+| 🔁 **Closed loop** | Deny → the agent re-plans with your notes; approve → VoxCode writes the patch and opens it for code review |
+| 🔗 **Share links** | The review is compressed into the link itself, so nothing is uploaded |
+| 🗂 **Archive** | Every decision is kept at `/review`; approved plans can be saved to an **Obsidian** vault (`OBSIDIAN_VAULT`) |
+
+<details>
+<summary><b>Code review screen</b></summary>
+<br>
+<p align="center"><img src="docs/assets/review-diff.png" alt="Reviewing a patch with a line comment" width="100%"></p>
+</details>
+
+The review flow was inspired by [Plannotator](https://github.com/backnotprop/plannotator). Full guide: [docs/review.md](docs/review.md).
 
 <a id="learning"></a>
 <p align="center"><img src="docs/assets/section-learning.svg" alt="It learns from you" width="100%"></p>
@@ -203,6 +234,7 @@ voxcode/
 │   ├── execution/        diffs, patch apply/undo, test runner, Docker sandbox
 │   ├── voice/            STT, VAD + wake word, prosody, commands, TTS
 │   ├── learning/         learned ranker, relevance feedback, training
+│   ├── review/           plan & patch review, Claude Code hook, archive, Obsidian export
 │   ├── integrations/     MCP server, GitHub branches and PRs
 │   ├── monitoring/       Prometheus metrics, OpenTelemetry tracing
 │   ├── evaluation/       retrieval, SWE-bench and answer-quality benchmarks

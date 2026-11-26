@@ -51,4 +51,5 @@ voxcode eval                            # retrieval changes: compare before/afte
 | Add an endpoint | `voxcode/api/routes/` |
 | Speed up a hot path in Rust | `native/src/` (+ the caller's Python fallback, see `voxcode/native.py`) |
 | Rust call graph | `voxcode/codebase/graph/rust_graph.py`, `rust_analyzer.py` |
+| Plan / patch review | `voxcode/review/` (API in `voxcode/api/routes/review.py`, page in `voxcode/ui/review.html`) |
 | Add a voice command | `voxcode/voice/commands.py` and `vscode-extension/src/extension.ts` |

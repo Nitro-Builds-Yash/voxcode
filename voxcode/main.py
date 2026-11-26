@@ -18,6 +18,8 @@ from voxcode.api.routes.agent import router as agent_router
 from voxcode.api.routes.config import router as config_router
 from voxcode.api.routes.health import router as health_router
 from voxcode.api.routes.index import router as index_router
+from voxcode.api.routes.review import pages as review_pages
+from voxcode.api.routes.review import router as review_router
 from voxcode.api.routes.voice import router as voice_router
 from voxcode.api.security import LocalSecurityMiddleware
 from voxcode.config.paths import ensure_storage_dirs
@@ -72,6 +74,8 @@ app.include_router(agent_router)
 app.include_router(voice_router)
 app.include_router(index_router)
 app.include_router(config_router)
+app.include_router(review_router)
+app.include_router(review_pages)
 
 try:
     from prometheus_client import make_asgi_app

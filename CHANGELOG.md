@@ -2,6 +2,19 @@
 
 All notable changes to VoxCode. Versions follow [Semantic Versioning](https://semver.org).
 
+## [0.8.0] — Review before it runs
+
+Inspired by [Plannotator](https://github.com/backnotprop/plannotator).
+
+### Added
+- **Browser review for plans and patches** (`/review/<id>`). For plans: select text to comment on it, delete it or replace it, plus a version history with a "what changed" diff. For patches: a file tree and line comments. Approve or deny with structured, quoted feedback.
+- **Voice review:** hold `V` to dictate a comment on the selection or overall; say "approve" or "deny, …".
+- **Claude Code integration:** `voxcode hook install claude` adds a `PermissionRequest` hook on `ExitPlanMode`. Plans open in VoxCode, and denials go back to Claude as feedback. Revisions in the same session become new versions of the same review.
+- **VoxCode's own loop** (`POST /reviews/plan`, plus a VS Code command): plan → feedback → re-plan → approve → patch → code review → apply. Accepted patches also feed the learned ranker.
+- `voxcode review FILE` (any markdown, or a diff from a file or stdin), `voxcode reviews`, and an archive page at `/review`.
+- Share links that carry the review in the URL fragment (compressed, not uploaded).
+- Obsidian export of approved plans (`OBSIDIAN_VAULT`, `OBSIDIAN_FOLDER`).
+
 ## [0.7.0] — It learns
 
 ### Added

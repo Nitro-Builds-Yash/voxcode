@@ -8,6 +8,9 @@ voxcode edit   "instruction" [--repo PATH] [--tests]   propose a validated patch
 voxcode eval   [--repo PATH] [--answers | --learning]  retrieval / answer / learned-ranker benchmark
 voxcode train-ranker [--repo PATH]    train the learned ranker (docstrings + feedback)
 voxcode mcp    [--repo PATH]          run as an MCP server (Claude, Cursor, ...)
+voxcode review FILE.md [--diff]       annotate a plan, doc or diff in the browser; prints the feedback
+voxcode reviews                       list past reviews (open http://127.0.0.1:8000/review)
+voxcode hook install|uninstall claude [--project]   review Claude Code plans in VoxCode
 voxcode swebench INSTANCES.jsonl      SWE-bench style evaluation
 """
 
@@ -56,6 +59,17 @@ def main(argv: list[str] | None = None) -> None:
         type=int,
         default=0,
         help="require this many feedback entries (default: train anyway)",
+    )
+
+    review = sub.add_parser("review", help="annotate a markdown file or diff in the browser")
+    review.add_argument("file", help="markdown plan/document, or a .diff/.patch file ('-' reads stdin)")
+    review.add_argument("--diff", action="store_true", help="treat the input as a unified diff")
+    sub.add_parser("reviews", help="list past reviews")
+    hook = sub.add_parser("hook", help="agent integrations (Claude Code plan mode)")
+    hook.add_argument("action", choices=["install", "uninstall", "claude-plan"])
+    hook.add_argument("agent", nargs="?", default="claude", choices=["claude"])
+    hook.add_argument(
+        "--project", action="store_true", help="use ./.claude/settings.json instead of ~/.claude"
     )
 
     mcp = sub.add_parser("mcp", help="run as a Model Context Protocol server")
@@ -107,6 +121,43 @@ def main(argv: list[str] | None = None) -> None:
 
             extra = ["--embedding-models", args.embedding_models] if args.embedding_models else []
             retrieval_eval.main(["--repo", args.repo, *extra])
+        return
+
+    if args.command == "hook":
+        from voxcode.review import hooks
+
+        if args.action == "claude-plan":
+            sys.exit(hooks.claude_plan_hook())
+        if args.action == "install":
+            print(f"Added the plan-review hook to {hooks.install_claude(args.project)}")
+            print("Claude Code plans now open in VoxCode for review. Restart Claude Code to load it.")
+        else:
+            removed = hooks.uninstall_claude(args.project)
+            print("Removed the VoxCode hook." if removed else "No VoxCode hook was installed.")
+        return
+
+    if args.command == "review":
+        from voxcode.review.client import review_text
+        from voxcode.review.feedback import title_from
+
+        text = sys.stdin.read() if args.file == "-" else Path(args.file).read_text(encoding="utf-8")
+        is_diff = args.diff or args.file.endswith((".diff", ".patch"))
+        name = "stdin" if args.file == "-" else Path(args.file).name
+        decision = review_text(
+            text,
+            "diff" if is_diff else "document",
+            name if is_diff else title_from(text, name),
+            "cli",
+            {"file": args.file},
+        )
+        print("APPROVED" if decision.get("decision") == "approved" else decision.get("feedback", ""))
+        sys.exit(0 if decision.get("decision") == "approved" else 1)
+
+    if args.command == "reviews":
+        from voxcode.review.store import review_store
+
+        for r in review_store.list(50):
+            print(f"{r['id']}  {r['status']:<9} {r['kind']:<8} {r['source']:<12} {r['title']}")
         return
 
     if args.command == "mcp":

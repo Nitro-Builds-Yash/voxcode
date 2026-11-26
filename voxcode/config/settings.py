@@ -9,7 +9,7 @@ class Settings(BaseSettings):
 
     # ----------------------------------------------------------------- app
     APP_NAME: str = "VoxCode"
-    APP_VERSION: str = "0.7.0"
+    APP_VERSION: str = "0.8.0"
     DEBUG: bool = False
     HOST: str = "127.0.0.1"
     PORT: int = 8000
@@ -62,6 +62,12 @@ class Settings(BaseSettings):
     INTENT_MIN_CONFIDENCE: float = 0.3
     # Contextual retrieval: an LLM sentence per chunk at index time (one call per changed file, cached).
     CONTEXTUAL_CHUNKS: bool = False
+    # Review (plans and patches in the browser): approved plans can be saved to Obsidian.
+    OBSIDIAN_VAULT: str = ""
+    OBSIDIAN_FOLDER: str = "VoxCode/Plans"
+    # Port of the review server started by `voxcode hook` / `voxcode review` when VoxCode is not
+    # already running. Fixed, so a review page survives between hook calls and works over SSH forwarding.
+    REVIEW_PORT: int = 19432
     # Learned ranker (voxcode train-ranker): re-scores fused candidates when a model is trained.
     LEARNED_RANKER: bool = True
     # Train it automatically after indexing (self-supervised from docstrings; < 1 s for most repos).
