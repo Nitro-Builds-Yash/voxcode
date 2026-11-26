@@ -3,21 +3,21 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Nitro-Builds-Yash/voxcode/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/Nitro-Builds-Yash/voxcode/ci.yml?branch=main&style=for-the-badge&label=CI&logo=githubactions&logoColor=white"></a>
-  <img alt="Python 3.10+" src="https://img.shields.io/badge/python-3.10%2B-3776ab?style=for-the-badge&logo=python&logoColor=white">
-  <img alt="Rust core" src="https://img.shields.io/badge/core-rust-f74c00?style=for-the-badge&logo=rust&logoColor=white">
-  <img alt="MCP server" src="https://img.shields.io/badge/MCP-server-6366f1?style=for-the-badge">
-  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-22c55e?style=for-the-badge"></a>
+  <a href="https://github.com/Nitro-Builds-Yash/voxcode/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/Nitro-Builds-Yash/voxcode/ci.yml?branch=main&style=for-the-badge&label=CI&logo=githubactions&logoColor=white&labelColor=1a1310"></a>
+  <img alt="Python 3.10+" src="https://img.shields.io/badge/python-3.10%2B-fbbf24?style=for-the-badge&logo=python&logoColor=fbbf24&labelColor=1a1310">
+  <img alt="Rust core" src="https://img.shields.io/badge/core-rust-fb923c?style=for-the-badge&logo=rust&logoColor=fb923c&labelColor=1a1310">
+  <img alt="MCP server" src="https://img.shields.io/badge/MCP-server-fb7185?style=for-the-badge&labelColor=1a1310">
+  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-e879f9?style=for-the-badge&labelColor=1a1310"></a>
 </p>
 
 <h3 align="center">Ask your repository questions out loud. Get answers with sources,<br>or a patch that's already been applied, tested and reviewed in a sandbox.</h3>
 
 <p align="center">
-  <a href="#-quick-start"><b>Quick start</b></a> &nbsp;•&nbsp;
-  <a href="#-features"><b>Features</b></a> &nbsp;•&nbsp;
-  <a href="#-use-it-anywhere"><b>Integrations</b></a> &nbsp;•&nbsp;
-  <a href="#-how-it-works"><b>How it works</b></a> &nbsp;•&nbsp;
-  <a href="#-rust-core"><b>Rust core</b></a> &nbsp;•&nbsp;
+  <a href="#quick-start"><b>Quick start</b></a> &nbsp;•&nbsp;
+  <a href="#features"><b>Features</b></a> &nbsp;•&nbsp;
+  <a href="#integrations"><b>Integrations</b></a> &nbsp;•&nbsp;
+  <a href="#how-it-works"><b>How it works</b></a> &nbsp;•&nbsp;
+  <a href="#rust-core"><b>Rust core</b></a> &nbsp;•&nbsp;
   <a href="docs/"><b>Docs</b></a> &nbsp;•&nbsp;
   <a href="CHANGELOG.md"><b>Changelog</b></a>
 </p>
@@ -28,40 +28,15 @@
   <img src="docs/assets/demo.svg" alt="VoxCode in the terminal: index, ask, edit with tests" width="85%">
 </p>
 
-## ✨ Features
+<a id="features"></a>
+<p align="center"><img src="docs/assets/section-features.svg" alt="Features" width="100%"></p>
 
-<table>
-  <tr>
-    <td width="33%" valign="top">
-      <h3>🎙️ Voice-first</h3>
-      Push-to-talk or fully hands-free with a wake word. Local Whisper transcription, instant commands (<i>“accept”</i>, <i>“undo”</i>, <i>“run the tests”</i>), and replies spoken as they stream, which you can interrupt mid-sentence.
-    </td>
-    <td width="33%" valign="top">
-      <h3>🔎 Search that reads code</h3>
-      tree-sitter symbols for Python, JS/TS, Java, Go and Rust. BM25 + vectors fused and reranked, then expanded through a <b>precise call graph</b> (Jedi / rust-analyzer) and your git history.
-    </td>
-    <td width="33%" valign="top">
-      <h3>✅ Patches you can trust</h3>
-      <b>Plan → edit → test → repair.</b> Every diff passes <code>git apply --check</code>, runs your tests in a network-isolated Docker sandbox, gets a review pass, and waits for you. Undo is one word.
-    </td>
-  </tr>
-  <tr>
-    <td valign="top">
-      <h3>🦀 Rust-accelerated</h3>
-      Search, scanning, secret redaction and voice detection have a Rust core: <b>up to 157× faster</b>, with byte-identical results and a pure-Python fallback.
-    </td>
-    <td valign="top">
-      <h3>🔌 Any model, your rules</h3>
-      Ollama (fully local), Anthropic, OpenAI, Gemini, Groq, OpenRouter and any OpenAI-compatible server. Native tool calling, prompt caching, token and cost tracking.
-    </td>
-    <td valign="top">
-      <h3>🔒 Private by default</h3>
-      Binds to localhost, redacts API keys and secrets before anything leaves your machine, has a <code>LOCAL_ONLY</code> mode, and keeps indexes in <code>~/.voxcode</code>, never in your repo.
-    </td>
-  </tr>
-</table>
+<p align="center">
+  <img src="docs/assets/features.svg" width="100%" alt="Features: voice-first with wake word and barge-in; code-aware hybrid search with a precise call graph and git history; plan-edit-test-repair patches tested in a network-isolated sandbox; Rust core up to 157x faster; any model from Ollama to Anthropic, OpenAI, Gemini, Groq and OpenRouter; private by default with secret redaction and LOCAL_ONLY mode.">
+</p>
 
-## 🚀 Quick start
+<a id="quick-start"></a>
+<p align="center"><img src="docs/assets/section-quick-start.svg" alt="Quick start" width="100%"></p>
 
 ```bash
 git clone https://github.com/Nitro-Builds-Yash/voxcode && cd voxcode
@@ -113,7 +88,8 @@ WORKSPACE_DIR=~/code docker compose -f deploy/docker-compose.yml --profile obser
 Index projects by their container path, e.g. `/workspace/my-project`. The image includes the Rust core. The microphone and local speech need VoxCode running directly on your machine.
 </details>
 
-## 🧩 Use it anywhere
+<a id="integrations"></a>
+<p align="center"><img src="docs/assets/section-integrations.svg" alt="Use it anywhere" width="100%"></p>
 
 | | Where | How |
 |:---:|---|---|
@@ -136,13 +112,15 @@ Index projects by their container path, e.g. `/workspace/my-project`. The image 
 ```
 </details>
 
-## 🧠 How it works
+<a id="how-it-works"></a>
+<p align="center"><img src="docs/assets/section-how-it-works.svg" alt="How it works" width="100%"></p>
 
 <p align="center">
   <img src="docs/assets/pipeline.svg" alt="Speak, understand, retrieve, generate, verify, you decide" width="100%">
 </p>
 
 ```mermaid
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Space Grotesk, Inter, sans-serif','primaryColor':'#1a1310','primaryTextColor':'#fff7ed','primaryBorderColor':'#fb7185','lineColor':'#fbbf24','secondaryColor':'#241a15','tertiaryColor':'#120d0b'}}}%%
 flowchart LR
     V["🎙️ Voice<br/>VAD · wake word · Whisper"] --> P
     E["🧩 VS Code · MCP · CLI · HTTP"] --> P
@@ -163,7 +141,8 @@ flowchart LR
 
 More in [architecture.md](docs/architecture.md).
 
-## 🦀 Rust core
+<a id="rust-core"></a>
+<p align="center"><img src="docs/assets/section-rust-core.svg" alt="Rust core" width="100%"></p>
 
 <p align="center">
   <img src="docs/assets/rust-bench.svg" alt="Rust core speed-ups over pure Python" width="85%">
@@ -173,7 +152,8 @@ The hot paths live in [`native/`](native/) as a PyO3 extension: one abi3 wheel p
 
 VoxCode also works **on** Rust projects: `impl`-aware symbols, a call graph from rust-analyzer (or a built-in resolver for `use`/`crate::`/`Self::` paths), and `cargo test` inside the repair loop.
 
-## 📊 Measured, not guessed
+<a id="benchmarks"></a>
+<p align="center"><img src="docs/assets/section-benchmarks.svg" alt="Measured, not guessed" width="100%"></p>
 
 | Benchmark | What it checks | Run |
 |---|---|---|
@@ -182,7 +162,8 @@ VoxCode also works **on** Rust projects: `impl`-aware symbols, a call graph from
 | Answer quality | An LLM judge grades answers against references (in CI) | `voxcode eval --answers` |
 | Rust vs Python | Speed and byte-identical results | `python scripts/bench_native.py` |
 
-## 🗂️ Project layout
+<a id="layout"></a>
+<p align="center"><img src="docs/assets/section-layout.svg" alt="Project layout" width="100%"></p>
 
 ```text
 voxcode/
@@ -208,7 +189,8 @@ voxcode/
 └── scripts/              launchers and the native benchmark
 ```
 
-## 🛠️ Development
+<a id="development"></a>
+<p align="center"><img src="docs/assets/section-development.svg" alt="Development" width="100%"></p>
 
 ```bash
 pip install -e ".[dev]" && pre-commit install
