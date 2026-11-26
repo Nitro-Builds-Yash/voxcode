@@ -1,162 +1,140 @@
 <p align="center">
-  <img src="docs/assets/hero.svg" alt="VoxCode: talk to your codebase" width="100%">
+  <img src="docs/assets/hero.svg" alt="VoxCode — talk to your codebase, get answers and tested patches back" width="100%">
 </p>
 
 <p align="center">
-  <a href="https://github.com/Nitro-Builds-Yash/voxcode/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/Nitro-Builds-Yash/voxcode/ci.yml?branch=main&style=flat-square&label=CI&logo=githubactions&logoColor=white"></a>
-  <img alt="Python 3.10+" src="https://img.shields.io/badge/python-3.10%2B-3776ab?style=flat-square&logo=python&logoColor=white">
-  <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-server-009688?style=flat-square&logo=fastapi&logoColor=white">
-  <img alt="VS Code extension" src="https://img.shields.io/badge/VS%20Code-extension-007acc?style=flat-square&logo=visualstudiocode&logoColor=white">
-  <img alt="Code style: ruff" src="https://img.shields.io/badge/code%20style-ruff-d7ff64?style=flat-square&logo=ruff&logoColor=black">
-  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-8b949e?style=flat-square"></a>
+  <a href="https://github.com/Nitro-Builds-Yash/voxcode/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/Nitro-Builds-Yash/voxcode/ci.yml?branch=main&style=for-the-badge&label=CI&logo=githubactions&logoColor=white"></a>
+  <img alt="Python 3.10+" src="https://img.shields.io/badge/python-3.10%2B-3776ab?style=for-the-badge&logo=python&logoColor=white">
+  <img alt="Rust core" src="https://img.shields.io/badge/core-rust-f74c00?style=for-the-badge&logo=rust&logoColor=white">
+  <img alt="MCP server" src="https://img.shields.io/badge/MCP-server-6366f1?style=for-the-badge">
+  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-22c55e?style=for-the-badge"></a>
 </p>
 
+<h3 align="center">Ask your repository questions out loud. Get answers with sources,<br>or a patch that's already been applied, tested and reviewed in a sandbox.</h3>
+
 <p align="center">
-  <a href="#-quick-start"><b>Quick start</b></a> ·
-  <a href="#-features"><b>Features</b></a> ·
-  <a href="#-vs-code-extension"><b>VS Code</b></a> ·
-  <a href="#-how-it-works"><b>How it works</b></a> ·
-  <a href="docs/architecture.md"><b>Architecture</b></a> ·
-  <a href="docs/api.md"><b>API</b></a> ·
-  <a href="docs/configuration.md"><b>Configuration</b></a>
+  <a href="#-quick-start"><b>Quick start</b></a> &nbsp;•&nbsp;
+  <a href="#-features"><b>Features</b></a> &nbsp;•&nbsp;
+  <a href="#-use-it-anywhere"><b>Integrations</b></a> &nbsp;•&nbsp;
+  <a href="#-how-it-works"><b>How it works</b></a> &nbsp;•&nbsp;
+  <a href="#-rust-core"><b>Rust core</b></a> &nbsp;•&nbsp;
+  <a href="docs/"><b>Docs</b></a> &nbsp;•&nbsp;
+  <a href="CHANGELOG.md"><b>Changelog</b></a>
 </p>
 
 <br>
 
-**VoxCode** is a voice-driven coding assistant that runs on your machine. It indexes your repository, finds the right code with hybrid search, and either **answers your question** or **writes a patch, proves it applies, runs your tests against it, and shows you the diff** before anything is written. Use it from VS Code, the built-in web UI, the CLI, or the HTTP API, with a local model through Ollama or any major cloud provider.
+<p align="center">
+  <img src="docs/assets/demo.svg" alt="VoxCode in the terminal: index, ask, edit with tests" width="85%">
+</p>
 
 ## ✨ Features
 
 <table>
   <tr>
-    <td width="50%" valign="top">
-      <h3>🎙️ Voice in, voice out</h3>
-      Push-to-talk from VS Code, local Whisper transcription, instant spoken commands (<i>“accept”</i>, <i>“undo”</i>, <i>“run the tests”</i>), and replies read aloud sentence by sentence as they stream.
+    <td width="33%" valign="top">
+      <h3>🎙️ Voice-first</h3>
+      Push-to-talk or fully hands-free with a wake word. Local Whisper transcription, instant commands (<i>“accept”</i>, <i>“undo”</i>, <i>“run the tests”</i>), and replies spoken as they stream, which you can interrupt mid-sentence.
     </td>
-    <td width="50%" valign="top">
-      <h3>🔎 Search that understands code</h3>
-      tree-sitter symbols for Python, JS/TS, Java, Go and Rust. Code-aware BM25 and dense vectors, fused with RRF, reranked, then expanded with callers and callees from a call graph.
+    <td width="33%" valign="top">
+      <h3>🔎 Search that reads code</h3>
+      tree-sitter symbols for Python, JS/TS, Java, Go and Rust. BM25 + vectors fused and reranked, then expanded through a <b>precise call graph</b> (Jedi / rust-analyzer) and your git history.
     </td>
-  </tr>
-  <tr>
-    <td valign="top">
+    <td width="33%" valign="top">
       <h3>✅ Patches you can trust</h3>
-      Every change is a unified diff checked with <code>git apply --check</code>, optionally tested in a throwaway copy, reviewed by a second model pass, and retried with the errors. You accept, reject or undo.
-    </td>
-    <td valign="top">
-      <h3>⚡ Fast and incremental</h3>
-      Only changed files are re-parsed and re-embedded, embeddings are cached on disk, a file watcher keeps the index fresh, and answers stream token by token.
+      <b>Plan → edit → test → repair.</b> Every diff passes <code>git apply --check</code>, runs your tests in a network-isolated Docker sandbox, gets a review pass, and waits for you. Undo is one word.
     </td>
   </tr>
   <tr>
     <td valign="top">
-      <h3>🔌 Any model</h3>
-      Ollama (fully local), Anthropic, OpenAI, Gemini, Groq and OpenRouter, all streamed and switchable at runtime. An agentic mode lets the model search and read files before answering.
+      <h3>🦀 Rust-accelerated</h3>
+      Search, scanning, secret redaction and voice detection have a Rust core: <b>up to 157× faster</b>, with byte-identical results and a pure-Python fallback.
     </td>
     <td valign="top">
-      <h3>🔒 Local and safe by default</h3>
-      Binds to localhost, blocks requests from other websites, and supports an API token and a folder allow-list. Indexes live in <code>~/.voxcode</code>, never inside your repositories.
+      <h3>🔌 Any model, your rules</h3>
+      Ollama (fully local), Anthropic, OpenAI, Gemini, Groq, OpenRouter and any OpenAI-compatible server. Native tool calling, prompt caching, token and cost tracking.
+    </td>
+    <td valign="top">
+      <h3>🔒 Private by default</h3>
+      Binds to localhost, redacts API keys and secrets before anything leaves your machine, has a <code>LOCAL_ONLY</code> mode, and keeps indexes in <code>~/.voxcode</code>, never in your repo.
     </td>
   </tr>
 </table>
-
-
-
-## What's new in v0.6 — Rust
-
-- **Rust core (optional).** The hot paths are rewritten in Rust (PyO3): BM25 search, the tokenizer, repository scanning, secret redaction and voice activity detection. Results are identical to the Python code, and VoxCode falls back to Python when the extension isn't installed.
-  ```bash
-  pip install maturin && pip install ./native     # then check: curl localhost:8000/health
-  ```
-  | Operation (this repo, 19k chunks) | Python | Rust |
-  |---|---|---|
-  | BM25 query ×4 | 40.6 ms | 0.2 ms |
-  | Build BM25 index | 1228 ms | 460 ms |
-  | Scan repository | 9.2 ms | 2.3 ms |
-  | Redact 0.5 MB | 71.7 ms | 35.8 ms |
-  | VAD, 60 s audio | 8.5 ms | 1.9 ms |
-
-  Reproduce with `python scripts/bench_native.py` (2-core machine; numbers vary by hardware).
-- **First-class Rust repositories.** `impl`/trait/module-aware symbols, a call graph from rust-analyzer (or a built-in resolver that follows `use`, `crate::`, `super::`, `Self::` and macro arguments), `cargo test` in the plan → edit → test → repair loop, and a `rust:1-slim` Docker sandbox.
-
-## What's new in v0.5
-
-- **MCP server** — use VoxCode's index from Claude Desktop, Claude Code or Cursor: `voxcode mcp --repo .`
-  ```json
-  {"mcpServers": {"voxcode": {"command": "voxcode", "args": ["mcp", "--repo", "/path/to/repo"]}}}
-  ```
-- **`@vox` in VS Code Chat**, plan review before edits, apply to a **branch or pull request**.
-- **Hands-free voice** — VAD segmentation, optional wake word, barge-in, tone from prosody.
-- **Smarter retrieval** — Jedi call graph, git-history search, optional query rewriting.
-- **Agent** — native tool calling, plan → edit → test → repair, Docker-sandboxed tests.
-- **Privacy & cost** — secret redaction, `LOCAL_ONLY` mode, prompt caching, token/cost tracking.
-- **Observability** — per-stage timings, OpenTelemetry traces, Grafana dashboard: `docker compose --profile observability up`.
-- **Evaluation** — `voxcode swebench` (SWE-bench localization), `voxcode eval --answers` (LLM judge), `--embedding-models` comparison.
 
 ## 🚀 Quick start
 
 ```bash
 git clone https://github.com/Nitro-Builds-Yash/voxcode && cd voxcode
-pip install -r requirements.txt     # everything: server, semantic search, voice
-cp .env.example .env                # choose a provider; add an API key if it needs one
-voxcode serve                       # web UI on http://127.0.0.1:8000 · API docs on /docs
+pip install -e ".[all]"            # server, semantic search, voice, MCP
+cp .env.example .env               # pick a provider (Ollama by default, so nothing leaves your machine)
+voxcode serve                      # web UI → http://127.0.0.1:8000 · API docs → /docs
 ```
 
-Ollama is the default provider (`ollama pull qwen3:8b`), so nothing leaves your machine unless you choose a cloud model.
-
-**Try it from the terminal:**
+Then talk to a repository from the terminal:
 
 ```bash
-voxcode index .                                          # incremental; re-run any time
-voxcode search "where are patches validated"
-voxcode ask    "how does incremental indexing work?"     # streamed answer
-voxcode edit   "add a docstring to reciprocal_rank_fusion" --tests   # validated diff, nothing written
+voxcode index .                                              # incremental; re-run any time
+voxcode ask  "how does incremental indexing work?"           # streamed answer with sources
+voxcode edit "add a docstring to reciprocal_rank_fusion" --tests
 ```
 
 <details>
-<summary><b>Lighter installs</b></summary>
+<summary><b>⚡ Turn on the Rust core</b></summary>
+<br>
 
+```bash
+pip install maturin && pip install ./native
+curl -s localhost:8000/health        # → "native": {"installed": true, "active": true, ...}
+```
+Needs a Rust toolchain ([rustup.rs](https://rustup.rs)). Everything works without it, just slower.
+</details>
+
+<details>
+<summary><b>📦 Lighter installs</b></summary>
 <br>
 
 | Command | You get |
 |---|---|
-| `pip install -e .` | Server, indexing, keyword search, all LLM providers. Fast; no models to download. |
-| `pip install -e ".[ml]"` | + semantic search and reranking (models download on first use) |
-| `pip install -e ".[voice]"` | + Whisper speech-to-text, microphone capture, Piper / pyttsx3 speech |
-| `pip install -r requirements-cuda.txt` | Everything, with CUDA PyTorch |
-
-Without the `ml` extra everything still works, using keyword search only. Redis and a Qdrant server are optional too: by default memory is in-process and vectors are stored under `~/.voxcode`.
+| `pip install -e .` | Server, indexing, keyword search, every LLM provider. No model downloads. |
+| `pip install -e ".[ml]"` | + semantic search and reranking |
+| `pip install -e ".[voice]"` | + Whisper speech-to-text, microphone, Piper / pyttsx3 speech |
+| `pip install -e ".[wakeword]"` | + “hey vox”-style wake word for hands-free mode |
+| `pip install -r requirements/cuda.txt` | Everything, with CUDA PyTorch |
 </details>
 
 <details>
-<summary><b>Docker</b></summary>
-
+<summary><b>🐳 Docker</b></summary>
 <br>
 
 ```bash
-WORKSPACE_DIR=~/code docker compose up    # VoxCode + Redis + Qdrant, CPU PyTorch
+WORKSPACE_DIR=~/code docker compose -f deploy/docker-compose.yml up                          # VoxCode + Redis + Qdrant
+WORKSPACE_DIR=~/code docker compose -f deploy/docker-compose.yml --profile observability up  # + Jaeger, Prometheus, Grafana
 ```
-
-Index projects by their container path, e.g. `/workspace/my-project`. Microphone capture and local speech playback need VoxCode running directly on your machine rather than in Docker.
+Index projects by their container path, e.g. `/workspace/my-project`. The image includes the Rust core. The microphone and local speech need VoxCode running directly on your machine.
 </details>
 
-## 🧩 VS Code extension
+## 🧩 Use it anywhere
 
-```bash
-cd vscode-extension && npm install && npm run compile
-npx @vscode/vsce package && code --install-extension voxcode-*.vsix
+| | Where | How |
+|:---:|---|---|
+| <img src="https://cdn.simpleicons.org/visualstudiocode/007ACC" width="22"> | **VS Code** | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>V</kbd> to talk, <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>H</kbd> for hands-free, or `@vox` in Chat. The diff opens side by side; say **“accept”**. ([extension](vscode-extension/README.md)) |
+| <img src="https://cdn.simpleicons.org/anthropic/D97757" width="22"> | **Claude Desktop · Claude Code · Cursor** | `voxcode mcp --repo .` exposes search, read, references, git history, propose-edit and apply-patch as MCP tools |
+| <img src="https://cdn.simpleicons.org/gnubash/4EAA25" width="22"> | **Terminal** | `voxcode index · search · ask · edit · eval · swebench` |
+| <img src="https://cdn.simpleicons.org/fastapi/009688" width="22"> | **HTTP / web UI** | REST + SSE streaming + WebSocket voice; see [docs/api.md](docs/api.md) |
+| <img src="https://cdn.simpleicons.org/github/white" width="22"> | **GitHub** | Apply a change as a new branch or open a pull request directly |
+
+<details>
+<summary><b>MCP config snippet</b></summary>
+<br>
+
+```json
+{
+  "mcpServers": {
+    "voxcode": { "command": "voxcode", "args": ["mcp", "--repo", "/path/to/repo"] }
+  }
+}
 ```
-
-| Do | How |
-|---|---|
-| Talk | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>V</kbd> to start, again to stop (or click **Vox** in the status bar) |
-| Type instead | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>T</kbd> |
-| Ask a question | The answer streams into the **VoxCode** output panel, optionally read aloud |
-| Ask for a change | A side-by-side diff opens. Say **“accept”**, **“reject”** or **“next file”** |
-| Change your mind | Say **“undo”** |
-| Check your work | Say **“run the tests”** |
-
-The workspace is indexed when VS Code starts and re-indexed as you edit. Settings live under `voiceCoding.*` ([details](vscode-extension/README.md)).
+</details>
 
 ## 🧠 How it works
 
@@ -164,73 +142,97 @@ The workspace is indexed when VS Code starts and re-indexed as you edit. Setting
   <img src="docs/assets/pipeline.svg" alt="Speak, understand, retrieve, generate, verify, you decide" width="100%">
 </p>
 
-1. **Speak.** Whisper (with voice-activity detection) transcribes your request; short commands like “undo” are handled instantly without the model.
-2. **Understand.** The request is classified as a question or a code change.
-3. **Retrieve.** BM25 and vector search run in parallel, are fused and reranked, and the best hits pull in their callers and callees.
-4. **Generate.** The context is packed into a token budget and the model streams its reply.
-5. **Verify.** For changes: `git apply --check`, tests in a sandbox copy, and a review pass, with retries on failure.
-6. **You decide.** Review the diff, accept or reject it, and undo with one word.
+```mermaid
+flowchart LR
+    V["🎙️ Voice<br/>VAD · wake word · Whisper"] --> P
+    E["🧩 VS Code · MCP · CLI · HTTP"] --> P
+    P{{"Pipeline<br/>question or change?"}} --> R
+    R["🔎 Retrieval<br/>BM25 + vectors → RRF → rerank<br/>+ call graph + git history"] --> G
+    G["🤖 LLM<br/>any provider · tool calling<br/>prompt caching · redaction"] -->|answer| A["💬 Streamed answer<br/>with sources"]
+    G -->|change| L["📝 Plan → edit"] --> T["🧪 Sandboxed tests<br/>Docker · pytest · cargo"]
+    T -->|fail| L
+    T -->|pass| D["✅ You decide<br/>accept · branch · PR · undo"]
+    R -. Rust core .- N[("🦀 voxcode-native")]
+```
 
-The [architecture notes](docs/architecture.md) cover indexing, editing and agentic mode in detail.
+1. **Speak or type.** Short commands like “undo” are handled instantly; everything else goes to the pipeline.
+2. **Retrieve.** Keyword and vector search run in parallel, are fused and reranked, and the best hits pull in their callers, callees and related commits.
+3. **Generate.** Context is packed into a token budget, secrets are redacted, and the model streams its answer or uses tools to look around first.
+4. **Verify.** A change is planned, written as a diff, checked, tested in a sandbox and repaired until it passes.
+5. **You decide.** Accept it into your working tree, a new branch or a pull request. Undo any time.
 
-## 📊 Retrieval quality
+More in [architecture.md](docs/architecture.md).
 
-`voxcode eval` asks 30 natural-language questions about this repository and checks whether the right function comes back:
+## 🦀 Rust core
 
-| Search | recall@5 | MRR@10 |
-|---|:---:|:---:|
-| BM25, whitespace tokens (previous version) | 0.50 | 0.42 |
-| **BM25, code-aware tokens** | **0.80** | **0.54** |
+<p align="center">
+  <img src="docs/assets/rust-bench.svg" alt="Rust core speed-ups over pure Python" width="85%">
+</p>
 
-With the `ml` extra installed it also reports semantic, hybrid and hybrid + rerank. The questions were written by the developers, so treat this as a regression check rather than a general benchmark.
+The hot paths live in [`native/`](native/) as a PyO3 extension: one abi3 wheel per platform covers Python 3.10+. Parity tests run every function through both the Rust and Python implementations and require identical output, so switching backends never changes a search result. Reproduce the numbers with `python scripts/bench_native.py`.
+
+VoxCode also works **on** Rust projects: `impl`-aware symbols, a call graph from rust-analyzer (or a built-in resolver for `use`/`crate::`/`Self::` paths), and `cargo test` inside the repair loop.
+
+## 📊 Measured, not guessed
+
+| Benchmark | What it checks | Run |
+|---|---|---|
+| Retrieval | 30 questions about this repo: recall@5 went from **0.50 → 0.80** with code-aware tokens | `voxcode eval` |
+| SWE-bench Lite | Does search find the files a real GitHub fix touched? (recall@1/5/10) | `voxcode swebench` |
+| Answer quality | An LLM judge grades answers against references (in CI) | `voxcode eval --answers` |
+| Rust vs Python | Speed and byte-identical results | `python scripts/bench_native.py` |
 
 ## 🗂️ Project layout
 
 ```text
 voxcode/
-├── voxcode/               Python package
-│   ├── api/               FastAPI routes and security middleware
-│   ├── agent/             planner, Q&A pipeline, edit loop, tool agent, memory
-│   ├── codebase/          scanner, tree-sitter parser, chunker, indexer, call graph, watcher
-│   ├── retrieval/         BM25, embeddings, Qdrant, fusion, reranker
-│   ├── generation/        context builder, prompts, streaming LLM providers
-│   ├── execution/         diff parsing, patch apply/undo, sandboxed test runner
-│   ├── voice/             speech-to-text, recorder, voice commands, text-to-speech
-│   ├── evaluation/        retrieval benchmark
-│   ├── ui/                web UI served at /
-│   └── cli.py             the `voxcode` command
-├── vscode-extension/      VS Code extension (TypeScript)
-├── tests/                 unit/ and integration/ (no models or network needed)
-├── docs/                  architecture, API, configuration, images
-├── examples/sample_repo/  tiny project to try VoxCode on
-└── scripts/               run.sh / run.ps1 launchers
+├── voxcode/              🐍 Python package
+│   ├── api/              FastAPI routes, auth, SSE/WebSocket streaming
+│   ├── agent/            Q&A pipeline, planner, edit loop, tool agent, memory
+│   ├── codebase/         scanner, tree-sitter parser, chunker, indexer, call graphs, git history
+│   ├── retrieval/        BM25, embeddings, Qdrant, fusion, reranker, query rewriting
+│   ├── generation/       context builder, prompts, streaming LLM providers
+│   ├── execution/        diffs, patch apply/undo, test runner, Docker sandbox
+│   ├── voice/            STT, VAD + wake word, prosody, commands, TTS
+│   ├── integrations/     MCP server, GitHub branches and PRs
+│   ├── monitoring/       Prometheus metrics, OpenTelemetry tracing
+│   ├── evaluation/       retrieval, SWE-bench and answer-quality benchmarks
+│   └── ui/               web UI served at /
+├── native/               🦀 Rust core (PyO3 + maturin)
+├── vscode-extension/     🧩 VS Code extension (TypeScript)
+├── tests/                ✅ unit/ and integration/ (no models or network needed)
+├── deploy/               🐳 Dockerfile, docker-compose, Prometheus + Grafana
+├── docs/                 📚 architecture, API, configuration, images
+├── examples/             a tiny project to try VoxCode on
+├── requirements/         pinned install sets (base, CUDA)
+└── scripts/              launchers and the native benchmark
 ```
-
-## 🔒 Security
-
-* Runs on `127.0.0.1`; requests from other websites are rejected, so a page in your browser cannot reconfigure VoxCode or read your code.
-* Set `API_TOKEN` to require a token and `ALLOWED_REPO_ROOTS` to limit which folders can be indexed or edited.
-* Patches can only touch files inside the repository, are never applied without an explicit accept (unless you enable auto-apply), and the last one can always be undone.
-* Testing a patch runs your project's own test suite in a temporary copy; “run the tests” runs it in place.
 
 ## 🛠️ Development
 
 ```bash
 pip install -e ".[dev]" && pre-commit install
-pytest                                   # unit + integration tests, no models or network needed
+pytest                                     # no models or network needed
 ruff check . && ruff format --check . && mypy
+cd native && cargo test && cargo clippy    # Rust core
 ```
 
-CI runs these on Python 3.10 and 3.12, plus the retrieval benchmark and the extension build. See [CONTRIBUTING.md](CONTRIBUTING.md).
+CI runs all of this on Python 3.10 and 3.12, builds the Rust core and the VS Code extension, and runs the benchmarks. See [CONTRIBUTING.md](CONTRIBUTING.md) to get started.
 
 <details>
-<summary><b>A note on tone adaptation</b></summary>
-
+<summary><b>🔒 Security model</b></summary>
 <br>
 
-With `EMOTION_ENABLED=true`, a keyword heuristic guesses whether you sound rushed, frustrated, tired or curious and adjusts the reply style (for example, the fix first and less explanation). It only shapes the system prompt and never changes what is searched. It reads the transcript, not your voice, so treat it as a hint.
+* Runs on `127.0.0.1`; requests from other websites are rejected, so a page in your browser cannot drive VoxCode.
+* `API_TOKEN` requires a token; `ALLOWED_REPO_ROOTS` limits which folders can be indexed or edited.
+* Secrets are redacted before code is sent to a remote model; `LOCAL_ONLY=true` refuses remote models entirely.
+* Patches only touch files inside the repository, are never written without your accept, and can be undone.
+* Sandboxed tests run in Docker with no network, capped memory and CPU, as a non-root user.
 </details>
 
-## 📄 License
-
-[MIT](LICENSE) © Yash ([Nitro-Builds-Yash](https://github.com/Nitro-Builds-Yash))
+<p align="center">
+  <br>
+  <b>If VoxCode saves you a context switch, a ⭐ helps others find it.</b>
+  <br><br>
+  <a href="LICENSE">MIT</a> © <a href="https://github.com/Nitro-Builds-Yash">Athota Yashwanth</a>
+</p>

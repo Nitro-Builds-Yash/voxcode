@@ -1,15 +1,18 @@
-# docker compose up                              VoxCode + Redis + Qdrant
-# docker compose --profile observability up      + Jaeger traces (localhost:16686),
-#                                                  Prometheus and Grafana (localhost:3000, admin/admin)
+# Run from the repository root:
+#   docker compose -f deploy/docker-compose.yml up                          VoxCode + Redis + Qdrant
+#   docker compose -f deploy/docker-compose.yml --profile observability up      + Jaeger traces (localhost:16686),
+#                                                                          Prometheus and Grafana (localhost:3000, admin/admin)
 # Set OTEL_ENABLED=true in .env to send traces.
 services:
   voxcode:
-    build: .
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
     container_name: voxcode
     ports:
       - "127.0.0.1:8000:8000"
     env_file:
-      - path: .env
+      - path: ../.env
         required: false
     environment:
       HOST: 0.0.0.0
@@ -22,7 +25,7 @@ services:
       ALLOWED_REPO_ROOTS: /workspace
       OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
     volumes:
-      - ${WORKSPACE_DIR:-./examples}:/workspace
+      - ${WORKSPACE_DIR:-../examples}:/workspace
       - voxcode_data:/root/.voxcode
       - hf_cache:/root/.cache/huggingface
     extra_hosts:
@@ -53,7 +56,7 @@ services:
     image: prom/prometheus:v2.55.1
     profiles: [observability]
     volumes:
-      - ./deploy/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
 
   grafana:
     image: grafana/grafana:11.3.0
@@ -61,8 +64,8 @@ services:
     ports:
       - "127.0.0.1:3000:3000"
     volumes:
-      - ./deploy/grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./deploy/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
       - prometheus
 

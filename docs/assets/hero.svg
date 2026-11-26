@@ -1,121 +1,37 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="440" viewBox="0 0 1280 440" role="img" aria-label="VoxCode: talk to your codebase">
+<svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" width="1280" height="440" viewBox="0 0 1280 440" role="img" aria-label="VoxCode: talk to your codebase">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#0a0f1f"/>
-      <stop offset="1" stop-color="#121a36"/>
-    </linearGradient>
-    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#7c5cff"/>
-      <stop offset="1" stop-color="#22d3ee"/>
-    </linearGradient>
-    <radialGradient id="glow" cx="0.78" cy="0.45" r="0.55">
-      <stop offset="0" stop-color="#7c5cff" stop-opacity="0.28"/>
-      <stop offset="1" stop-color="#7c5cff" stop-opacity="0"/>
-    </radialGradient>
-    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
-      <path d="M32 0H0V32" fill="none" stroke="#ffffff" stroke-opacity="0.035"/>
-    </pattern>
-    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
-      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000" flood-opacity="0.45"/>
-    </filter>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#070b18"/><stop offset="1" stop-color="#141b3a"/></linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8b5cf6"/><stop offset="0.5" stop-color="#6366f1"/><stop offset="1" stop-color="#22d3ee"/></linearGradient>
+    <radialGradient id="glow" cx="0.75" cy="0.5" r="0.5"><stop offset="0" stop-color="#6366f1" stop-opacity="0.35"/><stop offset="1" stop-color="#6366f1" stop-opacity="0"/></radialGradient>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse"><path d="M32 0H0V32" fill="none" stroke="#ffffff" stroke-opacity="0.04"/></pattern>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="12" stdDeviation="18" flood-color="#000" flood-opacity="0.5"/></filter>
   </defs>
-
   <rect width="1280" height="440" rx="24" fill="url(#bg)"/>
   <rect width="1280" height="440" rx="24" fill="url(#grid)"/>
   <rect width="1280" height="440" rx="24" fill="url(#glow)"/>
-
-  <!-- Logo: voice bars becoming code brackets -->
-  <g transform="translate(72 92)">
-    <rect width="64" height="64" rx="16" fill="url(#accent)"/>
-    <g fill="#0a0f1f">
-      <rect x="14" y="26" width="5" height="12" rx="2.5"/>
-      <rect x="22" y="18" width="5" height="28" rx="2.5"/>
-      <rect x="30" y="22" width="5" height="20" rx="2.5"/>
-    </g>
-    <path d="M41 22 L50 32 L41 42" fill="none" stroke="#0a0f1f" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <g font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif">
+    <rect x="120" y="70" width="178" height="30" rx="15" fill="#6366f1" fill-opacity="0.15" stroke="#818cf8" stroke-opacity="0.5"/>
+    <circle cx="140" cy="85" r="5" fill="#22d3ee"><animate attributeName="opacity" values="1;0.2;1" dur="1.6s" repeatCount="indefinite"/></circle>
+    <text x="154" y="90.5" font-size="14" font-weight="600" fill="#c7d2fe" letter-spacing="0.5">LISTENING · v0.6</text>
+    <text x="118" y="170" font-size="76" font-weight="800" fill="#ffffff" letter-spacing="-2">Vox<tspan fill="url(#accent)">Code</tspan></text>
+    <text x="122" y="214" font-size="27" font-weight="500" fill="#cbd5e1">Talk to your codebase. Get answers and</text>
+    <text x="122" y="248" font-size="27" font-weight="500" fill="#cbd5e1">tested patches back.</text>
   </g>
-  <text x="152" y="138" font-family="Segoe UI, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="46" font-weight="700" fill="#ffffff" letter-spacing="-0.5">VoxCode</text>
-
-  <text x="72" y="222" font-family="Segoe UI, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="40" font-weight="700" fill="#ffffff" letter-spacing="-0.5">Talk to your codebase.</text>
-  <text x="72" y="268" font-family="Segoe UI, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="20" fill="#a5b0d0">Ask questions out loud. Get grounded answers and</text>
-  <text x="72" y="296" font-family="Segoe UI, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="20" fill="#a5b0d0">patches that are checked before you see them.</text>
-
-  <g font-family="Segoe UI, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="14" font-weight="600">
-    <g transform="translate(72 334)">
-      <rect width="148" height="32" rx="16" fill="#ffffff" fill-opacity="0.06" stroke="#ffffff" stroke-opacity="0.12"/>
-      <circle cx="18" cy="16" r="4" fill="#22d3ee"/>
-      <text x="30" y="21" fill="#dbe2f5">Voice in &amp; out</text>
-    </g>
-    <g transform="translate(230 334)">
-      <rect width="148" height="32" rx="16" fill="#ffffff" fill-opacity="0.06" stroke="#ffffff" stroke-opacity="0.12"/>
-      <circle cx="18" cy="16" r="4" fill="#7c5cff"/>
-      <text x="30" y="21" fill="#dbe2f5">Hybrid search</text>
-    </g>
-    <g transform="translate(388 334)">
-      <rect width="160" height="32" rx="16" fill="#ffffff" fill-opacity="0.06" stroke="#ffffff" stroke-opacity="0.12"/>
-      <circle cx="18" cy="16" r="4" fill="#34d399"/>
-      <text x="30" y="21" fill="#dbe2f5">Validated patches</text>
-    </g>
-  </g>
-
-  <!-- Editor card -->
-  <g transform="translate(676 58)" filter="url(#shadow)">
-    <rect width="540" height="324" rx="14" fill="#0d1328" stroke="#ffffff" stroke-opacity="0.10"/>
-    <path d="M0 14 a14 14 0 0 1 14 -14 h512 a14 14 0 0 1 14 14 v22 h-540z" fill="#151d3b"/>
-    <circle cx="20" cy="18" r="5" fill="#ff5f57"/>
-    <circle cx="38" cy="18" r="5" fill="#febc2e"/>
-    <circle cx="56" cy="18" r="5" fill="#28c840"/>
-    <text x="270" y="23" text-anchor="middle" font-family="SFMono-Regular, Consolas, Menlo, monospace" font-size="12" fill="#8a94b8">app/users.py · VoxCode</text>
-
-    <!-- spoken request -->
-    <g transform="translate(20 54)">
-      <rect width="500" height="44" rx="10" fill="#7c5cff" fill-opacity="0.14" stroke="#7c5cff" stroke-opacity="0.45"/>
-      <g transform="translate(16 12)" fill="#c4b5fd">
-        <rect x="0" y="7" width="3.5" height="6" rx="1.75"/>
-        <rect x="5.5" y="3" width="3.5" height="14" rx="1.75"/>
-        <rect x="11" y="0" width="3.5" height="20" rx="1.75"/>
-        <rect x="16.5" y="4" width="3.5" height="12" rx="1.75"/>
-        <rect x="22" y="7" width="3.5" height="6" rx="1.75"/>
-      </g>
-      <text x="56" y="28" font-family="Segoe UI, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="15" fill="#e9e5ff">“Validate the email in create_user”</text>
-    </g>
-
-    <!-- diff -->
-    <g font-family="SFMono-Regular, Consolas, Menlo, monospace" font-size="13.5" xml:space="preserve">
-      <text x="24" y="128" fill="#6b7699">@@ -14,6 +14,8 @@ class UserService:</text>
-      <text x="24" y="152" fill="#c9d1ea">     def create_user(self, email, name):</text>
-      <rect x="20" y="161" width="500" height="22" fill="#34d399" fill-opacity="0.12"/>
-      <text x="24" y="177" fill="#6ee7b7">+        if not EMAIL_RE.match(email):</text>
-      <rect x="20" y="185" width="500" height="22" fill="#34d399" fill-opacity="0.12"/>
-      <text x="24" y="201" fill="#6ee7b7">+            raise ValueError("invalid email")</text>
-      <text x="24" y="225" fill="#c9d1ea">         user = User(email=email, name=name)</text>
-    </g>
-
-    <!-- checks -->
-    <line x1="20" y1="246" x2="520" y2="246" stroke="#ffffff" stroke-opacity="0.08"/>
-    <g font-family="Segoe UI, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="600">
-      <g transform="translate(24 262)">
-        <circle cx="9" cy="9" r="9" fill="#34d399" fill-opacity="0.18"/>
-        <path d="M5 9.5 l3 3 l6 -6.5" fill="none" stroke="#34d399" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-        <text x="26" y="14" fill="#b7c0dc">git apply --check</text>
-      </g>
-      <g transform="translate(196 262)">
-        <circle cx="9" cy="9" r="9" fill="#34d399" fill-opacity="0.18"/>
-        <path d="M5 9.5 l3 3 l6 -6.5" fill="none" stroke="#34d399" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-        <text x="26" y="14" fill="#b7c0dc">tests pass</text>
-      </g>
-      <g transform="translate(320 262)">
-        <circle cx="9" cy="9" r="9" fill="#34d399" fill-opacity="0.18"/>
-        <path d="M5 9.5 l3 3 l6 -6.5" fill="none" stroke="#34d399" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-        <text x="26" y="14" fill="#b7c0dc">review approved</text>
-      </g>
-      <g transform="translate(24 290)">
-        <rect width="74" height="24" rx="6" fill="url(#accent)"/>
-        <text x="37" y="16.5" text-anchor="middle" fill="#0a0f1f" font-size="12.5">Accept</text>
-        <rect x="84" width="70" height="24" rx="6" fill="#ffffff" fill-opacity="0.07" stroke="#ffffff" stroke-opacity="0.15"/>
-        <text x="119" y="16.5" text-anchor="middle" fill="#c9d1ea" font-size="12.5">Reject</text>
-        <text x="170" y="16.5" fill="#6b7699" font-size="12.5" font-weight="400">or just say “accept”</text>
-      </g>
-    </g>
+  <rect x="120" y="325.0" width="7" height="10.0" rx="3.5" fill="url(#accent)"><animate attributeName="height" values="10.0;35.2;10.0" dur="0.90s" repeatCount="indefinite"/><animate attributeName="y" values="325.0;312.4;325.0" dur="0.90s" repeatCount="indefinite"/></rect><rect x="133" y="317.8" width="7" height="24.4" rx="3.5" fill="url(#accent)"><animate attributeName="height" values="24.4;46.8;24.4" dur="0.95s" repeatCount="indefinite"/><animate attributeName="y" values="317.8;306.6;317.8" dur="0.95s" repeatCount="indefinite"/></rect><rect x="146" y="313.2" width="7" height="33.7" rx="3.5" fill="url(#accent)"><animate attributeName="height" values="33.7;46.9;33.7" dur="1.00s" repeatCount="indefinite"/><animate attributeName="y" values="313.2;306.5;313.2" dur="1.00s" repeatCount="indefinite"/></rect><rect x="159" y="312.7" width="7" height="34.7" rx="3.5" fill="url(#accent)"><animate attributeName="height" values="34.7;64.2;34.7" dur="1.05s" repeatCount="indefinite"/><animate attributeName="y" values="312.7;297.9;312.7" dur="1.05s" repeatCount="indefinite"/></rect><rect x="172" y="315.9" width="7" height="28.1" rx="3.5" fill="url(#accent)"><animate attributeName="height" values="28.1;30.6;28.1" dur="1.10s" repeatCount="indefinite"/><animate attributeName="y" values="315.9;314.7;315.9" dur="1.10s" repeatCount="indefinite"/></rect><rect x="185" y="321.3" width="7" height="17.5" rx="3.5" fill="url(#accent)"><animate attributeName="height" values="17.5;45.6;17.5" dur="1.15s" repeatCount="indefinite"/><animate attributeName="y" values="321.3;307.2;321.3" dur="1.15s" repeatCount="indefinite"/></rect><rect x="198" y="323.7" width="7" height="12.6" rx="3.5" fill="url(#accent)"><animate attributeName="height" values="12.6;30.1;12.6" dur="1.20s" repeatCount="indefinite"/><animate attributeName="y" values="323.7;314.9;323.7" dur="1.20s" repeatCount="indefinite"/></rect><rect x="211" y="320.8" width="7" height="18.4" rx="3.5" fill="url(#accent)"><animate attributeName="height" values="18.4;37.1;18.4" dur="0.90s" repeatCount="indefinite"/><animate attributeName="y" values="320.8;311.4;320.8" dur="0.90s" repeatCount="indefinite"/></rect><rect x="224" y="318.8" width="7" height="22.4" rx="3.5" fill="url(#accent)"><animate attributeName="height" values="22.4;50.0;22.4" dur="0.95s" repeatCount="indefinite"/><animate attributeName="y" values="318.8;305.0;318.8" dur="0.95s" repeatCount="indefinite"/></rect><rect x="237" y="317.0" width="7" height="26.0" rx="3.5" fill="url(#accent)"><animate attributeName="height" values="26.0;30.0;26.0" dur="1.00s" repeatCount="indefinite"/><animate attributeName="y" values="317.0;315.0;317.0" dur="1.00s" repeatCount="indefinite"/></rect><rect x="250" y="318.1" width="7" height="23.9" rx="3.5" fill="url(#accent)"><animate attributeName="height" values="23.9;53.6;23.9" dur="1.05s" repeatCount="indefinite"/><animate attributeName="y" values="318.1;303.2;318.1" dur="1.05s" repeatCount="indefinite"/></rect><rect x="263" y="322.4" width="7" height="15.2" rx="3.5" fill="url(#accent)"><animate attributeName="height" values="15.2;27.1;15.2" dur="1.10s" repeatCount="indefinite"/><animate attributeName="y" values="322.4;316.4;322.4" dur="1.10s" repeatCount="indefinite"/></rect><rect x="276" y="321.1" width="7" height="17.7" rx="3.5" fill="url(#accent)"><animate attributeName="height" values="17.7;41.1;17.7" dur="1.15s" repeatCount="indefinite"/><animate attributeName="y" values="321.1;309.5;321.1" dur="1.15s" repeatCount="indefinite"/></rect><rect x="289" y="314.9" width="7" height="30.3" rx="3.5" fill="url(#accent)"><animate attributeName="height" values="30.3;54.7;30.3" dur="1.20s" repeatCount="indefinite"/><animate attributeName="y" values="314.9;302.7;314.9" dur="1.20s" repeatCount="indefinite"/></rect><rect x="302" y="311.3" width="7" height="37.3" rx="3.5" fill="url(#accent)"><animate attributeName="height" values="37.3;47.6;37.3" dur="0.90s" repeatCount="indefinite"/><animate attributeName="y" values="311.3;306.2;311.3" dur="0.90s" repeatCount="indefinite"/></rect><rect x="315" y="312.1" width="7" height="35.8" rx="3.5" fill="url(#accent)"><animate attributeName="height" values="35.8;65.7;35.8" dur="0.95s" repeatCount="indefinite"/><animate attributeName="y" values="312.1;297.1;312.1" dur="0.95s" repeatCount="indefinite"/></rect><rect x="328" y="316.9" width="7" height="26.1" rx="3.5" fill="url(#accent)"><animate attributeName="height" values="26.1;31.8;26.1" dur="1.00s" repeatCount="indefinite"/><animate attributeName="y" values="316.9;314.1;316.9" dur="1.00s" repeatCount="indefinite"/></rect><rect x="341" y="324.0" width="7" height="12.0" rx="3.5" fill="url(#accent)"><animate attributeName="height" values="12.0;38.8;12.0" dur="1.05s" repeatCount="indefinite"/><animate attributeName="y" values="324.0;310.6;324.0" dur="1.05s" repeatCount="indefinite"/></rect><rect x="354" y="319.4" width="7" height="21.3" rx="3.5" fill="url(#accent)"><animate attributeName="height" values="21.3;41.4;21.3" dur="1.10s" repeatCount="indefinite"/><animate attributeName="y" values="319.4;309.3;319.4" dur="1.10s" repeatCount="indefinite"/></rect><rect x="367" y="315.5" width="7" height="29.1" rx="3.5" fill="url(#accent)"><animate attributeName="height" values="29.1;45.2;29.1" dur="1.15s" repeatCount="indefinite"/><animate attributeName="y" values="315.5;307.4;315.5" dur="1.15s" repeatCount="indefinite"/></rect><rect x="380" y="315.3" width="7" height="29.4" rx="3.5" fill="url(#accent)"><animate attributeName="height" values="29.4;58.1;29.4" dur="1.20s" repeatCount="indefinite"/><animate attributeName="y" values="315.3;300.9;315.3" dur="1.20s" repeatCount="indefinite"/></rect><rect x="393" y="318.1" width="7" height="23.8" rx="3.5" fill="url(#accent)"><animate attributeName="height" values="23.8;24.5;23.8" dur="0.90s" repeatCount="indefinite"/><animate attributeName="y" values="318.1;317.7;318.1" dur="0.90s" repeatCount="indefinite"/></rect><rect x="406" y="322.1" width="7" height="15.7" rx="3.5" fill="url(#accent)"><animate attributeName="height" values="15.7;44.8;15.7" dur="0.95s" repeatCount="indefinite"/><animate attributeName="y" values="322.1;307.6;322.1" dur="0.95s" repeatCount="indefinite"/></rect><rect x="419" y="324.4" width="7" height="11.1" rx="3.5" fill="url(#accent)"><animate attributeName="height" values="11.1;25.9;11.1" dur="1.00s" repeatCount="indefinite"/><animate attributeName="y" values="324.4;317.0;324.4" dur="1.00s" repeatCount="indefinite"/></rect><rect x="432" y="320.1" width="7" height="19.8" rx="3.5" fill="url(#accent)"><animate attributeName="height" values="19.8;41.0;19.8" dur="1.05s" repeatCount="indefinite"/><animate attributeName="y" values="320.1;309.5;320.1" dur="1.05s" repeatCount="indefinite"/></rect><rect x="445" y="315.8" width="7" height="28.3" rx="3.5" fill="url(#accent)"><animate attributeName="height" values="28.3;54.5;28.3" dur="1.10s" repeatCount="indefinite"/><animate attributeName="y" values="315.8;302.8;315.8" dur="1.10s" repeatCount="indefinite"/></rect><rect x="458" y="313.8" width="7" height="32.3" rx="3.5" fill="url(#accent)"><animate attributeName="height" values="32.3;39.5;32.3" dur="1.15s" repeatCount="indefinite"/><animate attributeName="y" values="313.8;310.2;313.8" dur="1.15s" repeatCount="indefinite"/></rect><rect x="471" y="315.6" width="7" height="28.9" rx="3.5" fill="url(#accent)"><animate attributeName="height" values="28.9;58.9;28.9" dur="1.20s" repeatCount="indefinite"/><animate attributeName="y" values="315.6;300.6;315.6" dur="1.20s" repeatCount="indefinite"/></rect><rect x="484" y="321.0" width="7" height="18.1" rx="3.5" fill="url(#accent)"><animate attributeName="height" values="18.1;26.9;18.1" dur="0.90s" repeatCount="indefinite"/><animate attributeName="y" values="321.0;316.5;321.0" dur="0.90s" repeatCount="indefinite"/></rect><rect x="497" y="321.7" width="7" height="16.6" rx="3.5" fill="url(#accent)"><animate attributeName="height" values="16.6;41.9;16.6" dur="0.95s" repeatCount="indefinite"/><animate attributeName="y" values="321.7;309.1;321.7" dur="0.95s" repeatCount="indefinite"/></rect><rect x="510" y="315.0" width="7" height="29.9" rx="3.5" fill="url(#accent)"><animate attributeName="height" values="29.9;52.3;29.9" dur="1.00s" repeatCount="indefinite"/><animate attributeName="y" values="315.0;303.9;315.0" dur="1.00s" repeatCount="indefinite"/></rect><rect x="523" y="311.6" width="7" height="36.9" rx="3.5" fill="url(#accent)"><animate attributeName="height" values="36.9;50.2;36.9" dur="1.05s" repeatCount="indefinite"/><animate attributeName="y" values="311.6;304.9;311.6" dur="1.05s" repeatCount="indefinite"/></rect><rect x="536" y="312.5" width="7" height="35.1" rx="3.5" fill="url(#accent)"><animate attributeName="height" values="35.1;64.5;35.1" dur="1.10s" repeatCount="indefinite"/><animate attributeName="y" values="312.5;297.7;312.5" dur="1.10s" repeatCount="indefinite"/></rect><rect x="549" y="317.1" width="7" height="25.8" rx="3.5" fill="url(#accent)"><animate attributeName="height" values="25.8;28.3;25.8" dur="1.15s" repeatCount="indefinite"/><animate attributeName="y" values="317.1;315.8;317.1" dur="1.15s" repeatCount="indefinite"/></rect>
+  <text x="122" y="392" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="16" fill="#94a3b8" letter-spacing="0.4">Local-first  ·  Hybrid code search  ·  Rust-accelerated  ·  Any LLM</text>
+  <g filter="url(#shadow)">
+    <rect x="712" y="72" width="452" height="306" rx="16" fill="#0d1117" stroke="#30363d"/>
+    <rect x="712" y="72" width="452" height="40" rx="16" fill="#161b22"/><rect x="712" y="96" width="452" height="16" fill="#161b22"/>
+    <circle cx="738" cy="92" r="6" fill="#ff5f57"/><circle cx="758" cy="92" r="6" fill="#febc2e"/><circle cx="778" cy="92" r="6" fill="#28c840"/>
+    <text x="938" y="97" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace" font-size="13" fill="#8b949e">voxcode — auth.py</text>
+    <rect x="732" y="128" width="412" height="44" rx="22" fill="#6366f1" fill-opacity="0.18" stroke="#818cf8" stroke-opacity="0.4"/>
+    <text x="752" y="156" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="16" fill="#e0e7ff">🎙️ “Fix the password check in login”</text>
+    <text x="742" y="208" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace" font-size="14" fill="#22d3ee" opacity="0">✓ found login() · 3 callers · tests pass<animate attributeName="opacity" from="0" to="1" begin="0.6s" dur="0.4s" fill="freeze"/></text>
+    <line x1="742" y1="226" x2="1134" y2="226" stroke="#30363d"/>
+    <text x="742" y="250" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace" font-size="15" fill="#8b949e" opacity="0">@@ src/auth.py @@<animate attributeName="opacity" from="0" to="1" begin="1.2s" dur="0.4s" fill="freeze"/></text><text x="742" y="274" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace" font-size="15" fill="#f85149" opacity="0">-    if user.password == password:<animate attributeName="opacity" from="0" to="1" begin="1.5499999999999998s" dur="0.4s" fill="freeze"/></text><text x="742" y="298" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace" font-size="15" fill="#3fb950" opacity="0">+    if verify_hash(password, user.hash):<animate attributeName="opacity" from="0" to="1" begin="1.9s" dur="0.4s" fill="freeze"/></text><text x="742" y="322" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace" font-size="15" fill="#8b949e" opacity="0">     return issue_token(user)<animate attributeName="opacity" from="0" to="1" begin="2.25s" dur="0.4s" fill="freeze"/></text>
+    <rect x="980" y="336" width="76" height="26" rx="8" fill="#238636" opacity="0"><animate attributeName="opacity" from="0" to="1" begin="2.8s" dur="0.4s" fill="freeze"/></rect>
+    <text x="1018" y="354" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="13" font-weight="600" fill="#fff" opacity="0">Accept<animate attributeName="opacity" from="0" to="1" begin="2.8s" dur="0.4s" fill="freeze"/></text>
+    <rect x="1064" y="336" width="76" height="26" rx="8" fill="#21262d" stroke="#30363d" opacity="0"><animate attributeName="opacity" from="0" to="1" begin="2.8s" dur="0.4s" fill="freeze"/></rect>
+    <text x="1102" y="354" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="13" font-weight="600" fill="#c9d1d9" opacity="0">Reject<animate attributeName="opacity" from="0" to="1" begin="2.8s" dur="0.4s" fill="freeze"/></text>
   </g>
 </svg>

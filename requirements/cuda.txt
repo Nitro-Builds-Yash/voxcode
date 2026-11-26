@@ -1,5 +1,5 @@
 # Optional CUDA 12.8 build of PyTorch for faster embeddings, reranking and Whisper.
-# Install with: pip install -r requirements-cuda.txt
+# Install with: pip install -r requirements/cuda.txt  (from the repository root)
 --extra-index-url https://download.pytorch.org/whl/cu128
 
 torch>=2.4.0

@@ -1,3 +1,4 @@
+# Install from the repository root: pip install -r requirements/base.txt
 # Everything (server + semantic search + voice). Dependencies are defined in
 # pyproject.toml; lighter installs:
 #   pip install -e .            core server, BM25 search, all LLM providers

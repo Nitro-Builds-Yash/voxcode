@@ -80,7 +80,7 @@ VS Code @vox / MCP clients ────┼─> API ─> pipeline ─> retrieval 
                                │                    └> agent: native tool calling │ plan → edit → sandboxed tests → repair
                                │                    └> providers: prompt caching, usage/cost, secret redaction, LOCAL_ONLY
                                └> apply: working tree │ branch (worktree) │ pull request
-metrics (Prometheus) + traces (OpenTelemetry) per stage ─> Grafana / Jaeger  (docker compose --profile observability)
+metrics (Prometheus) + traces (OpenTelemetry) per stage ─> Grafana / Jaeger  (docker compose -f deploy/docker-compose.yml --profile observability up)
 ```
 
 ## v0.6: Rust

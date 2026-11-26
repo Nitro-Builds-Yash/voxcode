@@ -1,3 +1,4 @@
+# Build from the repository root:  docker build -f deploy/Dockerfile -t voxcode .
 # --- Rust acceleration (voxcode-native) -------------------------------------
 FROM rust:1-slim AS native
 RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-pip python3-venv \
