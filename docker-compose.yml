@@ -17,8 +17,8 @@ services:
       # Only folders under /workspace can be indexed from inside the container.
       ALLOWED_REPO_ROOTS: /workspace
     volumes:
-      - ${WORKSPACE_DIR:-./playground}:/workspace
-      - voxcode_storage:/app/storage
+      - ${WORKSPACE_DIR:-./examples}:/workspace
+      - voxcode_data:/root/.voxcode
       - hf_cache:/root/.cache/huggingface
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -37,7 +37,7 @@ services:
       - redis_data:/data
 
 volumes:
-  voxcode_storage:
+  voxcode_data:
   hf_cache:
   qdrant_data:
   redis_data:

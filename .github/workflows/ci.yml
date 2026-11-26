@@ -28,7 +28,7 @@ jobs:
       - name: Tests
         run: pytest
       - name: Retrieval benchmark (BM25)
-        run: python -m backend.evaluation.retrieval_eval
+        run: voxcode eval
 
   vscode-extension:
     runs-on: ubuntu-latest
