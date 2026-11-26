@@ -1,156 +1,203 @@
 <p align="center">
-  <img src="./assets/hero.svg" width="100%" alt="voxcode — voice-native coding engine">
+  <img src="docs/assets/hero.svg" alt="VoxCode: talk to your codebase" width="100%">
 </p>
 
 <p align="center">
-  <a href="https://github.com/Nitro-Builds-Yash/voxcode/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/Nitro-Builds-Yash/voxcode/actions/workflows/ci.yml/badge.svg"></a>
-  <img alt="Python 3.10+" src="https://img.shields.io/badge/PYTHON-3.10%2B-3776ab?style=for-the-badge&logo=python&logoColor=white">
-  <a href="./LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/LICENSE-MIT-8b949e?style=for-the-badge"></a>
+  <a href="https://github.com/Nitro-Builds-Yash/voxcode/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/Nitro-Builds-Yash/voxcode/ci.yml?branch=main&style=flat-square&label=CI&logo=githubactions&logoColor=white"></a>
+  <img alt="Python 3.10+" src="https://img.shields.io/badge/python-3.10%2B-3776ab?style=flat-square&logo=python&logoColor=white">
+  <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-server-009688?style=flat-square&logo=fastapi&logoColor=white">
+  <img alt="VS Code extension" src="https://img.shields.io/badge/VS%20Code-extension-007acc?style=flat-square&logo=visualstudiocode&logoColor=white">
+  <img alt="Code style: ruff" src="https://img.shields.io/badge/code%20style-ruff-d7ff64?style=flat-square&logo=ruff&logoColor=black">
+  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-8b949e?style=flat-square"></a>
 </p>
 
 <p align="center">
-  <strong>Talk to your codebase. Get answers and validated patches.</strong><br>
-  VoxCode indexes your repository, finds the right code with hybrid search, and either answers your question or writes a patch, checks that it applies, optionally runs your tests against it, and shows you the diff before anything is written.
+  <a href="#-quick-start"><b>Quick start</b></a> ·
+  <a href="#-features"><b>Features</b></a> ·
+  <a href="#-vs-code-extension"><b>VS Code</b></a> ·
+  <a href="#-how-it-works"><b>How it works</b></a> ·
+  <a href="docs/architecture.md"><b>Architecture</b></a> ·
+  <a href="docs/api.md"><b>API</b></a> ·
+  <a href="docs/configuration.md"><b>Configuration</b></a>
 </p>
 
----
+<br>
 
-## What it does
+**VoxCode** is a voice-driven coding assistant that runs on your machine. It indexes your repository, finds the right code with hybrid search, and either **answers your question** or **writes a patch, proves it applies, runs your tests against it, and shows you the diff** before anything is written. Use it from VS Code, the built-in web UI, the CLI, or the HTTP API, with a local model through Ollama or any major cloud provider.
 
-| | |
-|---|---|
-| **Voice in, voice out** | Push-to-talk from VS Code (Ctrl+Alt+V), local Whisper transcription, instant voice commands ("accept", "undo", "next file", "run the tests"), and optional spoken replies (Piper neural TTS or pyttsx3). |
-| **Code-aware indexing** | tree-sitter symbol extraction for Python, JavaScript, TypeScript/TSX, Java, Go and Rust, plus Markdown sections. Incremental: only changed files are re-parsed and re-embedded, and a file watcher keeps the index fresh. |
-| **Hybrid search** | BM25 with a code-aware tokenizer (`getUserById` → `get user by id`) and dense vectors, merged with Reciprocal Rank Fusion, reranked with a cross-encoder, then expanded with callers and callees from a call graph. |
-| **Validated edits** | The model writes a unified diff → `git apply --check` → optional test run in a throwaway copy → LLM review → retry with the errors as feedback. You review a side-by-side diff and accept, reject or undo. |
-| **Any model** | Ollama (local), Anthropic, OpenAI, Gemini, Groq, OpenRouter, with streaming for all of them; switch at runtime. |
-| **Agentic mode** | The model can call `search_code`, `read_file`, `find_references` and `list_files` before answering. |
+## ✨ Features
 
-Without the optional ML extras, everything except semantic search and reranking still works (keyword search only). With a local Ollama model, nothing leaves your machine.
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <h3>🎙️ Voice in, voice out</h3>
+      Push-to-talk from VS Code, local Whisper transcription, instant spoken commands (<i>“accept”</i>, <i>“undo”</i>, <i>“run the tests”</i>), and replies read aloud sentence by sentence as they stream.
+    </td>
+    <td width="50%" valign="top">
+      <h3>🔎 Search that understands code</h3>
+      tree-sitter symbols for Python, JS/TS, Java, Go and Rust. Code-aware BM25 and dense vectors, fused with RRF, reranked, then expanded with callers and callees from a call graph.
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">
+      <h3>✅ Patches you can trust</h3>
+      Every change is a unified diff checked with <code>git apply --check</code>, optionally tested in a throwaway copy, reviewed by a second model pass, and retried with the errors. You accept, reject or undo.
+    </td>
+    <td valign="top">
+      <h3>⚡ Fast and incremental</h3>
+      Only changed files are re-parsed and re-embedded, embeddings are cached on disk, a file watcher keeps the index fresh, and answers stream token by token.
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">
+      <h3>🔌 Any model</h3>
+      Ollama (fully local), Anthropic, OpenAI, Gemini, Groq and OpenRouter, all streamed and switchable at runtime. An agentic mode lets the model search and read files before answering.
+    </td>
+    <td valign="top">
+      <h3>🔒 Local and safe by default</h3>
+      Binds to localhost, blocks requests from other websites, and supports an API token and a folder allow-list. Indexes live in <code>~/.voxcode</code>, never inside your repositories.
+    </td>
+  </tr>
+</table>
 
-## Quick start
+## 🚀 Quick start
 
 ```bash
 git clone https://github.com/Nitro-Builds-Yash/voxcode && cd voxcode
-pip install -r requirements.txt        # everything; see "Install options" for lighter installs
-cp .env.example .env                   # pick a provider / add an API key
-python -m backend.main                 # http://127.0.0.1:8000  (web UI)  ·  /docs (API)
+pip install -r requirements.txt     # everything: server, semantic search, voice
+cp .env.example .env                # choose a provider; add an API key if it needs one
+voxcode serve                       # web UI on http://127.0.0.1:8000 · API docs on /docs
 ```
 
-Then either open the web UI, install the VS Code extension (below), or use the CLI:
+Ollama is the default provider (`ollama pull qwen3:8b`), so nothing leaves your machine unless you choose a cloud model.
+
+**Try it from the terminal:**
 
 ```bash
-python scripts/voxcode_cli.py index  .
-python scripts/voxcode_cli.py search . "where are patches validated"
-python scripts/voxcode_cli.py ask    . "how does incremental indexing work?"
-python scripts/voxcode_cli.py edit   . "add a docstring to reciprocal_rank_fusion" --tests
+voxcode index .                                          # incremental; re-run any time
+voxcode search "where are patches validated"
+voxcode ask    "how does incremental indexing work?"     # streamed answer
+voxcode edit   "add a docstring to reciprocal_rank_fusion" --tests   # validated diff, nothing written
 ```
 
-### Install options
+<details>
+<summary><b>Lighter installs</b></summary>
 
-| Command | Gives you |
+<br>
+
+| Command | You get |
 |---|---|
-| `pip install -e .` | Server, indexing, BM25 search, all LLM providers (fast install, no models) |
-| `pip install -e ".[ml]"` | + semantic search and cross-encoder reranking (downloads models on first use) |
+| `pip install -e .` | Server, indexing, keyword search, all LLM providers. Fast; no models to download. |
+| `pip install -e ".[ml]"` | + semantic search and reranking (models download on first use) |
 | `pip install -e ".[voice]"` | + Whisper speech-to-text, microphone capture, Piper / pyttsx3 speech |
-| `pip install -r requirements-cuda.txt` | Everything with CUDA PyTorch |
+| `pip install -r requirements-cuda.txt` | Everything, with CUDA PyTorch |
 
-Redis and a Qdrant server are optional: by default conversation memory is kept in-process and vectors are stored in `storage/qdrant`. `docker compose up` runs the server with Redis and Qdrant (CPU PyTorch by default); put the code you want to index under `./playground` or set `WORKSPACE_DIR`, and index it by its container path, e.g. `/workspace/my-project`. Microphone capture and local speech playback need the server running directly on your machine, not in Docker.
+Without the `ml` extra everything still works, using keyword search only. Redis and a Qdrant server are optional too: by default memory is in-process and vectors are stored under `~/.voxcode`.
+</details>
 
-## VS Code extension
+<details>
+<summary><b>Docker</b></summary>
+
+<br>
+
+```bash
+WORKSPACE_DIR=~/code docker compose up    # VoxCode + Redis + Qdrant, CPU PyTorch
+```
+
+Index projects by their container path, e.g. `/workspace/my-project`. Microphone capture and local speech playback need VoxCode running directly on your machine rather than in Docker.
+</details>
+
+## 🧩 VS Code extension
 
 ```bash
 cd vscode-extension && npm install && npm run compile
-npx @vscode/vsce package --allow-missing-repository   # builds voxcode-0.3.0.vsix
-code --install-extension voxcode-0.3.0.vsix
+npx @vscode/vsce package && code --install-extension voxcode-*.vsix
 ```
 
-The server must be running (`python -m backend.main`); the extension talks to it at `voiceCoding.backendUrl`.
-
-* **Ctrl+Alt+V** starts/stops recording (the server records from your microphone); **Ctrl+Alt+T** types an instruction instead.
-* Questions stream into the *VoxCode* output panel. Change requests open a side-by-side diff; say or click **accept**, **reject**, or **next file**. **undo** reverts the last applied patch.
-* The workspace is indexed on startup and re-indexed when files change.
-* Settings: `voiceCoding.backendUrl`, `apiToken`, `autoApplyDiffs`, `runTestsOnEdit`, `speakReplies`, `watchWorkspace`.
-
-## API
-
-| Endpoint | Purpose |
+| Do | How |
 |---|---|
-| `POST /index/` | Incrementally index a repository (`full`, `watch` options) |
-| `GET /index/repos` | Indexed repositories |
-| `POST /agent/query` | `mode`: `auto` (answer or edit by intent), `answer`, `edit`, `agentic` |
-| `POST /agent/stream` | Same, as server-sent events (tokens, tool calls, or one `edit` event) |
-| `POST /agent/preview` · `/apply` · `/undo` | Inspect, apply and revert patches |
-| `POST /agent/test` | Run the repository's tests |
-| `POST /voice/record/start` · `/record/stop` | Push-to-talk on the server's microphone |
-| `POST /voice/transcribe` · `WS /voice/stream` | Upload audio, or stream it with partial transcripts |
-| `POST /voice/speak` · `/voice/synthesize` | Speak on the server, or get WAV audio back |
-| `GET/POST /config/` | Switch providers, models and keys at runtime |
-| `GET /metrics` | Prometheus metrics (per-stage latency, sizes, errors) |
+| Talk | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>V</kbd> to start, again to stop (or click **Vox** in the status bar) |
+| Type instead | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>T</kbd> |
+| Ask a question | The answer streams into the **VoxCode** output panel, optionally read aloud |
+| Ask for a change | A side-by-side diff opens. Say **“accept”**, **“reject”** or **“next file”** |
+| Change your mind | Say **“undo”** |
+| Check your work | Say **“run the tests”** |
 
-## Architecture
+The workspace is indexed when VS Code starts and re-indexed as you edit. Settings live under `voiceCoding.*` ([details](vscode-extension/README.md)).
 
-```
-voice ─► Whisper ─► command? ──yes──► editor action (accept / undo / next file / run tests)
-                       │ no
-                       ▼
-               intent classifier ──► answer ─┐
-                       │                     │
-                       ▼ edit                ▼
-  hybrid retrieval: BM25 ‖ vectors ─► RRF ─► rerank ─► call-graph expansion ─► token-budgeted context
-                       │                                                            │
-                       ▼                                                            ▼
-     coder ─► git apply --check ─► tests (sandbox copy) ─► reviewer      LLM (streamed) ─► answer / speech
-        ▲                                                     │
-        └──────────────── feedback on failure ◄───────────────┘
-                                                              ▼
-                                              diff preview ─► accept ─► apply (undoable)
-```
+## 🧠 How it works
 
-| Folder | Contents |
-|---|---|
-| `backend/codebase` | scanner, tree-sitter symbols, chunker, incremental indexer, call graph, file watcher |
-| `backend/retrieval` | BM25 + tokenizer, embeddings (with SQLite cache), per-repository Qdrant collections, fusion, reranker |
-| `backend/agent` | planner, step executor, Q&A pipeline, edit loop (coder / reviewer), tool-using agent, memory |
-| `backend/execution` | diff parsing, `git apply` patch service, sandboxed test runner |
-| `backend/generation` | context builder, prompts, streaming providers |
-| `backend/voice` | Whisper STT, microphone recorder, voice commands, TTS, tone analysis |
-| `backend/api` | FastAPI routes and the local-security middleware |
+<p align="center">
+  <img src="docs/assets/pipeline.svg" alt="Speak, understand, retrieve, generate, verify, you decide" width="100%">
+</p>
 
-## Retrieval quality
+1. **Speak.** Whisper (with voice-activity detection) transcribes your request; short commands like “undo” are handled instantly without the model.
+2. **Understand.** The request is classified as a question or a code change.
+3. **Retrieve.** BM25 and vector search run in parallel, are fused and reranked, and the best hits pull in their callers and callees.
+4. **Generate.** The context is packed into a token budget and the model streams its reply.
+5. **Verify.** For changes: `git apply --check`, tests in a sandbox copy, and a review pass, with retries on failure.
+6. **You decide.** Review the diff, accept or reject it, and undo with one word.
 
-`python -m backend.evaluation.retrieval_eval` runs 30 natural-language questions about this repository (`backend/evaluation/retrieval_queries.json`) and reports how often the right code comes back:
+The [architecture notes](docs/architecture.md) cover indexing, editing and agentic mode in detail.
+
+## 📊 Retrieval quality
+
+`voxcode eval` asks 30 natural-language questions about this repository and checks whether the right function comes back:
 
 | Search | recall@5 | MRR@10 |
-|---|---|---|
-| BM25, whitespace tokens (previous version) | 0.50 | 0.40 |
-| BM25, code-aware tokens | 0.73 | 0.56 |
+|---|:---:|:---:|
+| BM25, whitespace tokens (previous version) | 0.50 | 0.42 |
+| **BM25, code-aware tokens** | **0.80** | **0.54** |
 
-With the `ml` extra installed the script also reports semantic, hybrid, and hybrid + rerank rows. The questions were written by the developers, so treat these numbers as a regression check, not a general benchmark.
+With the `ml` extra installed it also reports semantic, hybrid and hybrid + rerank. The questions were written by the developers, so treat this as a regression check rather than a general benchmark.
 
-## Security
+## 🗂️ Project layout
 
-The server is meant to run on your own machine and binds to `127.0.0.1`.
+```text
+voxcode/
+├── voxcode/               Python package
+│   ├── api/               FastAPI routes and security middleware
+│   ├── agent/             planner, Q&A pipeline, edit loop, tool agent, memory
+│   ├── codebase/          scanner, tree-sitter parser, chunker, indexer, call graph, watcher
+│   ├── retrieval/         BM25, embeddings, Qdrant, fusion, reranker
+│   ├── generation/        context builder, prompts, streaming LLM providers
+│   ├── execution/         diff parsing, patch apply/undo, sandboxed test runner
+│   ├── voice/             speech-to-text, recorder, voice commands, text-to-speech
+│   ├── evaluation/        retrieval benchmark
+│   ├── ui/                web UI served at /
+│   └── cli.py             the `voxcode` command
+├── vscode-extension/      VS Code extension (TypeScript)
+├── tests/                 unit/ and integration/ (no models or network needed)
+├── docs/                  architecture, API, configuration, images
+├── examples/sample_repo/  tiny project to try VoxCode on
+└── scripts/               run.sh / run.ps1 launchers
+```
 
-* Requests from other websites are rejected (Origin check), so a page in your browser cannot reconfigure VoxCode or read your code.
-* Set `API_TOKEN` to require an `X-VoxCode-Token` header, and `ALLOWED_REPO_ROOTS` to restrict which folders can be indexed or edited.
-* Patches never touch files outside the repository, are never applied without an explicit accept (unless you enable `autoApplyDiffs`), and the last one can always be undone.
-* Testing a proposed patch runs your project's own test suite in a temporary copy of the repository; `POST /agent/test` ("run the tests") runs it in place.
+## 🔒 Security
 
-## Tone adaptation
+* Runs on `127.0.0.1`; requests from other websites are rejected, so a page in your browser cannot reconfigure VoxCode or read your code.
+* Set `API_TOKEN` to require a token and `ALLOWED_REPO_ROOTS` to limit which folders can be indexed or edited.
+* Patches can only touch files inside the repository, are never applied without an explicit accept (unless you enable auto-apply), and the last one can always be undone.
+* Testing a patch runs your project's own test suite in a temporary copy; “run the tests” runs it in place.
 
-When `EMOTION_ENABLED=true`, a keyword-based analyzer guesses whether you sound rushed, frustrated, tired or curious and adjusts the reply style (for example, shorter answers with the fix first). It only shapes the system prompt; it never changes what is searched. It works on the transcript, not your voice, so it is a heuristic.
-
-## Development
+## 🛠️ Development
 
 ```bash
 pip install -e ".[dev]" && pre-commit install
-pytest                    # unit + API tests (no models or network needed)
+pytest                                   # unit + integration tests, no models or network needed
 ruff check . && ruff format --check . && mypy
 ```
 
-CI runs the same checks on Python 3.10 and 3.12, the retrieval benchmark, and compiles the VS Code extension.
+CI runs these on Python 3.10 and 3.12, plus the retrieval benchmark and the extension build. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## License
+<details>
+<summary><b>A note on tone adaptation</b></summary>
 
-[MIT License](./LICENSE)
+<br>
+
+With `EMOTION_ENABLED=true`, a keyword heuristic guesses whether you sound rushed, frustrated, tired or curious and adjusts the reply style (for example, the fix first and less explanation). It only shapes the system prompt and never changes what is searched. It reads the transcript, not your voice, so treat it as a hint.
+</details>
+
+## 📄 License
+
+[MIT](LICENSE) © Yash ([Nitro-Builds-Yash](https://github.com/Nitro-Builds-Yash))

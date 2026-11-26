@@ -1,3 +1,9 @@
+import os
+import tempfile
+
+# Keep test data out of ~/.voxcode. Must run before voxcode is imported.
+os.environ.setdefault("VOXCODE_HOME", tempfile.mkdtemp(prefix="voxcode-tests-"))
+
 import hashlib
 import textwrap
 from pathlib import Path
@@ -5,7 +11,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from backend.generation.providers.base_provider import BaseProvider
+from voxcode.generation.providers.base_provider import BaseProvider
 
 SAMPLE_FILES = {
     "app/auth.py": '''
@@ -121,11 +127,11 @@ def isolated_storage(tmp_path, monkeypatch):
     """Point every on-disk store at a temp dir and use in-memory Qdrant."""
     from qdrant_client import QdrantClient
 
-    from backend.agent import runtime
-    from backend.api import services
-    from backend.codebase.indexer.index_store import IndexStore
-    from backend.execution.patch import patch_service
-    from backend.retrieval.semantic import vector_store
+    from voxcode.agent import runtime
+    from voxcode.api import services
+    from voxcode.codebase.indexer.index_store import IndexStore
+    from voxcode.execution.patch import patch_service
+    from voxcode.retrieval.semantic import vector_store
 
     store = IndexStore(tmp_path / "indexes")
     monkeypatch.setattr(services.indexer, "store", store)
