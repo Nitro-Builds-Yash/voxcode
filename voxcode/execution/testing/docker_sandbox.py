@@ -44,7 +44,7 @@ def install_command(repo: Path) -> str | None:
     if (repo / "go.mod").exists():
         return "go mod download"
     if (repo / "Cargo.toml").exists():
-        return "cargo fetch"
+        return "cargo fetch --locked || cargo fetch"
     steps = ["pip install -q pytest"]
     if (repo / "pyproject.toml").exists() or (repo / "setup.py").exists():
         steps.append("(pip install -q -e '.[dev]' || pip install -q -e '.[test]' || pip install -q -e .)")
@@ -60,7 +60,24 @@ def container_test_command(command: list[str]) -> list[str]:
     """Host command -> the same command inside the container."""
     if len(command) > 2 and command[1:3] == ["-m", "pytest"]:
         return ["python", *command[1:]]
+    if command[:2] == ["cargo", "test"]:
+        return [*command, "--offline"]  # the network is gone by then; deps were fetched
     return command
+
+
+# Default images when SANDBOX_IMAGE is left at its Python default.
+_LANGUAGE_IMAGES = {"Cargo.toml": "rust:1-slim", "go.mod": "golang:1", "package.json": "node:22-slim"}
+_DEFAULT_IMAGE = "python:3.12-slim"
+
+
+def sandbox_image(repo: Path) -> str:
+    """The configured image, or one that has the repository's toolchain."""
+    if settings.SANDBOX_IMAGE != _DEFAULT_IMAGE:
+        return settings.SANDBOX_IMAGE
+    for marker, image in _LANGUAGE_IMAGES.items():
+        if (repo / marker).exists():
+            return image
+    return _DEFAULT_IMAGE
 
 
 def build_run_args(name: str, workdir: Path, image: str) -> list[str]:
@@ -74,7 +91,9 @@ def build_run_args(name: str, workdir: Path, image: str) -> list[str]:
         "--security-opt", "no-new-privileges",
         "--cap-drop", "ALL",
         "-e", "HOME=/tmp", "-e", "CI=1", "-e", "PIP_USER=1", "-e", "PYTHONUSERBASE=/tmp/.local",
-        "-e", "PATH=/tmp/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "-e", "CARGO_HOME=/tmp/.cargo", "-e", "CARGO_TARGET_DIR=/tmp/target", "-e", "GOPATH=/tmp/go",
+        "-e", "GOCACHE=/tmp/.gocache", "-e", "npm_config_cache=/tmp/.npm",
+        "-e", "PATH=/tmp/.local/bin:/usr/local/cargo/bin:/usr/local/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
         "--user", f"{uid}:{gid}",
         "-v", f"{workdir}:/work",
         "-w", "/work",
@@ -84,7 +103,7 @@ def build_run_args(name: str, workdir: Path, image: str) -> list[str]:
 
 def run_in_docker(workdir: Path, command: list[str], timeout: int, image: str | None = None):
     """Install deps, cut the network, run `command`. Returns (exit code, output, timed_out)."""
-    image = image or settings.SANDBOX_IMAGE
+    image = image or sandbox_image(workdir)
     name = f"voxcode-test-{uuid.uuid4().hex[:10]}"
 
     def docker(*args: str, check_timeout: int = 900) -> subprocess.CompletedProcess:

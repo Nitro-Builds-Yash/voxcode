@@ -9,7 +9,7 @@ class Settings(BaseSettings):
 
     # ----------------------------------------------------------------- app
     APP_NAME: str = "VoxCode"
-    APP_VERSION: str = "0.5.0"
+    APP_VERSION: str = "0.6.0"
     DEBUG: bool = False
     HOST: str = "127.0.0.1"
     PORT: int = 8000
@@ -54,6 +54,9 @@ class Settings(BaseSettings):
     # Precise Python call graph with Jedi (falls back to name matching).
     PRECISE_CALL_GRAPH: bool = True
     # Recent commits indexed for "why/when/who changed" questions (0 disables).
+    # Rust call graph: "auto" uses rust-analyzer from PATH when it works, else tree-sitter resolution.
+    RUST_ANALYZER: str = "auto"
+    RUST_ANALYZER_TIMEOUT: float = 60.0
     GIT_HISTORY_COMMITS: int = 300
 
     # ------------------------------------------------------------ provider
@@ -116,6 +119,8 @@ class Settings(BaseSettings):
     TTS_ENGINE: str = "auto"
     PIPER_MODEL: str = ""
     # Hands-free listening: energy-based voice activity detection.
+    # "auto": use the Rust extension (voxcode-native) when installed; "off": pure Python.
+    NATIVE_ACCEL: str = "auto"
     VAD_SILENCE_SECONDS: float = 0.8
     VAD_ENERGY_THRESHOLD: float = 0.015
     # Optional wake word via openWakeWord (e.g. "hey_jarvis"); empty = push-to-talk only.

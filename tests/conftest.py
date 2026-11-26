@@ -154,3 +154,92 @@ def isolated_storage(tmp_path, monkeypatch):
     monkeypatch.setattr(patch_service, "CACHE_DIR", tmp_path / "cache")
     monkeypatch.setattr(vector_store, "_client", QdrantClient(":memory:"))
     return store
+
+
+RUST_FILES = {
+    "Cargo.toml": '[package]\nname = "mini-store"\nversion = "0.1.0"\nedition = "2021"\n',
+    "src/lib.rs": """pub mod store;
+mod util;
+
+use crate::store::Store;
+
+/// Open the default store.
+pub fn open_default() -> Store {
+    util::log("open");
+    Store::open("default")
+}
+""",
+    "src/store.rs": """use crate::util::{log, normalize as norm};
+
+pub struct Store {
+    name: String,
+    items: Vec<String>,
+}
+
+impl Store {
+    pub fn open(name: &str) -> Self {
+        log("opening");
+        Store { name: norm(name), items: Vec::new() }
+    }
+
+    pub fn add(&mut self, item: &str) -> usize {
+        self.validate(item);
+        self.items.push(norm(item));
+        self.items.len()
+    }
+
+    fn validate(&self, item: &str) {
+        assert!(!item.is_empty(), "empty item in {}", self.name);
+    }
+
+    pub fn count(&self) -> usize {
+        self.items.len()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn adds_items() {
+        let mut store = Store::open("x");
+        store.add("A");
+        assert_eq!(store.count(), 1);
+    }
+}
+""",
+    "src/util.rs": """/// Trim and lowercase a name.
+pub fn normalize(value: &str) -> String {
+    value.trim().to_lowercase()
+}
+
+pub fn log(message: &str) {
+    let _ = message;
+}
+""",
+    "src/main.rs": """use mini_store::open_default;
+
+fn main() {
+    let store = open_default();
+    println!("{}", store.count());
+}
+""",
+    "tests/integration.rs": """use mini_store::store::Store;
+
+#[test]
+fn opens_empty() {
+    assert_eq!(Store::open(" A ").count(), 0);
+}
+""",
+}
+
+
+@pytest.fixture
+def rust_repo(tmp_path):
+    root = tmp_path / "mini-store"
+    for rel, text in RUST_FILES.items():
+        path = root / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text)
+    return root

@@ -68,6 +68,9 @@ SYMBOL_NODES: dict[str, dict[str, str]] = {
         "enum_item": _CLASS,
         "trait_item": _CLASS,
         "impl_item": _CLASS,
+        "mod_item": _CLASS,  # only inline modules (`mod tests { ... }`)
+        "union_item": _CLASS,
+        "macro_definition": _FUNCTION,
     },
 }
 SYMBOL_NODES["tsx"] = SYMBOL_NODES["typescript"]
@@ -108,10 +111,16 @@ def extract_symbols(content: str, language: str) -> list[Symbol]:
 
 
 def _node_name(node) -> str | None:
+    if node.type == "mod_item" and node.child_by_field_name("body") is None:
+        return None  # `mod foo;` only declares a file
     for field in ("name", "type"):
         child = node.child_by_field_name(field)
         if child is not None and child.text:
-            return child.text.decode("utf-8", errors="replace")
+            name = child.text.decode("utf-8", errors="replace")
+            if node.type == "impl_item":
+                # `impl<T> Store<T>` / `impl fmt::Display for crate::db::Store` -> Store
+                name = name.split("<", 1)[0].rsplit("::", 1)[-1].strip()
+            return name
     return None
 
 

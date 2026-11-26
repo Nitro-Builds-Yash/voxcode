@@ -30,6 +30,37 @@ jobs:
       - name: Retrieval benchmark (BM25)
         run: voxcode eval
 
+  native:
+    # Rust core: fmt, clippy, cargo tests, then the Python suite with the
+    # extension installed (parity tests compare it with the Python code).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: native
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Rust checks
+        working-directory: native
+        run: |
+          cargo fmt --check
+          cargo clippy --all-targets --all-features -- -D warnings
+          cargo test
+      - name: Build and install the extension
+        run: pip install maturin && pip install ./native && pip install -e ".[dev]"
+      - name: Tests (native backend)
+        run: |
+          python -c "import voxcode_native; print('voxcode-native', voxcode_native.__version__)"
+          pytest
+      - name: Benchmark (informational)
+        run: python scripts/bench_native.py
+
   answer-quality:
     # LLM-judged answers; runs only when an Anthropic key is configured.
     runs-on: ubuntu-latest

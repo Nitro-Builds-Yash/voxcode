@@ -92,6 +92,57 @@ class UtteranceSegmenter:
             return Segment("end", audio if enough else None)
         return None
 
+    def feed_many(self, audio: np.ndarray) -> list[Segment]:
+        usable = len(audio) - len(audio) % FRAME
+        events = (self.feed(audio[i : i + FRAME]) for i in range(0, usable, FRAME))
+        return [e for e in events if e is not None]
+
+
+class NativeSegmenter:
+    """Same state machine in Rust (voxcode-native); same interface."""
+
+    def __init__(self, module, silence_seconds: float | None = None, threshold: float | None = None):
+        self._inner = module.Segmenter(
+            silence_seconds or settings.VAD_SILENCE_SECONDS,
+            threshold if threshold is not None else settings.VAD_ENERGY_THRESHOLD,
+        )
+
+    @property
+    def threshold(self) -> float:
+        return self._inner.threshold
+
+    @property
+    def in_speech(self) -> bool:
+        return self._inner.in_speech
+
+    def current_audio(self) -> np.ndarray:
+        return np.frombuffer(self._inner.current_audio(), dtype=np.float32)
+
+    def feed(self, frame: np.ndarray) -> Segment | None:
+        event = self._inner.feed(np.ascontiguousarray(frame, dtype=np.float32).tobytes())
+        return _segment(event) if event else None
+
+    def feed_many(self, audio: np.ndarray) -> list[Segment]:
+        """Process a buffer of many frames in one call (WebSocket chunks)."""
+        raw = np.ascontiguousarray(audio, dtype=np.float32).tobytes()
+        return [_segment(e) for e in self._inner.feed_many(raw)]
+
+
+def _segment(event: tuple[str, bytes | None]) -> Segment:
+    kind, audio = event
+    return Segment(kind, np.frombuffer(audio, dtype=np.float32).copy() if audio is not None else None)
+
+
+def make_segmenter(
+    silence_seconds: float | None = None, threshold: float | None = None
+) -> UtteranceSegmenter | NativeSegmenter:
+    from voxcode.native import native
+
+    module = native()
+    if module is not None:
+        return NativeSegmenter(module, silence_seconds, threshold)
+    return UtteranceSegmenter(silence_seconds, threshold)
+
 
 class WakeWord:
     """openWakeWord detector; available only when the package is installed."""
@@ -170,7 +221,7 @@ class VoiceListener:
                 )
 
         frames: queue.Queue = queue.Queue()
-        segmenter = UtteranceSegmenter()
+        segmenter = make_segmenter()
         armed = wake is None
         last_partial = 0.0
         try:
