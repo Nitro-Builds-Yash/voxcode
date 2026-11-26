@@ -20,7 +20,7 @@ def create_provider(name: str) -> BaseProvider:
         return OllamaProvider(settings.OLLAMA_MODEL, base_url=settings.OLLAMA_HOST)
     if name == "openai":
         return OpenAICompatibleProvider(
-            settings.OPENAI_MODEL, settings.OPENAI_API_KEY, "https://api.openai.com/v1"
+            settings.OPENAI_MODEL, settings.OPENAI_API_KEY, settings.OPENAI_BASE_URL
         )
     if name == "groq":
         return GroqProvider(settings.GROQ_MODEL, settings.GROQ_API_KEY, "https://api.groq.com/openai/v1")

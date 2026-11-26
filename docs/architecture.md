@@ -71,3 +71,14 @@ Failures are fed back together with the rejected patch. Nothing is written until
 | [`voxcode/core`](../voxcode/core) | model registry, repository identity and path checks, JSON extraction |
 | [`voxcode/evaluation`](../voxcode/evaluation) | retrieval benchmark and its question set |
 | [`voxcode/ui`](../voxcode/ui) | single-page web UI served at `/` |
+
+## v0.5: agent platform
+
+```
+voice (VAD/wake word/prosody) ─┐
+VS Code @vox / MCP clients ────┼─> API ─> pipeline ─> retrieval (BM25 + vectors + Jedi call graph + git history [+ query rewrite])
+                               │                    └> agent: native tool calling │ plan → edit → sandboxed tests → repair
+                               │                    └> providers: prompt caching, usage/cost, secret redaction, LOCAL_ONLY
+                               └> apply: working tree │ branch (worktree) │ pull request
+metrics (Prometheus) + traces (OpenTelemetry) per stage ─> Grafana / Jaeger  (docker compose --profile observability)
+```

@@ -14,6 +14,8 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 
 from voxcode.codebase.chunker.chunker import build_chunks
+from voxcode.codebase.git_history import read_commits
+from voxcode.codebase.graph.precise import build_call_edges
 from voxcode.codebase.indexer.index_store import (
     INDEX_FORMAT_VERSION,
     FileEntry,
@@ -109,6 +111,14 @@ class RepositoryIndexer:
             index.semantic_model = self._update_vectors(
                 key, index, previous, embedder, new_chunks, changed, removed, full
             )
+            if settings.PRECISE_CALL_GRAPH:
+                index.call_edges = build_call_edges(
+                    repo_path,
+                    index.chunks,
+                    set(changed) | set(removed),
+                    previous.call_edges if previous else None,
+                )
+            index.commits = read_commits(repo_path, settings.GIT_HISTORY_COMMITS)
             self.store.save(index)
 
         stats = IndexStats(

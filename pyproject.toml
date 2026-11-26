@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "voxcode"
-version = "0.4.0"
+version = "0.5.0"
 description = "Voice-driven coding agent with hybrid code search, validated patches and VS Code integration."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -39,8 +39,21 @@ dependencies = [
 ml = ["sentence-transformers>=2.6", "transformers>=4.40", "torch>=2.2", "tiktoken>=0.7"]
 # Speech-to-text, push-to-talk and text-to-speech.
 voice = ["faster-whisper>=1.0", "sounddevice>=0.4.6", "pyttsx3>=2.90", "piper-tts>=1.2"]
-all = ["voxcode[ml,voice]"]
-dev = ["pytest>=8.0", "ruff>=0.5", "mypy>=1.10", "pre-commit>=3.7"]
+# "Hey Vox"-style wake word for hands-free listening.
+wakeword = ["openwakeword>=0.6"]
+# Model Context Protocol server (`voxcode mcp`).
+mcp = ["mcp>=2.0"]
+# Precise Python call graph.
+analysis = ["jedi>=0.19"]
+# OpenTelemetry tracing (OTEL_ENABLED=true).
+otel = [
+    "opentelemetry-sdk>=1.25",
+    "opentelemetry-exporter-otlp-proto-http>=1.25",
+    "opentelemetry-instrumentation-fastapi>=0.46b0",
+    "opentelemetry-instrumentation-httpx>=0.46b0",
+]
+all = ["voxcode[ml,voice,mcp,analysis]"]
+dev = ["pytest>=8.0", "ruff>=0.5", "mypy>=1.10", "pre-commit>=3.7", "mcp>=2.0", "jedi>=0.19"]
 
 [project.scripts]
 voxcode = "voxcode.cli:main"

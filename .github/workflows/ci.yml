@@ -30,6 +30,26 @@ jobs:
       - name: Retrieval benchmark (BM25)
         run: voxcode eval
 
+  answer-quality:
+    # LLM-judged answers; runs only when an Anthropic key is configured.
+    runs-on: ubuntu-latest
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      DEFAULT_PROVIDER: anthropic
+      RERANK_ENABLED: "false"
+    steps:
+      - uses: actions/checkout@v4
+        if: ${{ env.ANTHROPIC_API_KEY != '' }}
+      - uses: actions/setup-python@v5
+        if: ${{ env.ANTHROPIC_API_KEY != '' }}
+        with:
+          python-version: "3.12"
+          cache: pip
+      - if: ${{ env.ANTHROPIC_API_KEY != '' }}
+        run: pip install -e ".[dev]" && voxcode eval --answers
+      - if: ${{ env.ANTHROPIC_API_KEY == '' }}
+        run: echo "ANTHROPIC_API_KEY secret not set; skipping answer-quality eval"
+
   vscode-extension:
     runs-on: ubuntu-latest
     defaults:

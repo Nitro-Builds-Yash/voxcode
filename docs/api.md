@@ -57,3 +57,10 @@ Recognised voice commands: `accept`, `reject`, `undo`, `next file`, `previous fi
 | `POST /config/update` | Change provider, models, keys or `ollama_host` at runtime |
 | `GET /health` | Liveness |
 | `GET /metrics` | Prometheus metrics: per-stage latency, prompt/context sizes, errors |
+
+## v0.5 additions
+
+- `POST /agent/query` and `/agent/stream` responses include `timings_ms` (per stage) and `usage` (`input_tokens`, `output_tokens`, `cache_read_tokens`, `cost_usd`). The stream's `done` event carries both plus `first_token`.
+- `POST /agent/edit` accepts `plan_only: true` (returns `status: "planned"` with a plan) and `plan` (an approved/edited plan to execute).
+- `POST /agent/apply` accepts `target`: `working_tree` (default), `branch` (commits on `voxcode/<slug>-<id>` via a temporary worktree, leaving your checkout untouched) or `pull_request` (also pushes and opens a PR; needs `GITHUB_TOKEN`), plus `title` / `description`.
+- Voice: `POST /voice/stop-speaking` (barge-in), `WS /voice/listen` (stream 16 kHz float32 frames, receive `start` / `end` / `transcript` events), `POST /voice/listen/start|stop` and `GET /voice/listen/events` (SSE) for server-side hands-free listening. Voice responses include prosody-aware emotion (`source: "text+voice"`).

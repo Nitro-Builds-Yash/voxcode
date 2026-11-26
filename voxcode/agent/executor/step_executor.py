@@ -7,10 +7,12 @@ import logging
 from voxcode.agent.executor.execution_context import ExecutionContext
 from voxcode.agent.executor.execution_result import ExecutionResult
 from voxcode.agent.planner.planner_step import PlannerStep, StepType
+from voxcode.codebase.git_history import has_history_intent
 from voxcode.config.settings import settings
 from voxcode.generation.context.context_builder import ContextBuilder
 from voxcode.generation.prompts.prompt_builder import PromptBuilder
 from voxcode.monitoring import Metrics
+from voxcode.retrieval.query_rewriter import rewrite_query
 
 logger = logging.getLogger(__name__)
 
@@ -53,8 +55,18 @@ class StepExecutor:
 
     # -------------------------------------------------------------- steps
     def _retrieve(self, context: ExecutionContext) -> None:
+        query = context.request.query
+        extra: list[str] = []
+        if settings.QUERY_REWRITE:
+            with Metrics.stage("query_rewrite"):
+                extra = rewrite_query(self.provider, query)
+            context.set_metadata("rewritten_queries", extra)
         with Metrics.retrieval_timer():
-            context.retrieval_results = self.retriever.search(context.request.query)
+            context.retrieval_results = self.retriever.search(query, extra_queries=extra)
+        if has_history_intent(query) and getattr(self.retriever, "commits", None):
+            history = self.retriever.history(query)
+            if history:
+                context.set_metadata("git_history", history)
         context.set_metadata("retrieval_result_count", len(context.retrieval_results))
 
     def _rerank(self, context: ExecutionContext) -> None:
@@ -86,6 +98,11 @@ class StepExecutor:
                 query=context.request.query,
                 retrieved_chunks=context.reranked_results,
                 conversation_history=context.conversation_history,
+                extra_sections=[
+                    f"RELEVANT COMMITS\n================\n{context.get_metadata('git_history')}\n"
+                ]
+                if context.get_metadata("git_history")
+                else None,
             )
         context.context = built
         Metrics.record_context_size(built.context_size)

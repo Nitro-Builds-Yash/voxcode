@@ -24,6 +24,12 @@ _SPEED = {"urgent": 1.15, "frustrated": 0.9, "fatigued": 0.92}
 class TTSService:
     def __init__(self):
         self._lock = threading.Lock()
+        self._stop = threading.Event()
+        self._pyttsx3 = None
+        # Barge-in silences the rest of the reply being spoken, so sentences
+        # that arrive after the user interrupted are dropped too.
+        self._current_reply: str | None = None
+        self._interrupted: set[str] = set()
         self._piper = None
         self._piper_failed = False
 
@@ -49,24 +55,58 @@ class TTSService:
             logger.warning("TTS synthesis failed (%s): %s", self.engine, exc)
         return None
 
-    def speak(self, text: str, emotion: str = "calm") -> None:
-        """Play speech on the backend machine without blocking the caller."""
+    def speak(self, text: str, emotion: str = "calm", reply_id: str | None = None) -> None:
+        """Play speech on the backend machine without blocking the caller.
+
+        Sentences of one streamed reply share a `reply_id`; once the user
+        interrupts that reply, its remaining sentences are skipped.
+        """
+        if reply_id is not None:
+            if reply_id in self._interrupted:
+                return
+            self._current_reply = reply_id
+        self._stop.clear()
         threading.Thread(target=self._speak_blocking, args=(text, emotion), daemon=True).start()
+
+    def stop(self) -> None:
+        """Barge-in: stop any speech that is playing or queued."""
+        self._stop.set()
+        if self._current_reply is not None:
+            self._interrupted.add(self._current_reply)
+            if len(self._interrupted) > 1000:
+                self._interrupted.clear()
+        try:
+            if self._pyttsx3 is not None:
+                self._pyttsx3.stop()
+        except Exception:
+            pass
+        try:
+            import sounddevice as sd
+
+            sd.stop()
+        except (ImportError, OSError):
+            pass
 
     # ----------------------------------------------------------- engines
     def _speak_blocking(self, text: str, emotion: str) -> None:
+        if self._stop.is_set():
+            return
         if self.engine == "pyttsx3":
             try:
                 with self._lock:
+                    if self._stop.is_set():
+                        return
                     engine = self._pyttsx3_engine(_SPEED.get(emotion, 1.0))
+                    self._pyttsx3 = engine
                     engine.say(text)
                     engine.runAndWait()
+                    self._pyttsx3 = None
                 return
             except Exception as exc:
                 logger.warning("pyttsx3 playback failed: %s", exc)
                 return
         audio = self.synthesize_wav(text, emotion)
-        if audio:
+        if audio and not self._stop.is_set():
             try:
                 import numpy as np
                 import sounddevice as sd

@@ -105,21 +105,35 @@ def fake_embedder():
 
 
 class ScriptedProvider(BaseProvider):
-    """Provider that replies from a script; a callable gets the prompt."""
+    """Provider that replies from a script; a callable gets the prompt.
+
+    For native tool calling, script entries may be ChatTurn objects (or
+    callables returning one), consumed by `chat()`.
+    """
 
     provider_name = "scripted"
 
-    def __init__(self, replies):
-        super().__init__("scripted-model")
+    def __init__(self, replies, turns=None, supports_tools=False):
+        super().__init__("scripted-model", base_url="http://localhost")
         self.replies = list(replies)
+        self.turns = list(turns or [])
+        self.supports_tools = supports_tools
         self.prompts = []
+        self.chats = []
 
-    def stream(self, prompt):
+    def _stream(self, prompt, usage):
         self.prompts.append(prompt)
         reply = self.replies.pop(0) if len(self.replies) > 1 else self.replies[0]
         text = reply(prompt) if callable(reply) else reply
+        usage.input_tokens += prompt.prompt_size // 4
+        usage.output_tokens += len(text) // 4
         for i in range(0, len(text), 7):
             yield text[i : i + 7]
+
+    def _chat(self, system, messages, tools):
+        self.chats.append((system, [dict(m) for m in messages], tools))
+        turn = self.turns.pop(0) if len(self.turns) > 1 else self.turns[0]
+        return turn(messages) if callable(turn) else turn
 
 
 @pytest.fixture

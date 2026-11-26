@@ -19,3 +19,4 @@ class AgentResponse(BaseModel):
     model_name: str = ""
     provider: str = ""
     sources: list[SourceRef] = Field(default_factory=list)
+    usage: dict = Field(default_factory=dict)

@@ -22,6 +22,7 @@ from voxcode.api.routes.voice import router as voice_router
 from voxcode.api.security import LocalSecurityMiddleware
 from voxcode.config.paths import ensure_storage_dirs
 from voxcode.config.settings import settings
+from voxcode.monitoring import tracing
 
 logging.basicConfig(
     level=logging.DEBUG if settings.DEBUG else logging.INFO,
@@ -60,6 +61,7 @@ if settings.allowed_origins:
         allow_headers=["Content-Type", "X-VoxCode-Token"],
     )
 app.add_middleware(LocalSecurityMiddleware)
+tracing.setup(app)
 
 app.include_router(health_router)
 app.include_router(agent_router)

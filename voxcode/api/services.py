@@ -16,7 +16,7 @@ from voxcode.codebase.watcher.watcher import WatchManager
 from voxcode.config.settings import settings
 from voxcode.core.model_registry import ModelRegistry
 from voxcode.core.repository import repository_key
-from voxcode.voice.emotion.emotion_analyzer import EmotionAnalyzer, EmotionProfile
+from voxcode.voice.emotion.emotion_analyzer import EmotionAnalyzer, EmotionProfile, analyze_with_audio
 
 logger = logging.getLogger(__name__)
 
@@ -59,5 +59,13 @@ def ensure_indexed(repo: Path) -> str:
     return key
 
 
-def analyze_emotion(text: str) -> EmotionProfile | None:
-    return emotion_analyzer.analyze(text) if settings.EMOTION_ENABLED and text else None
+def analyze_emotion(text: str, audio=None) -> EmotionProfile | None:
+    """Tone from the transcript, refined by the voice when audio is given."""
+    if not (settings.EMOTION_ENABLED and text):
+        return None
+    if audio is not None and len(audio):
+        try:
+            return analyze_with_audio(emotion_analyzer, text, audio)
+        except Exception as exc:  # never let tone analysis break a request
+            logger.debug("Prosody analysis failed: %s", exc)
+    return emotion_analyzer.analyze(text)
