@@ -96,3 +96,18 @@ metrics (Prometheus) + traces (OpenTelemetry) per stage ─> Grafana / Jaeger  (
 | Voice activity detection | per-frame numpy | state machine in Rust, `feed_many` for whole buffers |
 
 **Rust repositories.** Symbols cover `impl` blocks (methods attach to the type, generics stripped), traits, inline `mod`s and `macro_rules!`. The call graph comes from rust-analyzer's call hierarchy over LSP when available (`codebase/graph/rust_analyzer.py`); otherwise `codebase/graph/rust_graph.py` resolves calls through the module system: file layout and `Cargo.toml` crates (lib, `src/bin`, `tests`, `examples`), `use` trees with aliases and globs, `crate::`/`self::`/`super::`/`Self::` paths, `self.method()`, and calls inside macro arguments. Tests run with `cargo test` (plus `--workspace`), offline inside the `rust:1-slim` sandbox after `cargo fetch`; panics, rustc `-->` locations and failing test names map back to source files for the repair step.
+
+## v0.7: learning
+
+```
+question ─> intent model (n-gram logistic regression, rules fallback) ─> answer | edit
+         ─> answer cache (repo · index version · model · tone · normalised tokens) ── hit ─> reply
+         ─> BM25 + vectors ─> RRF ─> learned ranker (pairwise, 13 features) ─> rerank ─> graph
+         ─> cascade: difficulty ≤ threshold ? small model : main model
+         ─> grounding check (identifiers + file citations vs context and repo)
+                └─ small model weak or ungrounded ─> regenerate with main model
+feedback (👍, accepted patches) ─> feedback log ─> retrain ranker (saved only if held-out MRR improves)
+docstrings ─> inverse-cloze queries (docstrings hidden from the index) ─┘
+```
+
+The ranker is linear on purpose: 13 weights you can read (`voxcode train-ranker` prints them), with no new dependencies, and training takes milliseconds. Chunk-type features were removed after the first experiment: self-supervised answers are always documented definitions, so such a flag learned the dataset's bias (weight +1.48) instead of relevance.

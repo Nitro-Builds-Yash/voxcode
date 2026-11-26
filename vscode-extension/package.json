@@ -2,7 +2,7 @@
   "name": "voxcode",
   "displayName": "VoxCode",
   "description": "Talk to your codebase: voice-driven questions and validated code patches, powered by a local VoxCode server.",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "publisher": "Nitro-Builds-Yash",
   "license": "MIT",
   "repository": {

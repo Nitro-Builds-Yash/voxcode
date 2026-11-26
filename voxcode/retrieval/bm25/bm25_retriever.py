@@ -55,7 +55,9 @@ class BM25Index:
 class BM25Retriever:
     def __init__(self, chunks: list[CodeChunk]):
         self.chunks = chunks
-        self._index = BM25Index.from_texts([f"{c.symbol_name} {c.file_path} {c.content}" for c in chunks])
+        self._index = BM25Index.from_texts(
+            [f"{c.symbol_name} {c.file_path} {c.context} {c.content}" for c in chunks]
+        )
 
     def search(self, query: str, top_k: int = 10) -> list[RetrievalResult]:
         tokens = tokenize(query)

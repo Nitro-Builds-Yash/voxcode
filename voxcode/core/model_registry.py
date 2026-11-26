@@ -121,6 +121,24 @@ class ModelRegistry:
             self._providers[name] = (fingerprint, provider)
             return provider
 
+    def get_cascade_provider(self):
+        """The small, cheap model of the cascade (CASCADE_PROVIDER / CASCADE_MODEL), or None."""
+        if not settings.CASCADE_MODEL:
+            return None
+        from voxcode.generation.providers import create_provider
+
+        name = (settings.CASCADE_PROVIDER or settings.DEFAULT_PROVIDER).lower()
+        fingerprint = hashlib.sha1(
+            repr((_provider_config(name), settings.CASCADE_MODEL)).encode()
+        ).hexdigest()
+        with self._lock:
+            cached = self._providers.get("cascade")
+            if cached and cached[0] == fingerprint:
+                return cached[1]
+            provider = create_provider(name, settings.CASCADE_MODEL)
+            self._providers["cascade"] = (fingerprint, provider)
+            return provider
+
     def set_provider(self, name: str, provider) -> None:
         with self._lock:
             self._providers[name.lower()] = (

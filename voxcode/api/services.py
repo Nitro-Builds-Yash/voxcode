@@ -44,9 +44,25 @@ def tool_agent() -> ToolAgent:
 
 
 def index_repository(repo: Path, full: bool = False) -> IndexStats:
-    stats = indexer.index(repo, embedder=registry.get_embedder(), full=full)
+    contextualizer = None
+    if settings.CONTEXTUAL_CHUNKS:
+        from voxcode.retrieval.contextual import ChunkContextualizer
+
+        contextualizer = ChunkContextualizer(registry.get_provider())
+    stats = indexer.index(repo, embedder=registry.get_embedder(), full=full, contextualizer=contextualizer)
+    retrain_ranker(stats.repo_key)
     runtime_cache.invalidate(stats.repo_key)
     return stats
+
+
+def retrain_ranker(repo_key: str) -> dict | None:
+    from voxcode.learning.training import auto_train
+
+    index = indexer.store.load(repo_key)
+    report = auto_train(index) if index is not None else None
+    if report and report.get("saved"):
+        runtime_cache.invalidate(repo_key)
+    return report
 
 
 def ensure_indexed(repo: Path) -> str:

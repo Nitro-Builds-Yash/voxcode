@@ -1,4 +1,5 @@
-"""Rule-based intent classification on whole words (so "show" is not "how")."""
+"""Intent classification: a learned model (intent_model.py) with keyword
+rules on whole words (so "show" is not "how") as the fallback."""
 
 from __future__ import annotations
 
@@ -57,9 +58,21 @@ _RULES: list[tuple[TaskType, tuple[str, ...]]] = [
 _COMPILED = [(task, re.compile(r"\b(?:" + "|".join(words) + r")\b", re.IGNORECASE)) for task, words in _RULES]
 
 
+def rule_classify(query: str) -> TaskType:
+    for task, pattern in _COMPILED:
+        if pattern.search(query):
+            return task
+    return TaskType.CHAT
+
+
 class TaskClassifier:
     def classify(self, query: str) -> TaskType:
-        for task, pattern in _COMPILED:
-            if pattern.search(query):
-                return task
-        return TaskType.CHAT
+        from voxcode.config.settings import settings
+
+        if settings.INTENT_MODEL:
+            from voxcode.agent.planner.intent_model import default_model
+
+            label, confidence = default_model().predict(query)
+            if confidence >= settings.INTENT_MIN_CONFIDENCE:
+                return TaskType(label)
+        return rule_classify(query)

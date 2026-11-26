@@ -20,3 +20,8 @@ class AgentResponse(BaseModel):
     provider: str = ""
     sources: list[SourceRef] = Field(default_factory=list)
     usage: dict = Field(default_factory=dict)
+    # Model-free hallucination check: groundedness, unsupported identifiers, bad citations.
+    quality: dict = Field(default_factory=dict)
+    # Cascade routing: difficulty, tier (small | main), whether it escalated and why.
+    routing: dict = Field(default_factory=dict)
+    cached: bool = False

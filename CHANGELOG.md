@@ -2,6 +2,22 @@
 
 All notable changes to VoxCode. Versions follow [Semantic Versioning](https://semver.org).
 
+## [0.7.0] — It learns
+
+### Added
+- **Learned ranker** (`voxcode/learning/`). A pairwise learning-to-rank model (13 features, numpy, trains in under a second) re-scores fused search candidates. It trains from docstrings (an inverse-cloze task: each docstring becomes a query and is hidden from the index while training) and from relevance feedback. It's saved only when it beats the retrieval order on held-out queries. `voxcode train-ranker`; `voxcode eval --learning` runs the leave-one-out benchmark (MRR@10 0.50 → 0.63 on this repo).
+- **Relevance feedback:** `POST /agent/feedback`, plus the `query` field on `/agent/apply`. The ranker retrains automatically after 10 feedback entries. In VS Code, the Chat 👍/👎 buttons send this feedback.
+- **Contextual retrieval** (`CONTEXTUAL_CHUNKS=true`): an LLM-written sentence per symbol, indexed with the code and cached by file content.
+- **Model cascade** (`CASCADE_MODEL`): easy questions go to a small model; weak or ungrounded answers escalate to the main model.
+- **Grounding check** on every answer: `quality.groundedness`, unsupported identifiers and invented file paths. VS Code warns about low groundedness.
+- **Answer cache**, scoped to the index version, model and tone; near-duplicate questions match when an embedder is loaded.
+- **Learned intent classifier:** logistic regression over word n-grams trained on 240 labelled requests (68% cross-validated accuracy vs. 55% for the keyword rules), with the rules as fallback.
+- Metrics `voxcode_answer_cache_hits_total` and `voxcode_cascade_routes_total{tier}`.
+
+### Changed
+- README benchmark numbers re-measured on the current repository.
+- README artwork builds are now reproducible.
+
 ## [0.6.0] — Rust
 
 ### Added

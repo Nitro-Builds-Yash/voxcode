@@ -8,7 +8,10 @@ interface FileChange {
     status: string;
 }
 
+let lastQuery = '';
+
 interface PendingEdit {
+    query: string; // the request that produced it: accepted patches teach the ranker
     summary: string;
     repo: string;
     diff: string;
@@ -242,6 +245,7 @@ async function runVoiceCommand(command: string) {
 
 // ---------------------------------------------------------------- agent
 async function runAgent(query: string, extra: Record<string, unknown> = {}) {
+    lastQuery = query;
     const repo = workspaceRoot();
     if (!repo) {
         vscode.window.showWarningMessage('Open a folder first so VoxCode knows which repository to use.');
@@ -402,7 +406,7 @@ async function receiveEdit(repo: string, result: StreamEvent) {
         vscode.window.showWarningMessage(`VoxCode could not produce a working patch: ${result.summary}`);
         return;
     }
-    pending = { repo, diff: result.diff, files: result.files, index: 0, status: result.status, summary: result.summary || '' };
+    pending = { query: lastQuery, repo, diff: result.diff, files: result.files, index: 0, status: result.status, summary: result.summary || '' };
     output.appendLine(result.diff);
     speak(result.summary);
 
@@ -462,6 +466,7 @@ async function acceptEdit(target?: ApplyTarget) {
             target,
             title: edit.summary.split('\n')[0].slice(0, 120) || 'VoxCode change',
             description: `${edit.summary}\n\nRequested by voice with VoxCode.`,
+            query: edit.query,
         });
     } catch (err: any) {
         vscode.window.showErrorMessage(`Apply failed: ${err.message}`);
@@ -561,6 +566,8 @@ const chatHandler: vscode.ChatRequestHandler = async (request, _context, respons
         return {};
     }
     const mode = request.command === 'edit' ? 'edit' : request.command === 'agent' ? 'agentic' : 'auto';
+    lastQuery = request.prompt;
+    const sourceFiles: string[] = [];
     const abort = new AbortController();
     token.onCancellationRequested(() => abort.abort());
     response.progress(mode === 'edit' ? 'Writing and validating a patch…' : 'Searching the codebase…');
@@ -572,6 +579,7 @@ const chatHandler: vscode.ChatRequestHandler = async (request, _context, respons
                 switch (event.type) {
                     case 'sources':
                         for (const source of (event.sources || []).slice(0, 6)) {
+                            if (!sourceFiles.includes(source.file_path)) sourceFiles.push(source.file_path);
                             const uri = vscode.Uri.file(`${repo}/${source.file_path}`);
                             response.reference(
                                 new vscode.Location(uri, new vscode.Range(source.start_line - 1, 0, source.end_line - 1, 0))
@@ -586,6 +594,14 @@ const chatHandler: vscode.ChatRequestHandler = async (request, _context, respons
                         break;
                     case 'done':
                         if (event.answer && event.tool_mode !== undefined) response.markdown(event.answer);
+                        if (event.quality && event.quality.groundedness < 0.75) {
+                            const names = [...(event.quality.unsupported || []), ...(event.quality.bad_citations || [])];
+                            response.markdown(
+                                `\n\n> ⚠️ Low groundedness (${Math.round(event.quality.groundedness * 100)}%): ` +
+                                    `not found in the code: ${names.slice(0, 6).map((n: string) => '`' + n + '`').join(', ')}`
+                            );
+                        }
+                        if (event.cached) response.markdown('\n\n_(cached answer)_');
                         break;
                     case 'edit':
                         renderEditInChat(repo, event, response);
@@ -600,15 +616,31 @@ const chatHandler: vscode.ChatRequestHandler = async (request, _context, respons
     } catch (err: any) {
         if (!abort.signal.aborted) response.markdown(`**VoxCode is not reachable:** ${err.message}`);
     }
-    return {};
+    // Read back by onDidReceiveFeedback: a thumbs up marks these files as the right answer.
+    return { metadata: { query: request.prompt, repo, files: sourceFiles } };
 };
+
+async function sendChatFeedback(feedback: vscode.ChatResultFeedback) {
+    const meta = feedback.result.metadata as { query?: string; repo?: string; files?: string[] } | undefined;
+    if (!meta?.query || !meta.repo || !meta.files?.length) return;
+    try {
+        await api('/agent/feedback', {
+            repository_path: meta.repo,
+            query: meta.query,
+            files: meta.files,
+            helpful: feedback.kind === vscode.ChatResultFeedbackKind.Helpful,
+        });
+    } catch (err: any) {
+        output.appendLine(`Feedback not sent: ${err.message}`);
+    }
+}
 
 function renderEditInChat(repo: string, event: StreamEvent, response: vscode.ChatResponseStream) {
     if (event.plan) response.markdown(`**Plan**\n\n${event.plan}\n\n`);
     response.markdown(`**${event.status}**: ${event.summary}\n\n`);
     if (!event.diff) return;
     response.markdown('```diff\n' + event.diff + '\n```\n');
-    pending = { repo, diff: event.diff, files: event.files, index: 0, status: event.status, summary: event.summary || '' };
+    pending = { query: lastQuery, repo, diff: event.diff, files: event.files, index: 0, status: event.status, summary: event.summary || '' };
     idle();
     response.button({ command: 'voiceCoding.acceptPatch', title: 'Accept' });
     response.button({ command: 'voiceCoding.reviewPatch', title: 'Review diff' });
@@ -656,6 +688,7 @@ export function activate(context: vscode.ExtensionContext) {
     if (vscode.chat?.createChatParticipant) {
         const participant = vscode.chat.createChatParticipant('voxcode.vox', chatHandler);
         participant.iconPath = new vscode.ThemeIcon('mic');
+        participant.onDidReceiveFeedback(sendChatFeedback, undefined, context.subscriptions);
         context.subscriptions.push(participant);
     }
 

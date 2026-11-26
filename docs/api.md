@@ -64,3 +64,12 @@ Recognised voice commands: `accept`, `reject`, `undo`, `next file`, `previous fi
 - `POST /agent/edit` accepts `plan_only: true` (returns `status: "planned"` with a plan) and `plan` (an approved/edited plan to execute).
 - `POST /agent/apply` accepts `target`: `working_tree` (default), `branch` (commits on `voxcode/<slug>-<id>` via a temporary worktree, leaving your checkout untouched) or `pull_request` (also pushes and opens a PR; needs `GITHUB_TOKEN`), plus `title` / `description`.
 - Voice: `POST /voice/stop-speaking` (barge-in), `WS /voice/listen` (stream 16 kHz float32 frames, receive `start` / `end` / `transcript` events), `POST /voice/listen/start|stop` and `GET /voice/listen/events` (SSE) for server-side hands-free listening. Voice responses include prosody-aware emotion (`source: "text+voice"`).
+
+## v0.7 additions
+
+- `POST /agent/feedback` — `{repository_path, query, files?, chunk_ids?, helpful}`. A helpful vote records the files or chunks that answered the question; it returns `{recorded, feedback_entries, min_for_training}`. The learned ranker retrains in the background once `RANKER_MIN_FEEDBACK` entries exist.
+- `POST /agent/apply` accepts `query`; the files changed by an accepted patch become feedback for that query.
+- Answers (`/agent/query` and the stream's `done` event) include:
+  - `quality`: `{groundedness, checked, unsupported, citations, bad_citations}`
+  - `routing`: `{difficulty, tier: small|main, escalated, reason}`
+  - `cached`: `true` when served from the answer cache

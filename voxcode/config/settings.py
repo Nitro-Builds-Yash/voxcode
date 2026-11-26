@@ -9,7 +9,7 @@ class Settings(BaseSettings):
 
     # ----------------------------------------------------------------- app
     APP_NAME: str = "VoxCode"
-    APP_VERSION: str = "0.6.0"
+    APP_VERSION: str = "0.7.0"
     DEBUG: bool = False
     HOST: str = "127.0.0.1"
     PORT: int = 8000
@@ -47,6 +47,28 @@ class Settings(BaseSettings):
     # ----------------------------------------------------------- retrieval
     DEFAULT_TOP_K: int = 8
     RETRIEVAL_CANDIDATES: int = 30
+    # Model cascade: easy questions go to a small model first and escalate to
+    # the main provider when the answer looks weak. Off while CASCADE_MODEL is empty.
+    CASCADE_PROVIDER: str = ""  # defaults to DEFAULT_PROVIDER
+    CASCADE_MODEL: str = ""  # e.g. qwen3:1.7b, claude-haiku-4-5, gpt-4.1-mini
+    CASCADE_MAX_DIFFICULTY: float = 0.5
+    CASCADE_MIN_GROUNDEDNESS: float = 0.75
+    # Reuse answers to repeated questions until the index changes.
+    ANSWER_CACHE: bool = True
+    ANSWER_CACHE_SIZE: int = 256
+    ANSWER_CACHE_TTL_SECONDS: int = 3600
+    # Learned intent classifier; below this confidence the keyword rules decide.
+    INTENT_MODEL: bool = True
+    INTENT_MIN_CONFIDENCE: float = 0.3
+    # Contextual retrieval: an LLM sentence per chunk at index time (one call per changed file, cached).
+    CONTEXTUAL_CHUNKS: bool = False
+    # Learned ranker (voxcode train-ranker): re-scores fused candidates when a model is trained.
+    LEARNED_RANKER: bool = True
+    # Train it automatically after indexing (self-supervised from docstrings; < 1 s for most repos).
+    RANKER_AUTO_TRAIN: bool = True
+    # Auto-training waits for this much feedback: docstring self-supervision alone
+    # helped held-out docstring queries but not reliably real questions.
+    RANKER_MIN_FEEDBACK: int = 10
     GRAPH_EXPANSION: int = 4
     CONTEXT_MAX_TOKENS: int = 12_000
     # Rewrite vague (spoken) questions into code-search queries with the LLM.

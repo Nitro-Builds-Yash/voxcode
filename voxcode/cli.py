@@ -5,7 +5,8 @@ voxcode index  [PATH] [--full]        index a repository (default: current folde
 voxcode search "query" [--repo PATH]  show matching code
 voxcode ask    "question" [--repo PATH]       streamed answer
 voxcode edit   "instruction" [--repo PATH] [--tests]   propose a validated patch
-voxcode eval   [--repo PATH] [--answers]  retrieval (or answer) quality benchmark
+voxcode eval   [--repo PATH] [--answers | --learning]  retrieval / answer / learned-ranker benchmark
+voxcode train-ranker [--repo PATH]    train the learned ranker (docstrings + feedback)
 voxcode mcp    [--repo PATH]          run as an MCP server (Claude, Cursor, ...)
 voxcode swebench INSTANCES.jsonl      SWE-bench style evaluation
 """
@@ -14,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from pathlib import Path
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -45,6 +47,16 @@ def main(argv: list[str] | None = None) -> None:
         "--answers", action="store_true", help="LLM-judged answer quality instead of retrieval"
     )
     evaluate.add_argument("--embedding-models", default="", help="comma-separated models to compare")
+    evaluate.add_argument("--learning", action="store_true", help="leave-one-out test of the learned ranker")
+
+    trainer = sub.add_parser("train-ranker", help="train the learned ranker for a repository")
+    trainer.add_argument("--repo", default=".")
+    trainer.add_argument(
+        "--min-feedback",
+        type=int,
+        default=0,
+        help="require this many feedback entries (default: train anyway)",
+    )
 
     mcp = sub.add_parser("mcp", help="run as a Model Context Protocol server")
     mcp.add_argument("--repo", default=None, help="default repository (default: current folder)")
@@ -67,7 +79,25 @@ def main(argv: list[str] | None = None) -> None:
         serve()
         return
 
+    if args.command == "train-ranker":
+        import json as _json
+
+        from voxcode.api import services
+        from voxcode.learning.training import train
+
+        stats = services.index_repository(Path(args.repo).resolve())
+        repo_index = services.indexer.store.load(stats.repo_key)
+        assert repo_index is not None
+        report = train(repo_index, min_feedback=args.min_feedback)
+        print(_json.dumps({k: v for k, v in report.items() if k != "features"}, indent=2))
+        return
+
     if args.command == "eval":
+        if args.learning:
+            from voxcode.evaluation import learning_eval
+
+            learning_eval.main(["--repo", args.repo])
+            return
         if args.answers:
             from voxcode.evaluation import answer_eval
 

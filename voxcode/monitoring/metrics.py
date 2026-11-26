@@ -104,6 +104,14 @@ SECRETS_REDACTED_TOTAL = Counter(
     "Secrets removed from prompts before they were sent to a remote provider",
 )
 
+ANSWER_CACHE_HITS_TOTAL = Counter("answer_cache_hits_total", "Answers served from the answer cache")
+
+CASCADE_ROUTES_TOTAL = Counter(
+    "cascade_routes_total",
+    "Questions answered per cascade tier (small, main, escalated)",
+    ["tier"],
+)
+
 TIME_TO_FIRST_TOKEN = Histogram(
     "time_to_first_token_seconds",
     "Latency from request start to the first streamed token",

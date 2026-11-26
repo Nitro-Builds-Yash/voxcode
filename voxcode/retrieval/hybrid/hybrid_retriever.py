@@ -6,10 +6,13 @@ from __future__ import annotations
 import logging
 from concurrent.futures import ThreadPoolExecutor
 
+import numpy as np
+
 from voxcode.codebase.git_history import CommitSearch
 from voxcode.codebase.graph.code_graph import CodeGraph
 from voxcode.codebase.indexer.index_store import RepositoryIndex
 from voxcode.config.settings import settings
+from voxcode.learning.features import CandidateLists, featurize
 from voxcode.models.retrieval_result import RetrievalResult
 from voxcode.retrieval.bm25.bm25_retriever import BM25Retriever, to_result
 from voxcode.retrieval.hybrid.fusion import reciprocal_rank_fusion
@@ -28,16 +31,22 @@ class HybridRetriever:
         self.bm25 = BM25Retriever(index.chunks)
         self.graph = CodeGraph(index.chunks, index.call_edges)
         self.commits = CommitSearch(index.commits)
+        self.ranker = None
+        if settings.LEARNED_RANKER:
+            from voxcode.learning.training import load_ranker
+
+            self.ranker = load_ranker(index.repo_key)
+        self._callers: dict[str, int] | None = None
         self.semantic = None
         if embedder is not None and index.semantic_model:
             self.semantic = SemanticRetriever(
                 embedder, vector_store or VectorStore(index.repo_key), self.chunks_by_id
             )
 
-    def search(
+    def candidate_lists(
         self, query: str, top_k: int | None = None, extra_queries: list[str] | None = None
-    ) -> list[RetrievalResult]:
-        """First-stage retrieval: BM25 and semantic search in parallel, fused.
+    ) -> CandidateLists:
+        """BM25 and semantic lists for `query` (searched in parallel) and their RRF fusion.
 
         `extra_queries` (e.g. LLM rewrites) are searched too and fused in,
         with the original query's lists weighted first.
@@ -53,7 +62,24 @@ class HybridRetriever:
                 except Exception as exc:
                     logger.warning("Semantic search failed, using BM25 only: %s", exc)
             lists += [semantic_results, bm25_future.result()]
-        return reciprocal_rank_fusion(lists)[:top_k]
+        return CandidateLists(bm25=lists[1], semantic=lists[0], fused=reciprocal_rank_fusion(lists)[:top_k])
+
+    def search(
+        self, query: str, top_k: int | None = None, extra_queries: list[str] | None = None
+    ) -> list[RetrievalResult]:
+        """First-stage retrieval, re-scored by the learned ranker when one is trained."""
+        lists = self.candidate_lists(query, top_k, extra_queries)
+        if self.ranker is None or len(lists.fused) < 2:
+            return lists.fused
+        return self.rescore(query, lists)
+
+    def rescore(self, query: str, lists: CandidateLists) -> list[RetrievalResult]:
+        if self._callers is None:
+            self._callers = {c.chunk_id: len(self.graph.callers_of(c.chunk_id)) for c in self.index.chunks}
+        assert self.ranker is not None
+        scores = self.ranker.score(featurize(query, lists, self._callers))
+        order = np.argsort(-scores, kind="stable")
+        return [lists.fused[i].model_copy(update={"score": float(scores[i])}) for i in order]
 
     def history(self, query: str, limit: int = 8) -> str:
         """Relevant commits rendered for the prompt (empty if none)."""
