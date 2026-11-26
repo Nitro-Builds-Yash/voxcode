@@ -61,6 +61,24 @@
 </table>
 
 
+
+## What's new in v0.6 — Rust
+
+- **Rust core (optional).** The hot paths are rewritten in Rust (PyO3): BM25 search, the tokenizer, repository scanning, secret redaction and voice activity detection. Results are identical to the Python code, and VoxCode falls back to Python when the extension isn't installed.
+  ```bash
+  pip install maturin && pip install ./native     # then check: curl localhost:8000/health
+  ```
+  | Operation (this repo, 19k chunks) | Python | Rust |
+  |---|---|---|
+  | BM25 query ×4 | 40.6 ms | 0.2 ms |
+  | Build BM25 index | 1228 ms | 460 ms |
+  | Scan repository | 9.2 ms | 2.3 ms |
+  | Redact 0.5 MB | 71.7 ms | 35.8 ms |
+  | VAD, 60 s audio | 8.5 ms | 1.9 ms |
+
+  Reproduce with `python scripts/bench_native.py` (2-core machine; numbers vary by hardware).
+- **First-class Rust repositories.** `impl`/trait/module-aware symbols, a call graph from rust-analyzer (or a built-in resolver that follows `use`, `crate::`, `super::`, `Self::` and macro arguments), `cargo test` in the plan → edit → test → repair loop, and a `rust:1-slim` Docker sandbox.
+
 ## What's new in v0.5
 
 - **MCP server** — use VoxCode's index from Claude Desktop, Claude Code or Cursor: `voxcode mcp --repo .`

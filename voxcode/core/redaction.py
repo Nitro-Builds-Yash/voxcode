@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import re
 
+from voxcode.native import native
+
 _PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     (
         "private-key",
@@ -38,6 +40,14 @@ _PLACEHOLDERS = {"changeme", "change-me", "example", "xxxxxx", "your-key", "plac
 
 def redact(text: str) -> tuple[str, int]:
     """Return (redacted text, number of secrets removed)."""
+    accel = native()
+    if accel is not None:
+        cleaned, count = accel.redact(text)
+        return cleaned, count
+    return redact_python(text)
+
+
+def redact_python(text: str) -> tuple[str, int]:
     count = 0
 
     def sub(kind: str):

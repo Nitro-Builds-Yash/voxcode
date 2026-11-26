@@ -67,9 +67,9 @@ class CommitSearch:
         self.commits = commits
         self._index = None
         if commits:
-            from rank_bm25 import BM25Okapi
+            from voxcode.retrieval.bm25.bm25_retriever import BM25Index
 
-            self._index = BM25Okapi(
+            self._index = BM25Index(
                 [tokenize(f"{c.subject} {c.body} {' '.join(c.files)}") or ["_"] for c in commits]
             )
 
@@ -86,7 +86,7 @@ class CommitSearch:
             ]
         tokens = tokenize(query) if query else []
         if tokens and self._index is not None and candidates:
-            scores = self._index.get_scores(tokens)
+            scores = self._index.scores(tokens)
             ranked = sorted(candidates, key=lambda i: (-scores[i], i))
             matched = [i for i in ranked if scores[i] > 0]
             candidates = matched or ranked

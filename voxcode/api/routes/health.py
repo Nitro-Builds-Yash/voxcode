@@ -7,4 +7,6 @@ router = APIRouter()
 
 @router.get("/health")
 def health_check() -> dict:
-    return {"status": "healthy", "service": "voxcode", "version": settings.APP_VERSION}
+    from voxcode.native import status
+
+    return {"status": "healthy", "service": "voxcode", "version": settings.APP_VERSION, "native": status()}

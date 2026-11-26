@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "voxcode"
-version = "0.5.0"
+version = "0.6.0"
 description = "Voice-driven coding agent with hybrid code search, validated patches and VS Code integration."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -52,6 +52,9 @@ otel = [
     "opentelemetry-instrumentation-fastapi>=0.46b0",
     "opentelemetry-instrumentation-httpx>=0.46b0",
 ]
+# Rust acceleration (tokenizer, BM25, scanner, redaction, VAD). Build from
+# source with `pip install ./native` until wheels are on PyPI.
+native = ["voxcode-native>=0.6"]
 all = ["voxcode[ml,voice,mcp,analysis]"]
 dev = ["pytest>=8.0", "ruff>=0.5", "mypy>=1.10", "pre-commit>=3.7", "mcp>=2.0", "jedi>=0.19"]
 

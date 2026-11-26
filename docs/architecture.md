@@ -82,3 +82,17 @@ VS Code @vox / MCP clients ────┼─> API ─> pipeline ─> retrieval 
                                └> apply: working tree │ branch (worktree) │ pull request
 metrics (Prometheus) + traces (OpenTelemetry) per stage ─> Grafana / Jaeger  (docker compose --profile observability)
 ```
+
+## v0.6: Rust
+
+**Native core** (`native/`, PyO3 + maturin, abi3 wheel for Python 3.10+). `voxcode/native.py` imports `voxcode_native` when present; every caller keeps its Python implementation as the fallback and `tests/unit/test_native.py` checks both give identical output.
+
+| Hot path | Python | Rust |
+|---|---|---|
+| Tokenizer | regex | hand-written camelCase splitter, parallel over chunks (rayon) |
+| BM25 | `rank_bm25`, scores every document per query term | inverted index, only documents containing a term are touched; same scores |
+| Repository scan | `os.walk` | `read_dir` walk, same skip rules and ordering |
+| Secret redaction | `re` | `regex` crate (linear time), same patterns |
+| Voice activity detection | per-frame numpy | state machine in Rust, `feed_many` for whole buffers |
+
+**Rust repositories.** Symbols cover `impl` blocks (methods attach to the type, generics stripped), traits, inline `mod`s and `macro_rules!`. The call graph comes from rust-analyzer's call hierarchy over LSP when available (`codebase/graph/rust_analyzer.py`); otherwise `codebase/graph/rust_graph.py` resolves calls through the module system: file layout and `Cargo.toml` crates (lib, `src/bin`, `tests`, `examples`), `use` trees with aliases and globs, `crate::`/`self::`/`super::`/`Self::` paths, `self.method()`, and calls inside macro arguments. Tests run with `cargo test` (plus `--workspace`), offline inside the `rust:1-slim` sandbox after `cargo fetch`; panics, rustc `-->` locations and failing test names map back to source files for the repair step.

@@ -1,4 +1,5 @@
-"""Precise call edges for Python using Jedi's static analysis.
+"""Precise call edges: Python through Jedi, Rust through rust-analyzer or
+the module-aware tree-sitter resolver (rust_graph.py).
 
 Name matching links `save()` to *every* function called `save`; Jedi follows
 imports, classes and attributes to the one definition a call resolves to.
@@ -44,11 +45,6 @@ def build_call_edges(
     changed_files: set[str],
     previous_edges: dict[str, list[str]] | None = None,
 ) -> dict[str, list[str]]:
-    try:
-        import jedi
-    except ImportError:
-        return {}
-
     chunk_ids = {c.chunk_id for c in chunks}
     previous_edges = previous_edges or {}
     owner = {c.chunk_id: c.file_path for c in chunks}
@@ -64,9 +60,23 @@ def build_call_edges(
         else:
             stale_files.add(owner[caller])
 
+    rust_files = {c.file_path for c in chunks if c.language == "rust"}
+    rust_targets = {f for f in stale_files if f in rust_files}
+    if rust_targets:
+        from voxcode.codebase.graph.rust_graph import build_rust_edges
+
+        try:
+            edges.update(build_rust_edges(repo, chunks, rust_targets))
+        except Exception as exc:  # never let the graph break indexing
+            logger.warning("Rust call graph failed: %s", exc)
+
     python_files = {c.file_path for c in chunks if c.language == "python"}
     targets = sorted(f for f in stale_files if f in python_files)
     if not targets:
+        return edges
+    try:
+        import jedi
+    except ImportError:
         return edges
 
     locator = _ChunkLocator(chunks)

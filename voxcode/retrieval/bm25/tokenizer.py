@@ -7,6 +7,8 @@ from __future__ import annotations
 
 import re
 
+from voxcode.native import native
+
 _IDENTIFIER_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*|\d+")
 _CAMEL_RE = re.compile(r"[A-Z]+(?=[A-Z][a-z])|[A-Z]?[a-z]+|[A-Z]+|\d+")
 STOPWORDS = {
@@ -53,6 +55,13 @@ STOPWORDS = {
 
 
 def tokenize(text: str) -> list[str]:
+    accel = native()
+    if accel is not None:
+        return accel.tokenize(text)
+    return tokenize_python(text)
+
+
+def tokenize_python(text: str) -> list[str]:
     tokens: list[str] = []
     for identifier in _IDENTIFIER_RE.findall(text):
         lowered = identifier.lower()
