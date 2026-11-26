@@ -558,6 +558,28 @@ async function indexWorkspace(full = false, quiet = false) {
     }
 }
 
+// ---------------------------------------------------------------- browser review
+/** Plan a change, then annotate / approve the plan and the resulting patch in the review page. */
+async function planInBrowser() {
+    const repo = workspaceRoot();
+    if (!repo) {
+        vscode.window.showWarningMessage('Open a folder first so VoxCode knows which repository to use.');
+        return;
+    }
+    const query = await vscode.window.showInputBox({ prompt: 'What should change?', placeHolder: 'e.g. add rate limiting to the API' });
+    if (!query) return;
+    lastQuery = query;
+    try {
+        const review = await vscode.window.withProgress(
+            { location: vscode.ProgressLocation.Notification, title: 'VoxCode is planning…' },
+            () => api<{ id: string; url: string }>('/reviews/plan', { query, repository_path: repo, run_tests: config().runTestsOnEdit })
+        );
+        await vscode.env.openExternal(vscode.Uri.parse(`${config().backendUrl}${review.url}`));
+    } catch (err: any) {
+        vscode.window.showErrorMessage(`Planning failed: ${err.message}`);
+    }
+}
+
 // ---------------------------------------------------------------- @vox chat participant
 const chatHandler: vscode.ChatRequestHandler = async (request, _context, response, token) => {
     const repo = workspaceRoot();
@@ -671,6 +693,10 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand('voiceCoding.acceptAsPullRequest', () => acceptEdit('pull_request')),
         vscode.commands.registerCommand('voiceCoding.acceptAsBranch', () => acceptEdit('branch')),
         vscode.commands.registerCommand('voiceCoding.reviewPatch', () => showPendingFile(0)),
+        vscode.commands.registerCommand('voiceCoding.planInBrowser', planInBrowser),
+        vscode.commands.registerCommand('voiceCoding.openReviews', () =>
+            vscode.env.openExternal(vscode.Uri.parse(`${config().backendUrl}/review`))
+        ),
         vscode.commands.registerCommand('voiceCoding.toggleHandsFree', toggleHandsFree),
         vscode.commands.registerCommand('voiceCoding.rejectPatch', rejectEdit),
         vscode.commands.registerCommand('voiceCoding.undoPatch', undoEdit),

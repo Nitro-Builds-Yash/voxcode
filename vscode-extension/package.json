@@ -2,7 +2,7 @@
   "name": "voxcode",
   "displayName": "VoxCode",
   "description": "Talk to your codebase: voice-driven questions and validated code patches, powered by a local VoxCode server.",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "publisher": "Nitro-Builds-Yash",
   "license": "MIT",
   "repository": {
@@ -89,6 +89,14 @@
       {
         "command": "voiceCoding.reviewPatch",
         "title": "VoxCode: Review Pending Patch"
+      },
+      {
+        "command": "voiceCoding.planInBrowser",
+        "title": "VoxCode: Plan a Change and Review It in the Browser"
+      },
+      {
+        "command": "voiceCoding.openReviews",
+        "title": "VoxCode: Open Review Archive"
       }
     ],
     "configuration": {

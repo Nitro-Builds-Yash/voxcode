@@ -16,8 +16,8 @@ from urllib.parse import parse_qs
 
 from voxcode.config.settings import settings
 
-_PUBLIC_PATHS = ("/health", "/static/", "/favicon.ico")
-_PUBLIC_EXACT = {"/"}
+_PUBLIC_PATHS = ("/health", "/static/", "/favicon.ico", "/review/")
+_PUBLIC_EXACT = {"/", "/review"}
 
 
 class LocalSecurityMiddleware:
