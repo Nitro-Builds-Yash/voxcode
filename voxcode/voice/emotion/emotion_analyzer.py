@@ -9,6 +9,8 @@ class EmotionProfile(BaseModel):
     sentiment: str  # "negative", "neutral", "positive"
     tone_description: str
     vox_adaptation: str  # How Vox should tailor tone and engineering support
+    source: str = "text"  # "text", or "text+voice" when acoustic features were used
+    prosody: dict | None = None
 
 
 def _hits(keywords: list[str], text: str) -> int:
@@ -174,3 +176,28 @@ class EmotionAnalyzer:
                 "Be proactive, clear, and mathematically accurate."
             ),
         )
+
+
+_ACOUSTIC_TEXT = {
+    "urgent": "production is down, we need this asap!",
+    "fatigued": "i'm tired, been at this all night",
+}
+
+
+def analyze_with_audio(
+    analyzer: EmotionAnalyzer, text: str, audio, sample_rate: int = 16_000
+) -> EmotionProfile:
+    """Text analysis, refined by loudness, pitch and speaking rate.
+
+    The transcript wins when it carries a clear signal; the voice decides
+    only when the words alone read as calm.
+    """
+    from voxcode.voice.prosody import acoustic_state, extract_features
+
+    profile = analyzer.analyze(text)
+    features = extract_features(audio, text, sample_rate)
+    state = acoustic_state(features)
+    if profile.primary_emotion == "calm" and state in _ACOUSTIC_TEXT:
+        profile = analyzer.analyze(_ACOUSTIC_TEXT[state])
+        profile = profile.model_copy(update={"intensity": round(profile.intensity * 0.8, 2)})
+    return profile.model_copy(update={"source": "text+voice", "prosody": features.to_dict()})

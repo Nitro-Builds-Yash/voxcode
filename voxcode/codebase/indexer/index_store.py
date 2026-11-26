@@ -11,6 +11,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
+from voxcode.codebase.git_history import Commit
 from voxcode.config.paths import INDEXES_DIR
 from voxcode.models.code_chunk import CodeChunk
 
@@ -34,6 +35,9 @@ class RepositoryIndex(BaseModel):
     files: dict[str, FileEntry] = Field(default_factory=dict)
     chunks: list[CodeChunk] = Field(default_factory=list)
     semantic_model: str | None = None  # embedding model used for vectors, if any
+    commits: list[Commit] = Field(default_factory=list)
+    # Precise call edges (caller chunk id -> callee chunk ids) from Jedi.
+    call_edges: dict[str, list[str]] = Field(default_factory=dict)
     updated_at: float = 0.0
 
 

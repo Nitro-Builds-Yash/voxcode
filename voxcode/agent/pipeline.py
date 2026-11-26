@@ -3,6 +3,7 @@ context -> prompt -> generate, with conversation memory."""
 
 from __future__ import annotations
 
+import time
 from collections.abc import Iterator
 
 from voxcode.agent.agent_request import AgentRequest
@@ -14,6 +15,7 @@ from voxcode.agent.planner.planner import Planner
 from voxcode.agent.planner.planner_step import StepType
 from voxcode.agent.runtime import RuntimeCache, runtime_cache
 from voxcode.core.model_registry import ModelRegistry
+from voxcode.generation.providers.types import Usage
 from voxcode.monitoring import Metrics
 
 
@@ -70,6 +72,14 @@ class AgentPipeline:
                     model_name=executor.provider.model,
                     provider=executor.provider.provider_name,
                     sources=_sources(context),
+                    usage=usage_dict(
+                        executor.provider.model,
+                        Usage(
+                            context.generation.input_tokens,
+                            context.generation.output_tokens,
+                            context.generation.cache_read_tokens,
+                        ),
+                    ),
                 )
         except Exception:
             Metrics.record_error()
@@ -79,6 +89,7 @@ class AgentPipeline:
 
     def stream(self, request: AgentRequest) -> Iterator[dict]:
         """Yield `sources`, then `token` events, then `done`."""
+        started = time.perf_counter()
         plan = self.plan(request)
         Metrics.record_request()
         executor = self._executor(request)
@@ -94,8 +105,11 @@ class AgentPipeline:
             "sources": [s.model_dump() for s in _sources(context)],
         }
         parts: list[str] = []
+        usage = Usage()
         with Metrics.generation_timer(executor.provider.provider_name, executor.provider.model):
-            for text in executor.provider.stream(context.prompt):
+            for text in executor.provider.stream(context.prompt, usage):
+                if not parts:
+                    Metrics.record_first_token(time.perf_counter() - started)
                 parts.append(text)
                 yield {"type": "token", "text": text}
         answer = "".join(parts)
@@ -105,6 +119,7 @@ class AgentPipeline:
             "answer": answer,
             "model_name": executor.provider.model,
             "provider": executor.provider.provider_name,
+            "usage": usage_dict(executor.provider.model, usage),
         }
 
     def _remember(self, request: AgentRequest, answer: str) -> None:
@@ -124,3 +139,14 @@ def _sources(context: ExecutionContext) -> list[SourceRef]:
         for r in (context.reranked_results or [])
         if r.file_path in included
     ]
+
+
+def usage_dict(model: str, usage: Usage) -> dict:
+    cost = Metrics.estimate_cost(model, usage)
+    return {
+        "input_tokens": usage.input_tokens,
+        "output_tokens": usage.output_tokens,
+        "cache_read_tokens": usage.cache_read_tokens,
+        "cache_write_tokens": usage.cache_write_tokens,
+        "estimated_cost_usd": round(cost, 6) if cost is not None else None,
+    }

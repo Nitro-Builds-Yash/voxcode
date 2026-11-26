@@ -66,7 +66,15 @@ def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo", default=".", type=Path)
     parser.add_argument("--queries", default=DEFAULT_QUERIES, type=Path)
+    parser.add_argument(
+        "--embedding-models",
+        default="",
+        help="comma-separated embedding models to compare (e.g. a code-specific model vs the default)",
+    )
     args = parser.parse_args(argv)
+    if args.embedding_models:
+        compare_embedders(args.repo, json.loads(args.queries.read_text()), args.embedding_models.split(","))
+        return
 
     cases = json.loads(args.queries.read_text())
     registry = ModelRegistry()
@@ -96,6 +104,31 @@ def main(argv: list[str] | None = None) -> None:
         print(f"| {name:<32} | {m['recall@5']:>8} | {m['mrr@10']:>6} | {m['p50_ms']:>8} ms |")
     if retriever.semantic is None:
         print("\n(semantic / hybrid modes skipped: embedding model unavailable)")
+
+
+def compare_embedders(repo: Path, cases: list[dict], models: list[str]) -> None:
+    """Semantic-only and hybrid scores for each embedding model."""
+    from voxcode.retrieval.semantic.embedder import Embedder
+
+    indexer = RepositoryIndexer()
+    print(f"| {'embedding model':<44} | semantic R@5 | hybrid R@5 | hybrid MRR |")
+    print(f"|{'-' * 46}|--------------|------------|------------|")
+    for model in [m.strip() for m in models if m.strip()]:
+        try:
+            embedder = Embedder(model)
+        except Exception as exc:
+            print(f"| {model:<44} | unavailable: {exc}"[:110])
+            continue
+        stats = indexer.index(repo, embedder=embedder, full=True)
+        index = indexer.store.load(stats.repo_key)
+        assert index is not None
+        retriever = HybridRetriever(index, embedder)
+        assert retriever.semantic is not None
+        semantic = evaluate(lambda q, r=retriever: r.semantic.search(q, 10), cases)
+        hybrid = evaluate(lambda q, r=retriever: r.search(q, 30), cases)
+        print(
+            f"| {model:<44} | {semantic['recall@5']:>12} | {hybrid['recall@5']:>10} | {hybrid['mrr@10']:>10} |"
+        )
 
 
 if __name__ == "__main__":

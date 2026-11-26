@@ -88,6 +88,7 @@ def test_edit_agent_retries_until_patch_applies(sample_repo, tmp_path, monkeypat
 
     monkeypatch.setattr(settings, "DEFAULT_PROVIDER", "scripted")
     monkeypatch.setattr(settings, "RERANK_ENABLED", False)
+    monkeypatch.setattr(settings, "PLAN_EDITS", False)
     stats, registry, provider, runtimes = _setup(
         sample_repo, tmp_path, [BAD_DIFF, GOOD_DIFF, '{"approved": true, "issues": []}']
     )
@@ -130,6 +131,6 @@ def test_tool_agent_calls_tools_then_answers(sample_repo, tmp_path, monkeypatch)
 
 
 def agent_read_outside(repo, runtimes, key):
-    from voxcode.agent.tool_agent import _Tools
+    from voxcode.agent.tool_agent import CodeTools
 
-    return _Tools(repo, runtimes.retriever(key)).call("read_file", {"path": "../../etc/passwd"})
+    return CodeTools(repo, runtimes.retriever(key)).call("read_file", {"path": "../../etc/passwd"})

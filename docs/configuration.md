@@ -68,3 +68,23 @@ Every setting can be set as an environment variable or in a `.env` file in the f
 | `ALLOWED_ORIGINS` | – | Extra browser origins allowed to call the API. |
 | `PRELOAD_MODELS` | `true` | Load models in the background at startup. |
 | `RELOAD` / `DEBUG` | `false` | Development only. |
+
+## v0.5 settings
+
+| Setting | Default | Purpose |
+|---|---|---|
+| `LOCAL_ONLY` | `false` | Block every non-localhost LLM provider. |
+| `REDACT_SECRETS` | `true` | Replace API keys, private keys, JWTs and connection strings with placeholders before context leaves the machine. |
+| `MODEL_PRICES` | built-in table | JSON map `model -> [input, output]` USD per 1M tokens, used for `voxcode_llm_cost_usd_total`. |
+| `OPENAI_BASE_URL` | OpenAI | Point the OpenAI provider at any compatible server. |
+| `NATIVE_TOOL_CALLING` | `true` | Use provider-native function calling in agent mode; falls back to the JSON protocol. |
+| `PLAN_EDITS` | `true` | Draft a file-level plan before generating a diff. |
+| `QUERY_REWRITE` | `false` | LLM rewrites the question into extra keyword/code queries before retrieval. |
+| `PRECISE_CALL_GRAPH` | `true` | Resolve call edges with Jedi (needs the `analysis` extra). |
+| `GIT_HISTORY_COMMITS` | `300` | Commits indexed for "when/why did X change" questions. |
+| `TEST_SANDBOX` | `auto` | `docker` runs tests in a network-isolated container; `auto` uses Docker when available. |
+| `SANDBOX_IMAGE` / `SANDBOX_MEMORY` / `SANDBOX_CPUS` | `python:3.12-slim` / `2g` / `2` | Sandbox container limits. |
+| `GITHUB_TOKEN` | – | Required for `apply` with `target=pull_request`. |
+| `VAD_SILENCE_SECONDS` / `VAD_ENERGY_THRESHOLD` | `0.8` / `0.015` | Hands-free utterance segmentation. |
+| `WAKE_WORD` / `WAKE_WORD_THRESHOLD` | – / `0.5` | openWakeWord model name (needs the `wakeword` extra). |
+| `OTEL_ENABLED` / `OTEL_EXPORTER_OTLP_ENDPOINT` / `OTEL_SERVICE_NAME` | `false` / `http://localhost:4317` / `voxcode` | OpenTelemetry tracing of every pipeline stage. |

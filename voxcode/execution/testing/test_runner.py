@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -13,6 +14,7 @@ from pathlib import Path
 
 from voxcode.codebase.indexer.scanner import IGNORED_DIRS
 from voxcode.execution.diff.diff_utils import normalize_diff
+from voxcode.execution.testing.docker_sandbox import container_test_command, run_in_docker, use_docker
 
 # Heavy directories linked (not copied) into the sandbox so tests can import them.
 _LINKED = {"node_modules", ".venv", "venv", "target"}
@@ -53,8 +55,12 @@ def detect_test_command(repo: Path) -> list[str] | None:
     return None
 
 
-def _copy_repo(repo: Path, target: Path) -> None:
-    """Copy the repo, linking (not copying) dependency folders at any depth."""
+def _copy_repo(repo: Path, target: Path, link_dependencies: bool = True) -> None:
+    """Copy the repo, linking (not copying) dependency folders at any depth.
+
+    With link_dependencies=False (Docker) they are skipped instead: host
+    paths do not exist inside the container and deps are installed there.
+    """
     total = 0
     links: list[Path] = []
 
@@ -76,17 +82,28 @@ def _copy_repo(repo: Path, target: Path) -> None:
         return skipped
 
     shutil.copytree(repo, target, ignore=ignore, symlinks=True)
+    if not link_dependencies:
+        return
     for rel in links:
         os.symlink(repo / rel, target / rel, target_is_directory=True)
 
 
 def run_tests_with_patch(repo: Path, diff: str, timeout: int) -> TestReport | None:
+    """Apply `diff` to a copy of the repo and run its tests there.
+
+    Uses a network-less Docker container when TEST_SANDBOX allows it,
+    otherwise a temporary directory on this machine.
+    """
     command = detect_test_command(repo)
     if command is None:
         return None
+    in_docker = use_docker()
+    label = ("docker: " if in_docker else "") + " ".join(
+        container_test_command(command) if in_docker else command
+    )
     with tempfile.TemporaryDirectory(prefix="voxcode-tests-") as tmp:
         sandbox = Path(tmp) / "repo"
-        _copy_repo(repo, sandbox)
+        _copy_repo(repo, sandbox, link_dependencies=not in_docker)
         applied = subprocess.run(
             ["git", "apply", "--recount", "-"],
             cwd=sandbox,
@@ -95,7 +112,10 @@ def run_tests_with_patch(repo: Path, diff: str, timeout: int) -> TestReport | No
             text=True,
         )
         if applied.returncode != 0:
-            return TestReport(" ".join(command), False, applied.stderr)
+            return TestReport(label, False, applied.stderr)
+        if in_docker:
+            code, output, timed_out = run_in_docker(sandbox, command, timeout)
+            return TestReport(label, code == 0 and not timed_out, output[-4000:], timed_out=timed_out)
         try:
             result = subprocess.run(
                 command,
@@ -107,9 +127,34 @@ def run_tests_with_patch(repo: Path, diff: str, timeout: int) -> TestReport | No
             )
         except subprocess.TimeoutExpired as exc:
             output = (exc.stdout or "") if isinstance(exc.stdout, str) else ""
-            return TestReport(" ".join(command), False, output[-4000:], timed_out=True)
+            return TestReport(label, False, output[-4000:], timed_out=True)
         output = (result.stdout + "\n" + result.stderr).strip()
-        return TestReport(" ".join(command), result.returncode == 0, output[-4000:])
+        return TestReport(label, result.returncode == 0, output[-4000:])
+
+
+_FAILURE_PATTERNS = [
+    re.compile(r'File "([^"]+)", line (\d+)'),  # Python tracebacks
+    re.compile(r"^(?:FAILED|ERROR) ([\w./-]+\.py)::", re.M),  # pytest summary
+    re.compile(r"^([\w./-]+\.(?:py|ts|tsx|js|jsx|go|rs|java)):(\d+)", re.M),  # path:line
+    re.compile(r"\(([\w./-]+\.(?:ts|tsx|js|jsx)):(\d+):\d+\)"),  # JS stack frames
+]
+
+
+def failure_files(output: str, repo: Path, sandbox_prefix: str = "") -> list[str]:
+    """Repository files mentioned in a failing test run (tests and traces)."""
+    found: list[str] = []
+    for pattern in _FAILURE_PATTERNS:
+        for match in pattern.finditer(output):
+            raw = match.group(1)
+            for prefix in (sandbox_prefix, "/work/", str(repo) + "/"):
+                if prefix and raw.startswith(prefix):
+                    raw = raw[len(prefix) :]
+            if "voxcode-tests-" in raw:
+                raw = raw.split("/repo/", 1)[-1]
+            rel = raw.lstrip("./")
+            if rel and not rel.startswith("/") and (repo / rel).is_file() and rel not in found:
+                found.append(rel)
+    return found[:5]
 
 
 def run_tests(repo: Path, timeout: int) -> TestReport | None:

@@ -12,7 +12,7 @@ COPY voxcode ./voxcode
 # --build-arg TORCH_INDEX=https://download.pytorch.org/whl/cu128 for CUDA.
 ARG TORCH_INDEX=https://download.pytorch.org/whl/cpu
 RUN pip install --no-cache-dir torch --index-url ${TORCH_INDEX} \
-    && pip install --no-cache-dir ".[ml]" faster-whisper
+    && pip install --no-cache-dir ".[ml,mcp,analysis,otel]" faster-whisper
 
 COPY . .
 

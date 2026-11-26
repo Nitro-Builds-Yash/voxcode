@@ -1,0 +1,10 @@
+[
+  {"question": "How are BM25 and vector search results combined?", "reference": "Reciprocal Rank Fusion (RRF) merges the ranked lists (k=60) in voxcode/retrieval/hybrid/fusion.py; items found by several retrievers rise to the top."},
+  {"question": "What happens if a model-written patch does not apply?", "reference": "git apply --check fails, the error and the rejected patch are sent back to the coder as feedback, and it retries up to EDIT_MAX_ATTEMPTS times (default 3)."},
+  {"question": "Where are indexes stored?", "reference": "Under VOXCODE_HOME, ~/.voxcode by default: indexes/<repo>.json, a Qdrant folder and an SQLite embedding cache; nothing is written into the indexed repository."},
+  {"question": "How does VoxCode avoid re-embedding unchanged files?", "reference": "It hashes every file (SHA-1) and only re-parses and re-embeds new or changed files; embeddings are also cached by text hash in SQLite."},
+  {"question": "Which LLM providers are supported?", "reference": "Ollama, OpenAI (and OpenAI-compatible servers), Anthropic, Gemini, Groq and OpenRouter."},
+  {"question": "How does the server stop other websites from calling the API?", "reference": "LocalSecurityMiddleware rejects requests whose Origin header is neither the server's own origin nor in ALLOWED_ORIGINS; an optional API_TOKEN can also be required."},
+  {"question": "How are tests run against a proposed patch?", "reference": "The repo is copied to a temporary directory (or a network-less Docker container), the patch is applied there and the detected test command (pytest, npm test, go test, cargo test) runs with a timeout."},
+  {"question": "What does the call-graph expansion add to search results?", "reference": "For the top results it adds callers and callees from the code graph (precise Jedi edges for Python, name matching otherwise), up to GRAPH_EXPANSION extra chunks."}
+]

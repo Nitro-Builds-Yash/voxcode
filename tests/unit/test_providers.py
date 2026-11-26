@@ -37,7 +37,7 @@ def test_openai_compatible_streaming():
 
 def test_anthropic_streaming():
     def handler(request):
-        assert json.loads(request.content)["system"] == "sys"
+        assert json.loads(request.content)["system"][0]["text"] == "sys"
         return httpx.Response(
             200,
             text=_sse(

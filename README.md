@@ -60,6 +60,21 @@
   </tr>
 </table>
 
+
+## What's new in v0.5
+
+- **MCP server** — use VoxCode's index from Claude Desktop, Claude Code or Cursor: `voxcode mcp --repo .`
+  ```json
+  {"mcpServers": {"voxcode": {"command": "voxcode", "args": ["mcp", "--repo", "/path/to/repo"]}}}
+  ```
+- **`@vox` in VS Code Chat**, plan review before edits, apply to a **branch or pull request**.
+- **Hands-free voice** — VAD segmentation, optional wake word, barge-in, tone from prosody.
+- **Smarter retrieval** — Jedi call graph, git-history search, optional query rewriting.
+- **Agent** — native tool calling, plan → edit → test → repair, Docker-sandboxed tests.
+- **Privacy & cost** — secret redaction, `LOCAL_ONLY` mode, prompt caching, token/cost tracking.
+- **Observability** — per-stage timings, OpenTelemetry traces, Grafana dashboard: `docker compose --profile observability up`.
+- **Evaluation** — `voxcode swebench` (SWE-bench localization), `voxcode eval --answers` (LLM judge), `--embedding-models` comparison.
+
 ## 🚀 Quick start
 
 ```bash

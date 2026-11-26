@@ -27,8 +27,11 @@ class Coder:
         context: ContextResult,
         feedback: str | None = None,
         directive: str | None = None,
+        plan: str | None = None,
     ) -> CoderOutput:
         task = "Write the patch that implements the user's request."
+        if plan:
+            task += f"\n\nFollow this approved plan:\n{plan}"
         if feedback:
             task += (
                 "\n\nYour previous attempt was rejected. Fix these problems and output a "

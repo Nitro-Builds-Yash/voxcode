@@ -82,3 +82,30 @@ PROMPT_SIZE_BYTES = Histogram(
     "prompt_size_bytes",
     "Prompt size in bytes",
 )
+
+# ==========================================================
+# Tokens, cost and privacy
+# ==========================================================
+
+LLM_TOKENS_TOTAL = Counter(
+    "llm_tokens_total",
+    "LLM tokens by provider, model and kind (input, output, cache_read, cache_write)",
+    ["provider", "model", "kind"],
+)
+
+LLM_COST_USD_TOTAL = Counter(
+    "llm_cost_usd_total",
+    "Estimated LLM spend in USD (only for models listed in MODEL_PRICES)",
+    ["provider", "model"],
+)
+
+SECRETS_REDACTED_TOTAL = Counter(
+    "secrets_redacted_total",
+    "Secrets removed from prompts before they were sent to a remote provider",
+)
+
+TIME_TO_FIRST_TOKEN = Histogram(
+    "time_to_first_token_seconds",
+    "Latency from request start to the first streamed token",
+    buckets=(0.1, 0.25, 0.5, 0.75, 1, 1.5, 2, 3, 5, 10),
+)

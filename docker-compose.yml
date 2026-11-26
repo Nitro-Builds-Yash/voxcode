@@ -1,3 +1,7 @@
+# docker compose up                              VoxCode + Redis + Qdrant
+# docker compose --profile observability up      + Jaeger traces (localhost:16686),
+#                                                  Prometheus and Grafana (localhost:3000, admin/admin)
+# Set OTEL_ENABLED=true in .env to send traces.
 services:
   voxcode:
     build: .
@@ -16,6 +20,7 @@ services:
       OLLAMA_HOST: http://host.docker.internal:11434
       # Only folders under /workspace can be indexed from inside the container.
       ALLOWED_REPO_ROOTS: /workspace
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
     volumes:
       - ${WORKSPACE_DIR:-./examples}:/workspace
       - voxcode_data:/root/.voxcode
@@ -35,6 +40,31 @@ services:
     image: redis:7-alpine
     volumes:
       - redis_data:/data
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.62.0
+    profiles: [observability]
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "127.0.0.1:16686:16686"
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    profiles: [observability]
+    volumes:
+      - ./deploy/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+
+  grafana:
+    image: grafana/grafana:11.3.0
+    profiles: [observability]
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - ./deploy/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./deploy/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
 
 volumes:
   voxcode_data:

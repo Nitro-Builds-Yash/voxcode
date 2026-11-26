@@ -9,11 +9,12 @@ import time
 
 from fastapi import APIRouter, File, HTTPException, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.concurrency import run_in_threadpool
-from fastapi.responses import Response
+from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel, Field
 
 from voxcode.api import services
 from voxcode.voice.commands import parse_command
+from voxcode.voice.listener import VoiceListener
 from voxcode.voice.recorder import RecorderError, recorder
 from voxcode.voice.tts.tts_service import tts_service
 
@@ -29,6 +30,7 @@ class TTSRequest(BaseModel):
     text: str = Field(min_length=1, max_length=5000)
     emotion: str = "calm"
     play: bool = True  # play on the backend machine; False only synthesizes
+    reply_id: str | None = None  # sentences of one reply; dropped after barge-in
 
 
 class ToneAnalysisRequest(BaseModel):
@@ -45,8 +47,8 @@ def _stt():
     return stt
 
 
-def _result(text: str) -> dict:
-    emotion = services.analyze_emotion(text)
+def _result(text: str, audio=None) -> dict:
+    emotion = services.analyze_emotion(text, audio)
     return {
         "transcription": text,
         "command": parse_command(text) if text else None,
@@ -81,8 +83,15 @@ def stop_recording() -> dict:
         audio = recorder.stop()
     except RecorderError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+    started = time.perf_counter()
     text = _stt().transcribe(audio) if audio.size else ""
-    return {**_result(text), "seconds": round(audio.size / 16_000, 2), "status": "success"}
+    stt_ms = round((time.perf_counter() - started) * 1000, 1)
+    return {
+        **_result(text, audio if audio.size else None),
+        "seconds": round(audio.size / 16_000, 2),
+        "timings_ms": {"stt": stt_ms},
+        "status": "success",
+    }
 
 
 @router.post("/analyze-tone")
@@ -94,8 +103,15 @@ def analyze_tone(payload: ToneAnalysisRequest) -> dict:
 @router.post("/speak")
 def speak_text(payload: TTSRequest) -> dict:
     if payload.play:
-        tts_service.speak(payload.text, payload.emotion)
+        tts_service.speak(payload.text, payload.emotion, payload.reply_id)
     return {"status": "ok", "engine": tts_service.engine, "spoken": payload.text}
+
+
+@router.post("/stop-speaking")
+def stop_speaking() -> dict:
+    """Barge-in: stop the reply being spoken (and its queued sentences)."""
+    tts_service.stop()
+    return {"status": "stopped"}
 
 
 @router.post("/synthesize")
@@ -166,3 +182,94 @@ async def websocket_voice_endpoint(websocket: WebSocket):
     except Exception as exc:
         logger.error("Voice WebSocket error: %s", exc)
         await websocket.close()
+
+
+_listener: VoiceListener | None = None
+
+
+def _get_listener() -> VoiceListener:
+    global _listener
+    if _listener is None:
+        stt = _stt()
+        _listener = VoiceListener(stt.transcribe, _result)
+    return _listener
+
+
+@router.websocket("/listen")
+async def websocket_listen(websocket: WebSocket):
+    """Hands-free mode on the server's microphone.
+
+    Send `{"type": "start"}` to begin listening and `{"type": "stop"}` to end.
+    Events: listening, wake, speech_start, partial, final (with transcription,
+    command, emotion incl. prosody, timings_ms), stopped, error.
+    """
+    await websocket.accept()
+    try:
+        listener = await run_in_threadpool(_get_listener)
+    except HTTPException as exc:
+        await websocket.send_json({"type": "error", "detail": exc.detail})
+        await websocket.close()
+        return
+    events = listener.subscribe()
+
+    async def pump():
+        while True:
+            event = await run_in_threadpool(_next_event, events)
+            if event is not None:
+                await websocket.send_json(event)
+
+    pump_task = asyncio.create_task(pump())
+    try:
+        while True:
+            message = await websocket.receive_json()
+            kind = message.get("type")
+            if kind == "start":
+                listener.start()
+            elif kind == "stop":
+                listener.stop()
+    except (WebSocketDisconnect, RuntimeError, ValueError):
+        pass
+    finally:
+        pump_task.cancel()
+        listener.unsubscribe(events)
+        if not listener._subscribers:
+            listener.stop()
+
+
+def _next_event(events):
+    try:
+        return events.get(timeout=0.5)
+    except Exception:
+        return None
+
+
+@router.post("/listen/start")
+def listen_start() -> dict:
+    _get_listener().start()
+    return {"status": "listening"}
+
+
+@router.post("/listen/stop")
+def listen_stop() -> dict:
+    if _listener is not None:
+        _listener.stop()
+    return {"status": "stopped"}
+
+
+@router.get("/listen/events")
+def listen_events() -> StreamingResponse:
+    """Server-sent events from the hands-free listener (same events as the
+    /voice/listen WebSocket), for clients without WebSocket support."""
+    listener = _get_listener()
+    events = listener.subscribe()
+
+    def stream():
+        try:
+            yield ": connected\n\n"
+            while True:
+                event = _next_event(events)
+                yield f"data: {json.dumps(event)}\n\n" if event is not None else ": keep-alive\n\n"
+        finally:
+            listener.unsubscribe(events)
+
+    return StreamingResponse(stream(), media_type="text/event-stream", headers={"Cache-Control": "no-cache"})

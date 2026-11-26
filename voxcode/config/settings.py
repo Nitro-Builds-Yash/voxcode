@@ -9,7 +9,7 @@ class Settings(BaseSettings):
 
     # ----------------------------------------------------------------- app
     APP_NAME: str = "VoxCode"
-    APP_VERSION: str = "0.4.0"
+    APP_VERSION: str = "0.5.0"
     DEBUG: bool = False
     HOST: str = "127.0.0.1"
     PORT: int = 8000
@@ -49,17 +49,34 @@ class Settings(BaseSettings):
     RETRIEVAL_CANDIDATES: int = 30
     GRAPH_EXPANSION: int = 4
     CONTEXT_MAX_TOKENS: int = 12_000
+    # Rewrite vague (spoken) questions into code-search queries with the LLM.
+    QUERY_REWRITE: bool = False
+    # Precise Python call graph with Jedi (falls back to name matching).
+    PRECISE_CALL_GRAPH: bool = True
+    # Recent commits indexed for "why/when/who changed" questions (0 disables).
+    GIT_HISTORY_COMMITS: int = 300
 
     # ------------------------------------------------------------ provider
     DEFAULT_PROVIDER: str = "ollama"
     PROVIDER_TIMEOUT_SECONDS: float = 120.0
     MAX_OUTPUT_TOKENS: int = 8192
+    # Refuse every provider that is not on this machine or the local network.
+    LOCAL_ONLY: bool = False
+    # Strip API keys, passwords and tokens from prompts sent to remote models.
+    REDACT_SECRETS: bool = True
+    # Optional USD prices per 1M tokens for cost tracking, as JSON:
+    # {"claude-sonnet-5-5": {"input": 3, "output": 15, "cache_read": 0.3}}
+    MODEL_PRICES: str = ""
+    # Use the provider's native tool calling in agentic mode (JSON fallback otherwise).
+    NATIVE_TOOL_CALLING: bool = True
 
     OLLAMA_HOST: str = "http://localhost:11434"
     OLLAMA_MODEL: str = "qwen3:8b"
 
     OPENAI_API_KEY: str = Field(default="", repr=False)
     OPENAI_MODEL: str = "gpt-4.1"
+    # Any OpenAI-compatible server: LM Studio, vLLM, llama.cpp, Azure OpenAI...
+    OPENAI_BASE_URL: str = "https://api.openai.com/v1"
 
     OPENROUTER_API_KEY: str = Field(default="", repr=False)
     OPENROUTER_MODEL: str = "deepseek/deepseek-chat"
@@ -98,10 +115,31 @@ class Settings(BaseSettings):
     # "auto" prefers Piper (neural) when PIPER_MODEL is set, else pyttsx3.
     TTS_ENGINE: str = "auto"
     PIPER_MODEL: str = ""
+    # Hands-free listening: energy-based voice activity detection.
+    VAD_SILENCE_SECONDS: float = 0.8
+    VAD_ENERGY_THRESHOLD: float = 0.015
+    # Optional wake word via openWakeWord (e.g. "hey_jarvis"); empty = push-to-talk only.
+    WAKE_WORD: str = ""
+    WAKE_WORD_THRESHOLD: float = 0.5
 
     # ---------------------------------------------------------- code edits
     EDIT_MAX_ATTEMPTS: int = 3
     TEST_TIMEOUT_SECONDS: int = 180
+    # Draft a reviewable plan before multi-file edits.
+    PLAN_EDITS: bool = True
+    # "docker": run tests in a container with no network and resource limits;
+    # "local": in a temporary copy on this machine; "auto": docker if available.
+    TEST_SANDBOX: str = "auto"
+    SANDBOX_IMAGE: str = "python:3.12-slim"
+    SANDBOX_MEMORY: str = "2g"
+    SANDBOX_CPUS: str = "2"
+    # Used by branch + pull-request mode (/agent/apply with create_pr).
+    GITHUB_TOKEN: str = Field(default="", repr=False)
+
+    # ------------------------------------------------------- observability
+    OTEL_ENABLED: bool = False
+    OTEL_EXPORTER_OTLP_ENDPOINT: str = "http://localhost:4318/v1/traces"
+    OTEL_SERVICE_NAME: str = "voxcode"
 
     # ------------------------------------------------------------- helpers
     @staticmethod
