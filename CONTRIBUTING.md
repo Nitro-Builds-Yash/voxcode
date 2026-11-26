@@ -13,6 +13,19 @@ pre-commit install
 
 The VS Code extension lives in `vscode-extension/`: `npm install && npm run compile`, then press <kbd>F5</kbd> in VS Code to launch it in a development window.
 
+### Rust core (optional)
+
+The extension in `native/` speeds up search, scanning, redaction and VAD. Everything works without it.
+
+```bash
+pip install maturin
+pip install ./native                    # or, while iterating: cd native && maturin develop --release
+cd native && cargo fmt && cargo clippy --all-targets --all-features -- -D warnings && cargo test
+NATIVE_ACCEL=off pytest                 # check the pure-Python path too
+```
+
+Any change to a native function needs the matching Python change: `tests/unit/test_native.py` asserts both give identical results.
+
 ## Before you open a pull request
 
 ```bash
@@ -36,4 +49,6 @@ voxcode eval                            # retrieval changes: compare before/afte
 | Change how answers are built | `voxcode/agent/pipeline.py`, `voxcode/generation/` |
 | Change the edit loop | `voxcode/agent/edit_agent.py`, `voxcode/execution/` |
 | Add an endpoint | `voxcode/api/routes/` |
+| Speed up a hot path in Rust | `native/src/` (+ the caller's Python fallback, see `voxcode/native.py`) |
+| Rust call graph | `voxcode/codebase/graph/rust_graph.py`, `rust_analyzer.py` |
 | Add a voice command | `voxcode/voice/commands.py` and `vscode-extension/src/extension.ts` |

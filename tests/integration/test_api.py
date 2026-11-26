@@ -149,3 +149,19 @@ def test_api_token(client, monkeypatch):
     assert client.get("/config/", headers={"X-VoxCode-Token": "s3cret"}).status_code == 200
     assert client.get("/health").status_code == 200
     assert "s3cret" in client.get("/").text  # injected for the same-origin UI
+
+
+def test_rust_repository_end_to_end(client, rust_repo, monkeypatch):
+    monkeypatch.setattr(settings, "RUST_ANALYZER", "off")
+    stats = client.post("/index/", json={"repository_path": str(rust_repo)}).json()
+    assert stats["files_indexed"] == 6 and stats["functions_found"] >= 8
+    from voxcode.api import services
+    from voxcode.codebase.indexer.indexer import repository_key
+
+    index = services.indexer.store.load(repository_key(rust_repo.resolve()))
+    assert index is not None and len(index.call_edges) >= 5  # Rust call graph stored with the index
+
+    body = client.post(
+        "/agent/query", json={"query": "where are item names normalized", "repository_path": str(rust_repo)}
+    ).json()
+    assert "src/util.rs" in {s["file_path"] for s in body["sources"]}

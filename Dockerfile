@@ -1,3 +1,12 @@
+# --- Rust acceleration (voxcode-native) -------------------------------------
+FROM rust:1-slim AS native
+RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-pip python3-venv \
+    && rm -rf /var/lib/apt/lists/* \
+    && python3 -m venv /opt/maturin && /opt/maturin/bin/pip install --no-cache-dir "maturin>=1.7,<2"
+COPY native /src/native
+RUN /opt/maturin/bin/maturin build --release --manifest-path /src/native/Cargo.toml -o /wheels
+
+# --- Application ------------------------------------------------------------
 FROM python:3.11-slim
 
 WORKDIR /app
@@ -13,6 +22,8 @@ COPY voxcode ./voxcode
 ARG TORCH_INDEX=https://download.pytorch.org/whl/cpu
 RUN pip install --no-cache-dir torch --index-url ${TORCH_INDEX} \
     && pip install --no-cache-dir ".[ml,mcp,analysis,otel]" faster-whisper
+COPY --from=native /wheels /tmp/wheels
+RUN pip install --no-cache-dir /tmp/wheels/*.whl && rm -rf /tmp/wheels
 
 COPY . .
 

@@ -5,7 +5,8 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from voxcode.codebase.parser.languages import detect_language
+from voxcode.codebase.parser.languages import EXTENSION_LANGUAGES, detect_language
+from voxcode.native import native
 
 # Never source code, wherever they appear.
 IGNORED_DIRS = {
@@ -35,6 +36,20 @@ def _skip_dir(name: str, parent: Path, root: Path) -> bool:
 
 def scan_repository(root: Path, max_file_bytes: int = 1_000_000) -> list[Path]:
     """Return indexable files under `root`, sorted, as absolute paths."""
+    accel = native()
+    if accel is not None:
+        return accel.scan_repository(
+            Path(root),
+            max_file_bytes,
+            IGNORED_DIRS,
+            ROOT_IGNORED_DIRS,
+            list(IGNORED_SUFFIXES),
+            set(EXTENSION_LANGUAGES),
+        )
+    return scan_repository_python(root, max_file_bytes)
+
+
+def scan_repository_python(root: Path, max_file_bytes: int = 1_000_000) -> list[Path]:
     files: list[Path] = []
     for directory, subdirs, filenames in os.walk(root):
         parent = Path(directory)

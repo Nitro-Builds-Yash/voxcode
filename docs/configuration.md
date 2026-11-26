@@ -88,3 +88,13 @@ Every setting can be set as an environment variable or in a `.env` file in the f
 | `VAD_SILENCE_SECONDS` / `VAD_ENERGY_THRESHOLD` | `0.8` / `0.015` | Hands-free utterance segmentation. |
 | `WAKE_WORD` / `WAKE_WORD_THRESHOLD` | – / `0.5` | openWakeWord model name (needs the `wakeword` extra). |
 | `OTEL_ENABLED` / `OTEL_EXPORTER_OTLP_ENDPOINT` / `OTEL_SERVICE_NAME` | `false` / `http://localhost:4317` / `voxcode` | OpenTelemetry tracing of every pipeline stage. |
+
+## v0.6 settings (Rust)
+
+| Setting | Default | Purpose |
+|---|---|---|
+| `NATIVE_ACCEL` | `auto` | Use the Rust extension (`voxcode-native`) for tokenizing, BM25, scanning, redaction and VAD when it is installed. `off` forces the Python code; results are identical either way. |
+| `RUST_ANALYZER` | `auto` | Rust call graph source. `auto` uses `rust-analyzer` from `PATH` if it runs, otherwise the built-in tree-sitter resolver; a path picks a specific binary; `off` always uses the resolver. |
+| `RUST_ANALYZER_TIMEOUT` | `60` | Seconds to wait for rust-analyzer to finish indexing (the whole pass is capped at 3x this). |
+
+`SANDBOX_IMAGE` left at its default now picks `rust:1-slim` for Cargo projects (`golang:1` for Go, `node:22-slim` for Node).

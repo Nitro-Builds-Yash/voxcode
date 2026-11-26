@@ -1,0 +1,25 @@
+[package]
+name = "voxcode-native"
+version = "0.6.0"
+edition = "2021"
+rust-version = "1.74"
+description = "Rust acceleration for VoxCode: tokenizer, BM25, repository scanner, secret redaction, VAD"
+license = "MIT"
+publish = false
+
+[lib]
+name = "voxcode_native"
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = []
+python = ["dep:pyo3"]
+
+[dependencies]
+pyo3 = { version = "0.25", features = ["abi3-py310", "extension-module"], optional = true }
+rayon = "1.10"
+regex = "1.11"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1

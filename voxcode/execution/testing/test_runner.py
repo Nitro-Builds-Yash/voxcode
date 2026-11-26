@@ -42,8 +42,10 @@ def detect_test_command(repo: Path) -> list[str] | None:
             return ["npm", "test", "--silent"]
     if (repo / "go.mod").exists():
         return ["go", "test", "./..."]
-    if (repo / "Cargo.toml").exists():
-        return ["cargo", "test", "--quiet"]
+    cargo = repo / "Cargo.toml"
+    if cargo.exists():
+        workspace = "[workspace]" in cargo.read_text(errors="ignore")
+        return ["cargo", "test", "--quiet", *(["--workspace"] if workspace else [])]
     pyproject = repo / "pyproject.toml"
     if (
         (repo / "pytest.ini").exists()
@@ -137,6 +139,9 @@ _FAILURE_PATTERNS = [
     re.compile(r"^(?:FAILED|ERROR) ([\w./-]+\.py)::", re.M),  # pytest summary
     re.compile(r"^([\w./-]+\.(?:py|ts|tsx|js|jsx|go|rs|java)):(\d+)", re.M),  # path:line
     re.compile(r"\(([\w./-]+\.(?:ts|tsx|js|jsx)):(\d+):\d+\)"),  # JS stack frames
+    re.compile(r"panicked at ([\w./-]+\.rs):(\d+):\d+"),  # Rust test panics
+    re.compile(r"^\s*--> ([\w./-]+\.rs):(\d+):\d+", re.M),  # rustc errors
+    re.compile(r"^---- ([\w:]+) stdout ----", re.M),  # failing Rust test name (resolved below)
 ]
 
 
@@ -146,6 +151,8 @@ def failure_files(output: str, repo: Path, sandbox_prefix: str = "") -> list[str
     for pattern in _FAILURE_PATTERNS:
         for match in pattern.finditer(output):
             raw = match.group(1)
+            if "::" in raw or (pattern.pattern.startswith("^----")):
+                raw = _rust_test_file(raw, repo) or ""
             for prefix in (sandbox_prefix, "/work/", str(repo) + "/"):
                 if prefix and raw.startswith(prefix):
                     raw = raw[len(prefix) :]
@@ -155,6 +162,21 @@ def failure_files(output: str, repo: Path, sandbox_prefix: str = "") -> list[str
             if rel and not rel.startswith("/") and (repo / rel).is_file() and rel not in found:
                 found.append(rel)
     return found[:5]
+
+
+def _rust_test_file(test_path: str, repo: Path) -> str | None:
+    """`store::tests::saves` -> the file defining `fn saves` (src/store.rs)."""
+    *modules, name = test_path.split("::")
+    modules = [m for m in modules if m != "tests"]
+    candidates = [f"src/{'/'.join(modules)}.rs", f"src/{'/'.join(modules)}/mod.rs"] if modules else []
+    candidates += ["src/lib.rs", "src/main.rs"]
+    if not modules:
+        candidates += [p.relative_to(repo).as_posix() for p in sorted((repo / "tests").glob("*.rs"))]
+    for rel in candidates:
+        path = repo / rel
+        if path.is_file() and re.search(rf"\bfn\s+{re.escape(name)}\b", path.read_text(errors="ignore")):
+            return rel
+    return None
 
 
 def run_tests(repo: Path, timeout: int) -> TestReport | None:

@@ -33,6 +33,52 @@ jobs:
           path: dist/
       - uses: pypa/gh-action-pypi-publish@release/v1
 
+  native-wheels:
+    # abi3 wheels (one per platform covers Python 3.10+).
+    strategy:
+      matrix:
+        include:
+          - { os: ubuntu-latest, target: x86_64, manylinux: auto }
+          - { os: ubuntu-latest, target: aarch64, manylinux: auto }
+          - { os: macos-latest, target: universal2-apple-darwin }
+          - { os: windows-latest, target: x64 }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: PyO3/maturin-action@v1
+        with:
+          working-directory: native
+          target: ${{ matrix.target }}
+          manylinux: ${{ matrix.manylinux || 'off' }}
+          args: --release --out dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-wheels-${{ matrix.os }}-${{ matrix.target }}
+          path: native/dist/
+
+  native-package:
+    needs: native-wheels
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: PyO3/maturin-action@v1
+        with:
+          working-directory: native
+          command: sdist
+          args: --out dist
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: native-wheels-*
+          path: native/dist
+          merge-multiple: true
+      # Needs a trusted publisher for the `voxcode-native` project on PyPI.
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: native/dist/
+
   vscode-extension:
     runs-on: ubuntu-latest
     env:
@@ -60,7 +106,7 @@ jobs:
         run: npx --yes ovsx publish voxcode.vsix -p "$OVSX_PAT"
 
   github-release:
-    needs: [python-package, vscode-extension]
+    needs: [python-package, native-package, vscode-extension]
     runs-on: ubuntu-latest
     permissions:
       contents: write

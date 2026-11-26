@@ -24,7 +24,7 @@ class FileEntry(BaseModel):
 
 
 # Bump when chunking/parsing changes so existing indexes are rebuilt.
-INDEX_FORMAT_VERSION = 1
+INDEX_FORMAT_VERSION = 2
 
 
 class RepositoryIndex(BaseModel):
