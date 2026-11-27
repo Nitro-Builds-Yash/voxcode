@@ -9,7 +9,7 @@ class Settings(BaseSettings):
 
     # ----------------------------------------------------------------- app
     APP_NAME: str = "VoxCode"
-    APP_VERSION: str = "0.8.0"
+    APP_VERSION: str = "0.8.1"
     DEBUG: bool = False
     HOST: str = "127.0.0.1"
     PORT: int = 8000
@@ -59,7 +59,7 @@ class Settings(BaseSettings):
     ANSWER_CACHE_TTL_SECONDS: int = 3600
     # Learned intent classifier; below this confidence the keyword rules decide.
     INTENT_MODEL: bool = True
-    INTENT_MIN_CONFIDENCE: float = 0.3
+    INTENT_MIN_CONFIDENCE: float = 0.5
     # Contextual retrieval: an LLM sentence per chunk at index time (one call per changed file, cached).
     CONTEXTUAL_CHUNKS: bool = False
     # Review (plans and patches in the browser): approved plans can be saved to Obsidian.
@@ -85,6 +85,9 @@ class Settings(BaseSettings):
     # Rust call graph: "auto" uses rust-analyzer from PATH when it works, else tree-sitter resolution.
     RUST_ANALYZER: str = "auto"
     RUST_ANALYZER_TIMEOUT: float = 60.0
+    # Build the precise call graph after indexing, in the background, so the first question
+    # doesn't wait for it (search uses name matching until it's ready).
+    BACKGROUND_CALL_GRAPH: bool = True
     GIT_HISTORY_COMMITS: int = 300
 
     # ------------------------------------------------------------ provider

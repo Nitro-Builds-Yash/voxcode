@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import threading
 from functools import lru_cache
 from pathlib import Path
 
@@ -49,10 +50,46 @@ def index_repository(repo: Path, full: bool = False) -> IndexStats:
         from voxcode.retrieval.contextual import ChunkContextualizer
 
         contextualizer = ChunkContextualizer(registry.get_provider())
-    stats = indexer.index(repo, embedder=registry.get_embedder(), full=full, contextualizer=contextualizer)
+    with _index_lock:
+        stats = indexer.index(
+            repo,
+            embedder=registry.get_embedder(),
+            full=full,
+            contextualizer=contextualizer,
+            precise_graph=not settings.BACKGROUND_CALL_GRAPH,
+        )
     retrain_ranker(stats.repo_key)
     runtime_cache.invalidate(stats.repo_key)
+    _schedule_call_graph(stats.repo_key)
     return stats
+
+
+_index_lock = threading.RLock()
+_graph_jobs: set[str] = set()
+
+
+def _schedule_call_graph(repo_key: str) -> None:
+    """Build precise call edges in the background (Jedi takes ~30 s on a mid-size repo)."""
+    from voxcode.codebase.indexer.indexer import complete_call_graph
+
+    index = indexer.store.load(repo_key)
+    if index is None or not index.graph_pending or repo_key in _graph_jobs:
+        return
+    _graph_jobs.add(repo_key)
+
+    def run() -> None:
+        try:
+            if complete_call_graph(indexer.store, repo_key, _index_lock):
+                runtime_cache.invalidate(repo_key)
+        except Exception as exc:  # the name-based graph keeps working
+            logger.warning("Background call graph failed for %s: %s", repo_key, exc)
+        finally:
+            _graph_jobs.discard(repo_key)
+            latest = indexer.store.load(repo_key)
+            if latest is not None and latest.graph_pending:
+                _schedule_call_graph(repo_key)  # files changed while it ran
+
+    threading.Thread(target=run, daemon=True, name=f"call-graph-{repo_key}").start()
 
 
 def retrain_ranker(repo_key: str) -> dict | None:

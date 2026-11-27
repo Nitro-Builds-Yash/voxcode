@@ -14,7 +14,6 @@ import time
 from pathlib import Path
 
 import numpy as np
-from rank_bm25 import BM25Okapi
 
 from voxcode.codebase.indexer.indexer import RepositoryIndexer
 from voxcode.core.model_registry import ModelRegistry
@@ -49,7 +48,9 @@ def evaluate(search, cases: list[dict], k: int = 5) -> dict:
 
 def whitespace_bm25(chunks):
     """The original tokenizer (lowercase + split on spaces), for comparison."""
-    index = BM25Okapi([f"{c.symbol_name} {c.content}".lower().split() or ["_"] for c in chunks])
+    from voxcode.retrieval.bm25.bm25_retriever import Okapi
+
+    index = Okapi([f"{c.symbol_name} {c.content}".lower().split() or ["_"] for c in chunks])
 
     def search(query: str):
         scores = np.asarray(index.get_scores(query.lower().split()))

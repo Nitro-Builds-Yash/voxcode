@@ -118,3 +118,17 @@ def test_error_event_mid_stream_raises():
     )
     with pytest.raises(ProviderError, match="overloaded"):
         provider.generate(PROMPT)
+
+
+def test_unreachable_provider_says_what_to_do():
+    """Regression: the UI showed "ollama: request failed: [Errno 111] Connection refused"."""
+    import pytest
+
+    from voxcode.generation.providers.base_provider import ProviderError
+    from voxcode.generation.providers.providers import OllamaProvider
+
+    provider = OllamaProvider("qwen3:8b", base_url="http://127.0.0.1:9")
+    with pytest.raises(
+        ProviderError, match=r"Can't reach ollama at http://127.0.0.1:9\. Is Ollama running\?"
+    ):
+        provider._post_json("http://127.0.0.1:9/api/chat", {})

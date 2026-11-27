@@ -11,6 +11,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from voxcode.config.settings import settings
 from voxcode.generation.providers.base_provider import BaseProvider
 
 SAMPLE_FILES = {
@@ -157,6 +158,7 @@ def isolated_storage(tmp_path, monkeypatch):
     from voxcode.config import paths
 
     monkeypatch.setattr(paths, "LEARNING_DIR", tmp_path / "learning")
+    monkeypatch.setattr(settings, "BACKGROUND_CALL_GRAPH", False)  # deterministic graphs in tests
     answer_cache.clear()
     return store
 

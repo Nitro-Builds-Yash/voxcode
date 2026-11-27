@@ -65,14 +65,39 @@ def rule_classify(query: str) -> TaskType:
     return TaskType.CHAT
 
 
+_READ = {TaskType.EXPLAIN, TaskType.SEARCH, TaskType.CHAT}
+_QUESTION = re.compile(
+    r"^\s*(what|how|why|where|which|who|when|is|are|does|do|can|could|should|explain|describe|summari[sz]e|"
+    r"show|list|tell|walk|give)\b",
+    re.I,
+)
+
+
 class TaskClassifier:
+    """Keyword rules decide; the learned model only refines.
+
+    The model may (a) decide when no rule matches, and (b) pick a better
+    label *within the same family* (reading: explain/search/chat; changing:
+    fix/refactor/generate/test/execute). It never turns a question into an
+    edit or an edit into a question on its own: a misrouted question would
+    rewrite code the user only asked about.
+    """
+
     def classify(self, query: str) -> TaskType:
         from voxcode.config.settings import settings
 
-        if settings.INTENT_MODEL:
-            from voxcode.agent.planner.intent_model import default_model
+        rule = rule_classify(query)
+        if not settings.INTENT_MODEL:
+            return rule
+        from voxcode.agent.planner.intent_model import default_model
 
-            label, confidence = default_model().predict(query)
-            if confidence >= settings.INTENT_MIN_CONFIDENCE:
-                return TaskType(label)
-        return rule_classify(query)
+        label, confidence = default_model().predict(query)
+        guess = TaskType(label)
+        if rule != TaskType.CHAT:
+            same_family = (rule in _READ) == (guess in _READ)
+            return guess if same_family and confidence >= settings.INTENT_MIN_CONFIDENCE else rule
+        if confidence < settings.INTENT_MIN_CONFIDENCE:
+            return rule
+        if guess not in _READ and _QUESTION.match(query):
+            return TaskType.EXPLAIN  # a question is never an edit
+        return guess

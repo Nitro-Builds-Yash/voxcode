@@ -140,11 +140,32 @@ class BaseProvider(ABC):
                 f"(set {self.provider_name.upper()}_API_KEY or use /config/update)"
             )
 
+    def _unreachable(self, url: str, exc: Exception) -> str:
+        """A message that says what to do, not just "request failed"."""
+        from urllib.parse import urlsplit
+
+        parts = urlsplit(url)
+        where = f"{parts.scheme}://{parts.netloc}"
+        if isinstance(exc, httpx.ConnectError):
+            hint = (
+                "Is Ollama running? Start it with `ollama serve` (and `ollama pull <model>`), "
+                "or choose another provider in the settings."
+                if self.provider_name == "ollama"
+                else "Check the server address and your network, or choose another provider in the settings."
+            )
+            return f"Can't reach {self.provider_name} at {where}. {hint}"
+        if isinstance(exc, httpx.TimeoutException):
+            return (
+                f"{self.provider_name} at {where} did not answer in time. A large local model may still be "
+                "loading; try again, or raise PROVIDER_TIMEOUT_SECONDS."
+            )
+        return f"{self.provider_name}: request to {where} failed: {exc}"
+
     def _post_json(self, url: str, payload: dict, headers: dict | None = None) -> dict:
         try:
             response = self.client.post(url, json=payload, headers=headers or {})
         except httpx.HTTPError as exc:
-            raise ProviderError(f"{self.provider_name}: request failed: {exc}") from exc
+            raise ProviderError(self._unreachable(url, exc)) from exc
         if response.status_code >= 400:
             raise ProviderError(
                 f"{self.provider_name} API error {response.status_code}: {response.text[:500]}"
@@ -159,7 +180,7 @@ class BaseProvider(ABC):
                     raise ProviderError(f"{self.provider_name} API error {response.status_code}: {body}")
                 yield from response.iter_lines()
         except httpx.HTTPError as exc:
-            raise ProviderError(f"{self.provider_name}: request failed: {exc}") from exc
+            raise ProviderError(self._unreachable(url, exc)) from exc
 
     def _sse_json(self, url: str, payload: dict, headers: dict | None = None) -> Iterator[dict]:
         """Parse a server-sent-events stream into JSON objects."""

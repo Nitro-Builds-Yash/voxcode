@@ -213,9 +213,9 @@ VoxCode also works **on** Rust projects: `impl`-aware symbols, a call graph from
 
 | Benchmark | What it checks | Run |
 |---|---|---|
-| Retrieval | 30 handwritten questions about this repo: code-aware tokens lift recall@5 **0.47 → 0.70** over whitespace BM25 | `voxcode eval` |
-| Learned ranker | Leave-one-out over the same questions as feedback: MRR@10 **0.50 → 0.63** (+27%), recall unchanged | `voxcode eval --learning` |
-| Intent model | 5-fold CV on 240 labelled requests: **68%** vs 55% for keyword rules | `pytest tests/unit/test_learning.py` |
+| Retrieval | 30 handwritten questions about this repo: code-aware tokens lift recall@5 **0.47 → 0.67** over whitespace BM25 | `voxcode eval` |
+| Learned ranker | Leave-one-out over the same questions as feedback: MRR@10 **0.50 → 0.58**, recall@5 0.67 → 0.70 | `voxcode eval --learning` |
+| Intent model | 5-fold CV on 264 labelled requests: **67%** vs 57% for keyword rules; it refines the rules and never turns a question into an edit | `pytest tests/unit/test_learning.py` |
 | SWE-bench Lite | Does search find the files a real GitHub fix touched? (recall@1/5/10) | `voxcode swebench` |
 | Answer quality | An LLM judge grades answers against references (in CI) | `voxcode eval --answers` |
 | Rust vs Python | Speed and byte-identical results | `python scripts/bench_native.py` |

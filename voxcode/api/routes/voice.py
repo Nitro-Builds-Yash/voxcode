@@ -102,6 +102,12 @@ def analyze_tone(payload: ToneAnalysisRequest) -> dict:
 
 @router.post("/speak")
 def speak_text(payload: TTSRequest) -> dict:
+    if payload.play and not tts_service.available():
+        # Used to answer "ok" and stay silent.
+        raise HTTPException(
+            status_code=503,
+            detail=f"Text-to-speech engine '{tts_service.engine}' is not installed: pip install -e '.[voice]'",
+        )
     if payload.play:
         tts_service.speak(payload.text, payload.emotion, payload.reply_id)
     return {"status": "ok", "engine": tts_service.engine, "spoken": payload.text}

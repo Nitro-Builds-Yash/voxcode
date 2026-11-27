@@ -61,7 +61,20 @@ class RepositoryIndexer:
         self.store = store or IndexStore()
         self.vector_store_factory = vector_store_factory
 
-    def index(self, repo_path: Path, embedder=None, full: bool = False, contextualizer=None) -> IndexStats:
+    def index(
+        self,
+        repo_path: Path,
+        embedder=None,
+        full: bool = False,
+        contextualizer=None,
+        precise_graph: bool = True,
+    ) -> IndexStats:
+        """Index (incrementally) and save.
+
+        precise_graph=False saves at once and leaves the slow Jedi / rust-analyzer
+        pass to `complete_call_graph` (the server runs it in the background), so
+        the first question about a repository doesn't wait for it.
+        """
         started = time.perf_counter()
         repo_path = repo_path.resolve()
         key = repository_key(repo_path)
@@ -114,12 +127,13 @@ class RepositoryIndexer:
                 key, index, previous, embedder, new_chunks, changed, removed, full
             )
             if settings.PRECISE_CALL_GRAPH:
-                index.call_edges = build_call_edges(
-                    repo_path,
-                    index.chunks,
-                    set(changed) | set(removed),
-                    previous.call_edges if previous else None,
-                )
+                stale = set(changed) | set(removed) | set(previous.graph_pending if previous else [])
+                previous_edges = previous.call_edges if previous else None
+                if precise_graph:
+                    index.call_edges = build_call_edges(repo_path, index.chunks, stale, previous_edges)
+                else:
+                    index.call_edges = _surviving_edges(index.chunks, stale, previous_edges or {})
+                    index.graph_pending = sorted(stale & set(index.files))
             index.commits = read_commits(repo_path, settings.GIT_HISTORY_COMMITS)
             self.store.save(index)
 
@@ -158,3 +172,33 @@ class RepositoryIndexer:
             store.ensure(vectors.shape[1])
             store.upsert([c.chunk_id for c in to_embed], [c.file_path for c in to_embed], vectors)
         return model
+
+
+def _surviving_edges(chunks, stale: set[str], edges: dict[str, list[str]]) -> dict[str, list[str]]:
+    """Previous precise edges that are still valid: neither end in a changed file."""
+    file_of = {c.chunk_id: c.file_path for c in chunks}
+    kept = {}
+    for caller, callees in edges.items():
+        if file_of.get(caller) in (None, *stale):
+            continue
+        kept[caller] = [c for c in callees if c in file_of and file_of[c] not in stale]
+    return kept
+
+
+def complete_call_graph(store, repo_key: str, lock=None) -> bool:
+    """Compute the pending precise call edges and save them if the index hasn't changed meanwhile."""
+    import contextlib
+
+    index = store.load(repo_key)
+    if index is None or not index.graph_pending:
+        return False
+    snapshot = {path: entry.sha1 for path, entry in index.files.items()}
+    edges = build_call_edges(Path(index.repo_path), index.chunks, set(index.graph_pending), index.call_edges)
+    with lock or contextlib.nullcontext():
+        latest = store.load(repo_key)
+        if latest is None or {p: e.sha1 for p, e in latest.files.items()} != snapshot:
+            return False  # re-indexed meanwhile; that run schedules its own pass
+        latest.call_edges = edges
+        latest.graph_pending = []
+        store.save(latest)
+    return True

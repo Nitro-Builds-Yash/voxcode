@@ -122,3 +122,9 @@ Every setting can be set as an environment variable or in a `.env` file in the f
 | `OBSIDIAN_FOLDER` | `VoxCode/Plans` | Folder inside the vault. |
 
 Set `VOXCODE_NO_BROWSER=1` to print review URLs instead of opening a browser. SSH sessions do this automatically.
+
+## v0.8.1
+
+| Setting | Default | Purpose |
+|---|---|---|
+| `BACKGROUND_CALL_GRAPH` | `true` | Build the precise call graph after indexing, in the background, so the first question doesn't wait for it (about 30 s on a mid-size repo). Search uses name matching until it's ready. |
