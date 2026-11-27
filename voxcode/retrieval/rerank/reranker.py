@@ -12,8 +12,12 @@ class CrossEncoderReranker:
 
         self._torch = torch
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-        self.model = AutoModelForSequenceClassification.from_pretrained(model_name)
+        from voxcode.config.settings import settings
+
+        # Optional supply-chain pin: RERANK_MODEL_REVISION=<commit sha> fixes the exact weights.
+        revision = settings.RERANK_MODEL_REVISION or None
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name, revision=revision)  # nosec B615
+        self.model = AutoModelForSequenceClassification.from_pretrained(model_name, revision=revision)  # nosec B615
         if self.device == "cuda":
             self.model.half()
         self.model.to(self.device).eval()

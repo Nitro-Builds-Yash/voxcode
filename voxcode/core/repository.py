@@ -41,5 +41,5 @@ def repository_key(path: Path | str) -> str:
     """
     resolved = Path(path).expanduser().resolve()
     slug = re.sub(r"[^a-zA-Z0-9_-]+", "-", resolved.name).strip("-").lower() or "repo"
-    digest = hashlib.sha1(str(resolved).encode()).hexdigest()[:8]
+    digest = hashlib.sha1(str(resolved).encode(), usedforsecurity=False).hexdigest()[:8]
     return f"{slug}-{digest}"

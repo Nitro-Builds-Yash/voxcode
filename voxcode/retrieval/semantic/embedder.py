@@ -33,7 +33,8 @@ class EmbeddingCache:
             for start in range(0, len(keys), 500):
                 batch = keys[start : start + 500]
                 marks = ",".join("?" * len(batch))
-                for key, blob in self._db.execute(f"SELECT key, vec FROM emb WHERE key IN ({marks})", batch):
+                query = f"SELECT key, vec FROM emb WHERE key IN ({marks})"  # nosec B608: only "?" placeholders
+                for key, blob in self._db.execute(query, batch):
                     found[key] = np.frombuffer(blob, dtype=np.float32)
         return found
 
@@ -72,7 +73,9 @@ class Embedder:
     def embed_texts(self, texts: list[str]) -> np.ndarray:
         if not texts:
             return np.zeros((0, 0), dtype=np.float32)
-        keys = [hashlib.sha1(f"{self.model_name}\0{t}".encode()).hexdigest() for t in texts]
+        keys = [
+            hashlib.sha1(f"{self.model_name}\0{t}".encode(), usedforsecurity=False).hexdigest() for t in texts
+        ]
         cached = self.cache.get_many(keys)
         missing = [i for i, k in enumerate(keys) if k not in cached]
         if missing:

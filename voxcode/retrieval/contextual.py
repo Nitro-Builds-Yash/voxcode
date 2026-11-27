@@ -42,7 +42,9 @@ class ChunkContextualizer:
         self.calls = 0
 
     def _cache_path(self, rel: str, source: str):
-        digest = hashlib.sha1(f"{self.provider.model}\0{rel}\0{source}".encode()).hexdigest()
+        digest = hashlib.sha1(
+            f"{self.provider.model}\0{rel}\0{source}".encode(), usedforsecurity=False
+        ).hexdigest()
         return self.cache_dir / f"{digest}.json"
 
     def annotate(self, rel: str, source: str, chunks: list[CodeChunk]) -> int:

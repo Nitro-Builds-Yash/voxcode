@@ -9,7 +9,7 @@ class Settings(BaseSettings):
 
     # ----------------------------------------------------------------- app
     APP_NAME: str = "VoxCode"
-    APP_VERSION: str = "0.8.1"
+    APP_VERSION: str = "0.8.2"
     DEBUG: bool = False
     HOST: str = "127.0.0.1"
     PORT: int = 8000
@@ -23,6 +23,10 @@ class Settings(BaseSettings):
     # from the server's own origin (the bundled UI) and requests with no
     # Origin header (VS Code extension, curl) are always allowed.
     ALLOWED_ORIGINS: str = ""
+    # Extra host names this server may be reached by (comma-separated), e.g. a LAN
+    # name when HOST=0.0.0.0. Requests addressed to any other host are refused, which
+    # blocks DNS-rebinding attacks. localhost / 127.0.0.1 / ::1 / HOST always work; "*" disables the check.
+    ALLOWED_HOSTS: str = ""
     # Optional shared secret. When set, every API call must send it in the
     # `X-VoxCode-Token` header (or `?token=` for WebSockets).
     API_TOKEN: str = Field(default="", repr=False)
@@ -43,6 +47,8 @@ class Settings(BaseSettings):
     # ------------------------------------------------------------ reranker
     RERANK_ENABLED: bool = True
     RERANK_MODEL: str = "BAAI/bge-reranker-base"
+    # Pin the reranker to a Hugging Face commit (supply-chain safety); empty = latest.
+    RERANK_MODEL_REVISION: str = ""
 
     # ----------------------------------------------------------- retrieval
     DEFAULT_TOP_K: int = 8
@@ -185,6 +191,10 @@ class Settings(BaseSettings):
     @property
     def allowed_origins(self) -> list[str]:
         return self._split(self.ALLOWED_ORIGINS)
+
+    @property
+    def allowed_hosts(self) -> list[str]:
+        return [h.lower() for h in self._split(self.ALLOWED_HOSTS)]
 
     @property
     def allowed_repo_roots(self) -> list[str]:

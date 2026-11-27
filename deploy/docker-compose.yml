@@ -23,6 +23,8 @@ services:
       OLLAMA_HOST: http://host.docker.internal:11434
       # Only folders under /workspace can be indexed from inside the container.
       ALLOWED_REPO_ROOTS: /workspace
+      # Prometheus scrapes http://voxcode:8000; other hosts are refused (DNS-rebinding protection).
+      ALLOWED_HOSTS: voxcode
       OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
     volumes:
       - ${WORKSPACE_DIR:-../examples}:/workspace

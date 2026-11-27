@@ -64,6 +64,9 @@ def _clean_path(raw: str) -> str | None:
     pure = PurePosixPath(path)
     if pure.is_absolute() or ".." in pure.parts or not path:
         raise UnsafeDiffError(f"Refusing patch path outside the repository: {raw!r}")
+    if any(part.lower() == ".git" for part in pure.parts):
+        # git refuses these too; say so clearly (hooks in .git/ would run code on the next commit)
+        raise UnsafeDiffError(f"Refusing to patch git internals: {raw!r}")
     return pure.as_posix()
 
 

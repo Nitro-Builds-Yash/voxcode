@@ -39,7 +39,7 @@ class MicrophoneRecorder:
                 return
             self._frames = []
 
-            def callback(indata, frames, time_info, status):
+            def callback(indata, frames, _time_info, status):
                 if sum(len(f) for f in self._frames) < SAMPLE_RATE * MAX_SECONDS:
                     self._frames.append(indata[:, 0].copy())
 

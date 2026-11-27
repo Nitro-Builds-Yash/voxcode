@@ -79,7 +79,7 @@ class Example:
 
 
 def _holdout(key: str, fraction: float = 0.2) -> bool:
-    return int(hashlib.md5(key.encode()).hexdigest(), 16) % 1000 < fraction * 1000
+    return int(hashlib.md5(key.encode(), usedforsecurity=False).hexdigest(), 16) % 1000 < fraction * 1000
 
 
 def self_supervised(index: RepositoryIndex) -> tuple[list[Example], list[CodeChunk]]:
