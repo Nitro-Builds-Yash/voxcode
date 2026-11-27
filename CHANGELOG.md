@@ -2,6 +2,16 @@
 
 All notable changes to VoxCode. Versions follow [Semantic Versioning](https://semver.org).
 
+## [0.9.0] — Agent crew and semantic search without a GPU
+
+### Added
+- **Agent crew** (`voxcode crew`, `/crew` page, `/crews` API). A planner splits the task into research questions; up to three researchers investigate them in parallel with code tools; then either a writer drafts a grounded answer that a reviewer checks (revising once if under 75% grounded), or a coder writes a patch, a tester runs the suite against it in a copy of the repo, and a reviewer scores it and sends it back with the issues and test output for up to `CREW_MAX_ROUNDS` rounds. Every call is metered per agent (tokens, tool calls, cost) under a shared token budget, streamed live over SSE and saved, so past runs can be replayed.
+- **Crew page.** Live agent lanes with tool calls and results, a Gantt timeline of who worked when, run stats, the answer with its groundedness or the patch with reviewer and test badges, and a one-click Apply.
+- **Local semantic search.** When no embedding model is installed, VoxCode now trains a small latent semantic model (sublinear TF-IDF over code-aware tokens + truncated SVD, 128 dimensions) per repository and fuses it with BM25. It trains in under a second, is cached on disk, and needs only scipy. On the 30-question retrieval benchmark: MRR **0.490 → 0.533** (+9%), recall@5 0.633 → 0.700 (measured on this repo at v0.9.0). Set `LOCAL_SEMANTIC=false` to turn it off.
+
+### Changed
+- `scipy` is now a core dependency.
+
 ## [0.8.2] — Audit fixes
 
 From a full re-audit: static analysis (ruff, mypy, Bandit, Vulture, Radon), dependency audit (pip-audit: no known vulnerabilities), coverage, and a manual security review.

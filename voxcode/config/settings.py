@@ -9,7 +9,7 @@ class Settings(BaseSettings):
 
     # ----------------------------------------------------------------- app
     APP_NAME: str = "VoxCode"
-    APP_VERSION: str = "0.8.2"
+    APP_VERSION: str = "0.9.0"
     DEBUG: bool = False
     HOST: str = "127.0.0.1"
     PORT: int = 8000
@@ -42,6 +42,8 @@ class Settings(BaseSettings):
 
     # ----------------------------------------------------------- embedding
     EMBEDDING_MODEL: str = "BAAI/bge-small-en-v1.5"
+    # Without the `ml` extra, train a small semantic model (LSA) on each repository for hybrid search.
+    LOCAL_SEMANTIC: bool = True
     EMBEDDING_BATCH_SIZE: int = 64
 
     # ------------------------------------------------------------ reranker
@@ -74,6 +76,10 @@ class Settings(BaseSettings):
     # Port of the review server started by `voxcode hook` / `voxcode review` when VoxCode is not
     # already running. Fixed, so a review page survives between hook calls and works over SSH forwarding.
     REVIEW_PORT: int = 19432
+    # Agent crew (/crew): parallel researchers, revision rounds and a token budget per run.
+    CREW_MAX_RESEARCHERS: int = 3
+    CREW_MAX_ROUNDS: int = 2
+    CREW_MAX_TOKENS: int = 200_000
     # Learned ranker (voxcode train-ranker): re-scores fused candidates when a model is trained.
     LEARNED_RANKER: bool = True
     # Train it automatically after indexing (self-supervised from docstrings; < 1 s for most repos).

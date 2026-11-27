@@ -91,7 +91,8 @@ def main(argv: list[str] | None = None) -> None:
         "bm25 (code-aware tokens)": lambda q: retriever.bm25.search(q, 10),
     }
     if retriever.semantic is not None:
-        modes["semantic"] = lambda q: retriever.semantic.search(q, 10)
+        kind = "semantic" if embedder is not None else "semantic (local tf-idf/svd)"
+        modes[kind] = lambda q: retriever.semantic.search(q, 10)
         modes["hybrid (rrf)"] = lambda q: retriever.search(q, 30)
     reranker = registry.get_reranker()
     if reranker is not None:
@@ -104,7 +105,7 @@ def main(argv: list[str] | None = None) -> None:
         m = evaluate(search, cases)
         print(f"| {name:<32} | {m['recall@5']:>8} | {m['mrr@10']:>6} | {m['p50_ms']:>8} ms |")
     if retriever.semantic is None:
-        print("\n(semantic / hybrid modes skipped: embedding model unavailable)")
+        print("\n(semantic / hybrid modes skipped: no embedding model and LOCAL_SEMANTIC is off)")
 
 
 def compare_embedders(repo: Path, cases: list[dict], models: list[str]) -> None:
