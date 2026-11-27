@@ -32,12 +32,11 @@ def test_tokenizer_parity():
 
 
 def test_bm25_parity():
-    from rank_bm25 import BM25Okapi
-
+    from voxcode.retrieval.bm25.bm25_retriever import Okapi
     from voxcode.retrieval.bm25.tokenizer import tokenize_python
 
     corpus = [tokenize_python(p.read_text()) or ["_empty_"] for p in SOURCES]
-    reference, index = BM25Okapi(corpus), native.Bm25Index(corpus)
+    reference, index = Okapi(corpus), native.Bm25Index(corpus)
     for query in [
         "verify password hash",
         "build chunks symbols",

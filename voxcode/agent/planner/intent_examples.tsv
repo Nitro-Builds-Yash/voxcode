@@ -238,3 +238,27 @@ chat	louder please
 chat	i'll be back in a minute
 chat	that's all for today
 chat	goodbye
+explain	explain the add function
+explain	explain this function
+explain	explain the code
+explain	explain add
+explain	explain the parser
+explain	describe the login function
+explain	summarize the readme
+explain	summarise this file
+explain	give me a summary of the auth module
+explain	what is this class for
+explain	walk me through this file
+explain	explain what the tokenizer does
+explain	describe how the cache class works
+explain	tell me what this function returns
+explain	explain the main function
+search	list the endpoints
+search	show me the parser
+search	where is the add function
+search	which function handles uploads
+search	find the add function
+fix	fix the add function
+fix	the add function returns the wrong value
+refactor	clean up the add function
+generate	add a docstring to the add function

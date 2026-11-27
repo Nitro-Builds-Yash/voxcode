@@ -40,6 +40,9 @@ class RepositoryIndex(BaseModel):
     commits: list[Commit] = Field(default_factory=list)
     # Precise call edges (caller chunk id -> callee chunk ids) from Jedi.
     call_edges: dict[str, list[str]] = Field(default_factory=dict)
+    # Files whose precise call edges are still being computed in the background;
+    # until then the graph falls back to name matching for them.
+    graph_pending: list[str] = Field(default_factory=list)
     updated_at: float = 0.0
 
 

@@ -309,9 +309,30 @@ def test_intent_model_beats_keyword_rules():
     from voxcode.agent.planner.task_classifier import TaskClassifier, rule_classify
 
     scores = cross_validate(load_examples())
-    assert scores["examples"] == 240 and scores["model_accuracy"] > scores["rules_accuracy"]
+    assert scores["examples"] >= 240 and scores["model_accuracy"] > scores["rules_accuracy"]
     classifier = TaskClassifier()
     assert rule_classify("the login is broken when the password has spaces").value == "chat"
     assert classifier.classify("the login is broken when the password has spaces").value == "fix"
     assert rule_classify("make the parser faster").value == "generate"
     assert classifier.classify("make the parser faster").value == "refactor"
+
+
+@pytest.mark.parametrize(
+    "question",
+    [
+        "explain the add function",
+        "explain this function",
+        "explain add",
+        "describe the login function",
+        "summarize the readme",
+        "what does the parser return",
+        "why does the test fail",
+        "how do I run the server",
+        "explain the code",
+    ],
+)
+def test_questions_are_never_routed_to_an_edit(question):
+    """Regression: the learned model once sent "explain the add function" to refactor (edit mode)."""
+    from voxcode.agent.planner.task_classifier import _READ, TaskClassifier
+
+    assert TaskClassifier().classify(question) in _READ

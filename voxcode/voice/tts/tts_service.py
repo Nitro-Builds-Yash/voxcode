@@ -55,6 +55,13 @@ class TTSService:
             logger.warning("TTS synthesis failed (%s): %s", self.engine, exc)
         return None
 
+    def available(self) -> bool:
+        """Whether the configured engine can actually produce speech here."""
+        import importlib.util
+
+        module = {"piper": "piper", "pyttsx3": "pyttsx3"}.get(self.engine)
+        return module is not None and importlib.util.find_spec(module) is not None
+
     def speak(self, text: str, emotion: str = "calm", reply_id: str | None = None) -> None:
         """Play speech on the backend machine without blocking the caller.
 

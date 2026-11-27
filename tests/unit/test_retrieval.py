@@ -57,3 +57,12 @@ def test_context_builder_respects_token_budget():
     assert built.context_size <= 1200
     assert 0 < built.num_chunks < 10
     assert "   1| x = 1" in built.context
+
+
+def test_bm25_finds_a_name_used_in_every_file():
+    """Regression: Okapi IDF went negative for words in most files, so small repos found nothing."""
+    from voxcode.retrieval.bm25.bm25_retriever import BM25Index, Okapi
+
+    corpus = [["def", "add", "return"], ["test", "add", "assert", "add"]]
+    assert (Okapi(corpus).get_scores(["add"]) > 0).all()
+    assert [i for i, _ in BM25Index(corpus).top_k(["add"], 5)] == [1, 0]

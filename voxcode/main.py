@@ -10,7 +10,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from voxcode.api import services
@@ -86,6 +86,18 @@ except ImportError:  # pragma: no cover
 
 if UI_DIR.exists():
     app.mount("/static", StaticFiles(directory=UI_DIR), name="static")
+
+
+_FAVICON = (
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#fb7185"/>'
+    '<path d="M16 7a4 4 0 0 0-4 4v5a4 4 0 0 0 8 0v-5a4 4 0 0 0-4-4zM9 15a7 7 0 0 0 14 0M16 22v4" stroke="#120d0b" '
+    'stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>'
+)
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon() -> Response:
+    return Response(_FAVICON, media_type="image/svg+xml", headers={"Cache-Control": "max-age=86400"})
 
 
 @app.get("/", include_in_schema=False)

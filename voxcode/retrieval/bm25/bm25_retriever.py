@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+
 import numpy as np
 
 from voxcode.models.code_chunk import CodeChunk
@@ -10,23 +12,57 @@ from voxcode.native import native
 from voxcode.retrieval.bm25.tokenizer import tokenize
 
 
+class Okapi:
+    """BM25 with Lucene's IDF, ln(1 + (N - df + 0.5) / (df + 0.5)), which is never negative.
+
+    The classic Okapi IDF (used by rank_bm25) goes negative for a word in more
+    than half the documents, so in small repositories, or for a name used across
+    many files, a perfect match scored below zero and search returned nothing.
+    """
+
+    def __init__(self, corpus: list[list[str]], k1: float = 1.5, b: float = 0.75):
+        self.k1 = k1
+        self.size = len(corpus)
+        self.postings: dict[str, list[tuple[int, float]]] = {}
+        for doc, tokens in enumerate(corpus):
+            counts: dict[str, float] = {}
+            for token in tokens:
+                counts[token] = counts.get(token, 0.0) + 1.0
+            for token, count in counts.items():
+                self.postings.setdefault(token, []).append((doc, count))
+        avgdl = sum(len(d) for d in corpus) / self.size if self.size else 0.0
+        self.norm = [k1 * (1.0 - b + b * len(d) / avgdl) if avgdl else k1 for d in corpus]
+        self.idf = {
+            t: math.log(1.0 + (self.size - len(docs) + 0.5) / (len(docs) + 0.5))
+            for t, docs in self.postings.items()
+        }
+
+    def get_scores(self, query: list[str]) -> np.ndarray:
+        scores = np.zeros(self.size)
+        for token in query:
+            docs = self.postings.get(token)
+            if not docs:
+                continue
+            idf = self.idf[token]
+            for doc, tf in docs:
+                scores[doc] += idf * (tf * (self.k1 + 1.0) / (tf + self.norm[doc]))
+        return scores
+
+
 class BM25Index:
-    """BM25 Okapi over token lists: Rust inverted index when available,
-    rank_bm25 otherwise. Same scores either way."""
+    """BM25 over token lists: Rust inverted index when available, Python
+    otherwise. Same scores either way."""
 
     def __init__(self, corpus: list[list[str]], prebuilt=None, size: int = 0):
         self.size = size or len(corpus)
         self._native = prebuilt
-        self._python = None
+        self._python: Okapi | None = None
         if prebuilt is not None:
             return
         accel = native()
         self._native = accel.Bm25Index(corpus) if accel is not None and corpus else None
-        self._python = None
         if self._native is None and corpus:
-            from rank_bm25 import BM25Okapi
-
-            self._python = BM25Okapi(corpus)
+            self._python = Okapi(corpus)
 
     @classmethod
     def from_texts(cls, texts: list[str]) -> BM25Index:
@@ -40,7 +76,7 @@ class BM25Index:
         if self._native is not None:
             return np.asarray(self._native.scores(tokens))
         if self._python is not None:
-            return np.asarray(self._python.get_scores(tokens))
+            return self._python.get_scores(tokens)
         return np.zeros(0)
 
     def top_k(self, tokens: list[str], k: int) -> list[tuple[int, float]]:

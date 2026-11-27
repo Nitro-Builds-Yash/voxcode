@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%228%22 fill=%22%23fb7185%22/%3E%3Cpath d=%22M16 7a4 4 0 0 0-4 4v5a4 4 0 0 0 8 0v-5a4 4 0 0 0-4-4zM9 15a7 7 0 0 0 14 0M16 22v4%22 stroke=%22%23120d0b%22 stroke-width=%222.4%22 fill=%22none%22 stroke-linecap=%22round%22/%3E%3C/svg%3E">
   <style>
     :root {
       --bg: #07090e;
@@ -286,8 +286,8 @@
       min-height: 280px;
     }
 
-    .diff-added { color: #34d399; background: rgba(16, 185, 129, 0.12); display: block; padding: 0 4px; }
-    .diff-removed { color: #f87171; background: rgba(239, 68, 68, 0.12); display: block; padding: 0 4px; }
+    .diff-added { color: #34d399; background: rgba(16, 185, 129, 0.12); display: inline-block; min-width: 100%; padding: 0 4px; }
+    .diff-removed { color: #f87171; background: rgba(239, 68, 68, 0.12); display: inline-block; min-width: 100%; padding: 0 4px; }
 
     #toast-banner {
       position: fixed;
@@ -315,14 +315,14 @@
 <body>
 
   <div id="toast-banner">
-    <i data-lucide="info" style="width: 18px; height: 18px; color: #a5b4fc;"></i>
+    <svg style="width: 18px; height: 18px; color: #a5b4fc;" aria-hidden="true" class="lucide lucide-info" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" > <circle cx="12" cy="12" r="10" /> <path d="M12 16v-4" /> <path d="M12 8h.01" /> </svg>
     <span id="toast-message">VoxCode Engine Active</span>
   </div>
 
   <header>
     <div class="brand">
       <div class="vox-logo-badge">
-        <i data-lucide="mic" style="width: 18px; height: 18px; color: white;"></i>
+        <svg style="width: 18px; height: 18px; color: white;" aria-hidden="true" class="lucide lucide-mic" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" > <path d="M12 19v3" /> <path d="M19 10v2a7 7 0 0 1-14 0v-2" /> <rect x="9" y="2" width="6" height="13" rx="3" /> </svg>
       </div>
       <span>VoxCode</span>
       <span style="font-size: 0.7rem; font-family: var(--mono); background: rgba(99, 102, 241, 0.2); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.4); padding: 0.2rem 0.5rem; border-radius: 9999px;">AI COPILOT</span>
@@ -334,7 +334,7 @@
         <span id="backend-status-text">Vox Agent Ready</span>
       </div>
       <button class="btn btn-secondary" onclick="reindexRepo()">
-        <i data-lucide="database" style="width: 16px; height: 16px;"></i>
+        <svg style="width: 16px; height: 16px;" aria-hidden="true" class="lucide lucide-database" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" > <ellipse cx="12" cy="5" rx="9" ry="3" /> <path d="M3 5V19A9 3 0 0 0 21 19V5" /> <path d="M3 12A9 3 0 0 0 21 12" /> </svg>
         Index Workspace
       </button>
     </div>
@@ -345,7 +345,7 @@
     <!-- Left: Models & Configuration -->
     <div class="panel">
       <div class="panel-header">
-        <span><i data-lucide="sliders" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px;"></i> AI Models & Config</span>
+        <span><svg style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px;" aria-hidden="true" class="lucide lucide-sliders" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" > <path d="M10 8h4" /> <path d="M12 21v-9" /> <path d="M12 8V3" /> <path d="M17 16h4" /> <path d="M19 12V3" /> <path d="M19 21v-5" /> <path d="M3 14h4" /> <path d="M5 10V3" /> <path d="M5 21v-7" /> </svg> AI Models & Config</span>
         <span class="emotion-badge emo-calm" id="active-provider-chip">GEMINI</span>
       </div>
       <div class="panel-content">
@@ -372,7 +372,7 @@
         </div>
 
         <button class="btn" onclick="saveAIConfig()">
-          <i data-lucide="save" style="width: 16px; height: 16px;"></i>
+          <svg style="width: 16px; height: 16px;" aria-hidden="true" class="lucide lucide-save" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" > <path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" /> <path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7" /> <path d="M7 3v4a1 1 0 0 0 1 1h7" /> </svg>
           Save & Apply Config
         </button>
 
@@ -392,7 +392,7 @@
     <div class="panel">
       <div class="vox-hub">
         <button id="mic-btn" class="vox-orb" onclick="toggleRecording()">
-          <i data-lucide="mic" id="mic-icon" style="width: 38px; height: 38px; color: white;"></i>
+          <svg id="mic-icon" style="width: 38px; height: 38px; color: white;" aria-hidden="true" class="lucide lucide-mic" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" > <path d="M12 19v3" /> <path d="M19 10v2a7 7 0 0 1-14 0v-2" /> <rect x="9" y="2" width="6" height="13" rx="3" /> </svg>
         </button>
         <h2 id="voice-heading" style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.35rem;">Speak or Type Your Intent</h2>
         <p style="color: var(--text-muted); font-size: 0.85rem;" id="voice-subtext">Click the microphone to dictate instructions in real-time.</p>
@@ -402,7 +402,7 @@
         <!-- Live Tone & Emotion Telemetry -->
         <div class="emotion-hud">
           <div style="display: flex; align-items: center; gap: 0.6rem;">
-            <i data-lucide="activity" style="width: 18px; height: 18px; color: #a5b4fc;"></i>
+            <svg style="width: 18px; height: 18px; color: #a5b4fc;" aria-hidden="true" class="lucide lucide-activity" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" > <path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2" /> </svg>
             <span style="font-size: 0.85rem; font-weight: 600;">Detected Tone:</span>
           </div>
           <div class="emotion-badge emo-calm" id="emotion-tag">
@@ -413,7 +413,7 @@
         <div style="display: flex; gap: 0.75rem;">
           <input type="text" id="prompt-input" placeholder="e.g. 'Refactor the tokenizer to handle markdown snippets with tests'..." onkeydown="if(event.key==='Enter') runAgent()">
           <button class="btn" onclick="runAgent()" style="flex-shrink: 0;">
-            <i data-lucide="sparkles" style="width: 16px; height: 16px;"></i>
+            <svg style="width: 16px; height: 16px;" aria-hidden="true" class="lucide lucide-sparkles" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" > <path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z" /> <path d="M20 2v4" /> <path d="M22 4h-4" /> <circle cx="4" cy="20" r="2" /> </svg>
             Execute
           </button>
         </div>
@@ -431,7 +431,7 @@ Enter a query or click the microphone to begin.
     <!-- Right: Telemetry & Spoken Audio -->
     <div class="panel">
       <div class="panel-header">
-        <span><i data-lucide="bar-chart-2" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px;"></i> Workspace Intelligence</span>
+        <span><svg style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px;" aria-hidden="true" class="lucide lucide-bar-chart-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" > <path d="M5 21v-6" /> <path d="M12 21V3" /> <path d="M19 21V9" /> </svg> Workspace Intelligence</span>
         <span class="emotion-badge emo-curious" id="chunk-count-chip">0 Chunks</span>
       </div>
       <div class="panel-content">
@@ -458,7 +458,7 @@ Enter a query or click the microphone to begin.
         </div>
 
         <button class="btn" onclick="speakSummary()" style="margin-top: auto;">
-          <i data-lucide="volume-2" style="width: 18px; height: 18px;"></i>
+          <svg style="width: 18px; height: 18px;" aria-hidden="true" class="lucide lucide-volume-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" > <path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z" /> <path d="M16 9a5 5 0 0 1 0 6" /> <path d="M19.364 18.364a9 9 0 0 0 0-12.728" /> </svg>
           Read Output Aloud (TTS)
         </button>
       </div>
@@ -472,94 +472,139 @@ Enter a query or click the microphone to begin.
       if (window.VOXCODE_TOKEN) headers['X-VoxCode-Token'] = window.VOXCODE_TOKEN;
       return fetch(url, Object.assign({}, options, { headers }));
     }
-
-    if (window.lucide) { lucide.createIcons(); }
-
-    let isRecording = false;
-    let recognition = null;
-    let lastSummary = "VoxCode is online and ready.";
-    let lastEmotion = "calm";
-    let lastIntensity = 0.5;
-
-    function showToast(message) {
-      const toast = document.getElementById('toast-banner');
-      document.getElementById('toast-message').innerText = message;
-      toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 3500);
+    async function errorText(res) {
+      const data = await res.json().catch(() => ({}));
+      return data.detail ? (typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail)) : `HTTP ${res.status}`;
     }
 
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognition = new SpeechRecognition();
-      recognition.continuous = false;
-      recognition.interimResults = true;
+    let isRecording = false, recognition = null, recorder = null, busy = false;
+    let lastSummary = '', lastEmotion = 'calm', lastIntensity = 0.5;
+    let lastDiff = null, lastRepoPath = '.', lastQuery = '', controller = null;
+    const $ = (id) => document.getElementById(id);
 
-      recognition.onresult = (event) => {
-        let transcript = '';
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          transcript += event.results[i][0].transcript;
-        }
-        document.getElementById('prompt-input').value = transcript;
-      };
-
-      recognition.onend = () => {
-        if (isRecording) {
-          toggleRecording();
-          runAgent();
-        }
-      };
+    function showToast(message, ms = 3500) {
+      $('toast-message').innerText = message;
+      $('toast-banner').classList.add('show');
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => $('toast-banner').classList.remove('show'), ms);
+    }
+    function escapeHtml(string) {
+      const entityMap = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+      return String(string ?? '').replace(/[&<>"']/g, (s) => entityMap[s]);
     }
 
-    function toggleRecording() {
-      const btn = document.getElementById('mic-btn');
-      const heading = document.getElementById('voice-heading');
-      isRecording = !isRecording;
+    // Remember the repository between visits ('.' means the folder VoxCode was started in).
+    const repoInput = $('repo-path');
+    try { const saved = localStorage.getItem('voxcode.repo'); if (saved) repoInput.value = saved; } catch (e) {}
+    repoInput.addEventListener('change', () => { try { localStorage.setItem('voxcode.repo', repoInput.value.trim()); } catch (e) {} });
 
-      if (isRecording) {
-        btn.classList.add('active');
-        heading.innerText = "Listening to Voice Instruction...";
-        if (recognition) { try { recognition.start(); } catch(e){} }
-      } else {
-        btn.classList.remove('active');
-        heading.innerText = "Speak or Type Your Intent";
-        if (recognition) { try { recognition.stop(); } catch(e){} }
+    // ------------------------------------------------------------ voice input
+    // Chrome's built-in recognition when it works (needs internet); otherwise
+    // record locally and transcribe with VoxCode's own Whisper (/voice/transcribe).
+    const BrowserRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let useBrowserRecognition = !!BrowserRecognition;
+
+    function setMicUi(on, heading) {
+      isRecording = on;
+      $('mic-btn').classList.toggle('active', on);
+      $('voice-heading').innerText = heading || (on ? 'Listening… click again to stop' : 'Speak or Type Your Intent');
+    }
+
+    async function toggleRecording() {
+      if (isRecording) { stopRecording(); return; }
+      if (useBrowserRecognition) {
+        recognition = new BrowserRecognition();
+        recognition.interimResults = true;
+        let finalText = '', failed = false;
+        recognition.onresult = (event) => {
+          let text = '';
+          for (let i = 0; i < event.results.length; ++i) text += event.results[i][0].transcript;
+          finalText = text; $('prompt-input').value = text;
+        };
+        recognition.onerror = (event) => {
+          failed = true;
+          if (['network', 'service-not-allowed', 'language-not-supported'].includes(event.error)) {
+            useBrowserRecognition = false; // e.g. offline: switch to local Whisper and retry
+            setMicUi(false); showToast('Browser speech recognition is unavailable; using VoxCode\'s local Whisper instead.');
+            toggleRecording();
+          } else if (event.error === 'not-allowed') {
+            setMicUi(false); showToast('Microphone permission was denied.');
+          } else if (event.error !== 'no-speech' && event.error !== 'aborted') {
+            setMicUi(false); showToast(`Speech recognition error: ${event.error}`);
+          }
+        };
+        recognition.onend = () => {
+          if (failed && !isRecording) return;
+          setMicUi(false);
+          if (finalText.trim()) runAgent(); else if (!failed) showToast('Heard nothing. Try again closer to the microphone.');
+        };
+        try { recognition.start(); setMicUi(true); } catch (e) { useBrowserRecognition = false; toggleRecording(); }
+        return;
       }
+      if (!navigator.mediaDevices || !window.MediaRecorder) { showToast('This browser cannot record audio. Type your request instead.'); return; }
+      let stream;
+      try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+      catch (e) { showToast(`Microphone unavailable: ${e.message}`); return; }
+      const chunks = [];
+      recorder = new MediaRecorder(stream);
+      recorder.ondataavailable = (e) => chunks.push(e.data);
+      recorder.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        setMicUi(false, 'Transcribing…');
+        const form = new FormData();
+        form.append('file', new Blob(chunks, { type: recorder.mimeType || 'audio/webm' }), 'voice.webm');
+        recorder = null;
+        try {
+          const res = await apiFetch('/voice/transcribe', { method: 'POST', body: form });
+          if (!res.ok) throw new Error(await errorText(res));
+          const data = await res.json();
+          const text = (data.transcription || data.text || '').trim();
+          setMicUi(false);
+          if (!text) { showToast('Heard nothing. Try again closer to the microphone.'); return; }
+          $('prompt-input').value = text;
+          runAgent();
+        } catch (e) { setMicUi(false); showToast(`Transcription failed: ${e.message}`, 6000); }
+      };
+      recorder.start();
+      setMicUi(true, 'Listening (local Whisper)… click again to stop');
+    }
+    function stopRecording() {
+      if (recognition && useBrowserRecognition) { try { recognition.stop(); } catch (e) {} }
+      if (recorder && recorder.state === 'recording') recorder.stop();
+      else setMicUi(false);
     }
 
+    // ------------------------------------------------------------ config
     async function loadConfig() {
       try {
         const res = await apiFetch('/config/');
+        if (!res.ok) throw new Error(await errorText(res));
         const data = await res.json();
-        document.getElementById('provider-select').value = data.active_provider;
-        document.getElementById('active-provider-chip').innerText = data.active_provider.toUpperCase();
+        $('provider-select').value = data.active_provider;
         switchProvider();
-      } catch (err) {}
-    }
-
-    function switchProvider() {
-      const prov = document.getElementById('provider-select').value;
-      document.getElementById('active-provider-chip').innerText = prov.toUpperCase();
-      document.getElementById('api-key-label').innerText = prov.toUpperCase() + ' API KEY / AUTH';
-    }
-
-    async function saveAIConfig() {
-      const prov = document.getElementById('provider-select').value;
-      const key = document.getElementById('api-key-input').value;
-      const payload = { default_provider: prov };
-      if (prov === 'gemini' && key) payload.gemini_api_key = key;
-      if (prov === 'groq' && key) payload.groq_api_key = key;
-      if (prov === 'anthropic' && key) payload.anthropic_api_key = key;
-      if (prov === 'openai' && key) payload.openai_api_key = key;
-
-      try {
-        const res = await apiFetch('/config/update', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        showToast(`Configuration updated: Active Engine is ${prov.toUpperCase()}`);
+        $('backend-status-text').innerText = 'Backend online';
       } catch (err) {
-        showToast('Configuration update failed: ' + err);
+        $('backend-status-text').innerText = 'Backend offline';
+        showToast(`Cannot reach the VoxCode server: ${err.message}`, 6000);
+      }
+    }
+    function switchProvider() {
+      const prov = $('provider-select').value;
+      $('active-provider-chip').innerText = prov.toUpperCase();
+      $('api-key-label').innerText = prov.toUpperCase() + ' API KEY / AUTH';
+    }
+    async function saveAIConfig() {
+      const prov = $('provider-select').value;
+      const key = $('api-key-input').value.trim();
+      const payload = { default_provider: prov };
+      if (key && ['gemini', 'groq', 'anthropic', 'openai', 'openrouter'].includes(prov)) payload[`${prov}_api_key`] = key;
+      try {
+        const res = await apiFetch('/config/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        if (!res.ok) throw new Error(await errorText(res));
+        $('api-key-input').value = '';
+        showToast(`Active model provider: ${prov.toUpperCase()}`);
+      } catch (err) {
+        showToast(`Could not save the configuration: ${err.message}`, 6000);
       }
     }
 
@@ -567,139 +612,160 @@ Enter a query or click the microphone to begin.
       if (!emotion) return;
       lastEmotion = emotion.primary_emotion;
       lastIntensity = emotion.intensity;
-
-      const tag = document.getElementById('emotion-tag');
-      const text = document.getElementById('emotion-text');
-      const intensity = document.getElementById('emotion-intensity');
-      const directiveBox = document.getElementById('vox-directive-box');
-
-      text.innerText = emotion.primary_emotion.toUpperCase();
-      intensity.innerText = Math.round(emotion.intensity * 100) + '%';
-      directiveBox.innerText = emotion.vox_adaptation;
-
-      tag.className = 'emotion-badge emo-' + emotion.primary_emotion;
+      $('emotion-text').innerText = emotion.primary_emotion.toUpperCase();
+      $('emotion-intensity').innerText = Math.round(emotion.intensity * 100) + '%';
+      $('vox-directive-box').innerText = emotion.vox_adaptation;
+      $('emotion-tag').className = 'emotion-badge emo-' + emotion.primary_emotion;
     }
 
-    function formatTerminalDiff(text, diff) {
-      let output = `[VoxCode Summary]\n${text}\n\n`;
-      if (diff) {
-        output += `[Generated Code Patch]\n`;
-        const lines = diff.split('\n');
-        for (const line of lines) {
-          if (line.startsWith('+') && !line.startsWith('+++')) {
-            output += `<span class="diff-added">${escapeHtml(line)}</span>`;
-          } else if (line.startsWith('-') && !line.startsWith('---')) {
-            output += `<span class="diff-removed">${escapeHtml(line)}</span>`;
-          } else {
-            output += `${escapeHtml(line)}\n`;
+    function renderDiff(diff) {
+      return diff.split('\n').map((line) => {
+        if (line.startsWith('+') && !line.startsWith('+++')) return `<span class="diff-added">${escapeHtml(line)}</span>`;
+        if (line.startsWith('-') && !line.startsWith('---')) return `<span class="diff-removed">${escapeHtml(line)}</span>`;
+        return escapeHtml(line);
+      }).join('\n');
+    }
+    function renderSources(sources) {
+      if (!sources || !sources.length) return '';
+      return '\n\n[Sources]\n' + sources.slice(0, 6).map((s) =>
+        `  ${escapeHtml(s.file_path)}:${s.start_line}-${s.end_line}  ${escapeHtml(s.symbol_name || '')}`).join('\n');
+    }
+
+    // ------------------------------------------------------------ ask / edit (streamed)
+    async function runAgent() {
+      const prompt = $('prompt-input').value.trim();
+      if (!prompt) return;
+      if (controller) controller.abort(); // a new request replaces a running one
+      controller = new AbortController();
+      const terminal = $('terminal-out');
+      const repoPath = repoInput.value.trim() || '.';
+      lastQuery = prompt; lastRepoPath = repoPath; lastDiff = null; lastSummary = '';
+      terminal.innerText = `> ${prompt}\n> Searching the code…`;
+      let answer = '', sources = [], mode = 'answer', started = performance.now(), firstToken = true;
+
+      const show = (extra = '') => {
+        terminal.innerHTML = `<b>[VoxCode]</b> <span style="opacity:.6">${escapeHtml(mode)}</span>\n${escapeHtml(answer)}${extra}${renderSources(sources)}`;
+        terminal.scrollTop = terminal.scrollHeight;
+      };
+      try {
+        const res = await apiFetch('/agent/stream', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: controller.signal,
+          body: JSON.stringify({ query: prompt, repository_path: repoPath }),
+        });
+        if (!res.ok || !res.body) throw new Error(await errorText(res));
+        const reader = res.body.getReader(), decoder = new TextDecoder();
+        let buffer = '';
+        for (;;) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          let cut;
+          while ((cut = buffer.indexOf('\n\n')) !== -1) {
+            const block = buffer.slice(0, cut); buffer = buffer.slice(cut + 2);
+            for (const line of block.split('\n')) {
+              if (!line.startsWith('data:')) continue;
+              const ev = JSON.parse(line.slice(5));
+              if (ev.type === 'start') {
+                mode = ev.mode; updateEmotionUI(ev.emotion);
+                terminal.innerText = `> ${prompt}\n> ${mode === 'edit' ? 'Planning and writing a patch (tests run before you see it)…' : 'Searching the code…'}`;
+              } else if (ev.type === 'sources') {
+                sources = ev.sources || [];
+                terminal.innerText = `> ${prompt}\n> Found ${sources.length} relevant snippet${sources.length === 1 ? '' : 's'}. Waiting for the model…`;
+              } else if (ev.type === 'token') {
+                if (firstToken) { firstToken = false; answer = ''; }
+                answer += ev.text; show();
+              } else if (ev.type === 'tool') {
+                answer += `\n· ${ev.tool}(${escapeHtml(JSON.stringify(ev.args || {})).slice(0, 80)})`; show();
+              } else if (ev.type === 'edit') {
+                answer = ev.summary || 'Patch ready.';
+                lastDiff = ev.diff || null;
+                const files = (ev.files || []).map((f) => f.path).join(', ');
+                show(lastDiff ? `\n\n[Patch: ${escapeHtml(files)}] (${escapeHtml(ev.status)})\n${renderDiff(lastDiff)}\n\n<button class="btn apply-btn" onclick="applyLastPatch()">Apply patch</button>` : '');
+              } else if (ev.type === 'done') {
+                if (ev.answer && !answer) answer = ev.answer;
+                let note = '';
+                if (ev.quality && ev.quality.groundedness < 0.75) {
+                  const names = [...(ev.quality.unsupported || []), ...(ev.quality.bad_citations || [])].slice(0, 5);
+                  note = `\n\n⚠ Some names in this answer were not found in the code: ${escapeHtml(names.join(', '))}`;
+                }
+                if (ev.cached) note += '\n(cached answer)';
+                show(note);
+              } else if (ev.type === 'error') {
+                throw new Error(ev.detail || 'The request failed');
+              }
+            }
           }
         }
-      }
-      return output;
-    }
-
-    function escapeHtml(string) {
-      const entityMap = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
-      return String(string).replace(/[&<>"']/g, (s) => entityMap[s]);
-    }
-
-    async function runAgent() {
-      const prompt = document.getElementById('prompt-input').value.trim();
-      if (!prompt) return;
-
-      const terminal = document.getElementById('terminal-out');
-      const repoPath = document.getElementById('repo-path').value || '.';
-
-      terminal.innerText = `> Analyzing instruction & tone for: "${prompt}"...\n> Searching AST symbols and generating code patch...`;
-
-      try {
-        const res = await apiFetch('/agent/query', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            query: prompt,
-            repository_path: repoPath,
-            auto_tts: false
-          })
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          terminal.innerText = `[VoxCode Error]: ${data.detail || res.status}`;
-          return;
-        }
-
-        updateEmotionUI(data.emotion);
-
-        lastSummary = data.summary || "Completed instruction.";
-        if (data.vox_voice_feedback) {
-          document.getElementById('voice-line-preview').innerText = `"${data.vox_voice_feedback}"`;
-        }
-
-        terminal.innerHTML = formatTerminalDiff(lastSummary, data.diff);
-        if (data.diff) {
-          lastDiff = data.diff;
-          lastRepoPath = repoPath;
-          terminal.innerHTML += `\n<button class="btn" onclick="applyLastPatch()">Apply patch (${escapeHtml(data.status)})</button>`;
-        }
+        lastSummary = answer;
+        if (!answer && !lastDiff) terminal.innerText = `> ${prompt}\n(no answer)`;
+        $('voice-line-preview').innerText = `"${(answer || '').slice(0, 160)}${answer.length > 160 ? '…' : ''}"`;
+        console.info(`answered in ${Math.round(performance.now() - started)} ms`);
       } catch (err) {
-        terminal.innerText = `[VoxCode Error]: ${err}`;
+        if (err.name === 'AbortError') return;
+        terminal.innerHTML = `<span class="diff-removed">[VoxCode Error] ${escapeHtml(err.message)}</span>`;
+      } finally {
+        controller = null;
       }
     }
 
-    let lastDiff = null, lastRepoPath = '.';
     async function applyLastPatch() {
       if (!lastDiff) return;
-      const res = await apiFetch('/agent/apply', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ repository_path: lastRepoPath, diff: lastDiff })
-      });
-      const data = await res.json();
-      showToast(res.ok ? `Applied to ${data.files_modified.join(', ')}` : `Apply failed: ${data.detail}`);
-      if (res.ok) lastDiff = null;
+      try {
+        const res = await apiFetch('/agent/apply', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ repository_path: lastRepoPath, diff: lastDiff, query: lastQuery }),
+        });
+        if (!res.ok) throw new Error(await errorText(res));
+        const data = await res.json();
+        lastDiff = null;
+        document.querySelectorAll('#terminal-out .apply-btn').forEach((b) => b.remove());
+        $('terminal-out').innerHTML += `\n\n✓ Applied to ${escapeHtml(data.files_modified.join(', '))}. <button class="btn undo-btn" onclick="undoPatch()">Undo</button>`;
+        showToast(`Applied to ${data.files_modified.join(', ')}`);
+      } catch (err) {
+        showToast(`Apply failed: ${err.message}`, 6000);
+      }
+    }
+    async function undoPatch() {
+      try {
+        const res = await apiFetch('/agent/undo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ repository_path: lastRepoPath }) });
+        if (!res.ok) throw new Error(await errorText(res));
+        const data = await res.json();
+        showToast(`Reverted ${data.files_modified.join(', ')}`);
+      } catch (err) { showToast(`Undo failed: ${err.message}`, 6000); }
     }
 
     async function reindexRepo() {
-      const repoPath = document.getElementById('repo-path').value || '.';
-      const terminal = document.getElementById('terminal-out');
-      terminal.innerText = `> Indexing repository AST at: ${repoPath}...`;
-
+      const repoPath = repoInput.value.trim() || '.';
+      const terminal = $('terminal-out');
+      terminal.innerText = `> Indexing ${repoPath}…`;
       try {
-        const res = await apiFetch('/index/', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ repository_path: repoPath })
-        });
+        const res = await apiFetch('/index/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ repository_path: repoPath }) });
+        if (!res.ok) throw new Error(await errorText(res));
         const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || res.status);
-
-        document.getElementById('chunk-count-chip').innerText = `${data.chunks_created} Chunks`;
-        document.getElementById('func-count').innerText = data.functions_found;
-        document.getElementById('class-count').innerText = data.classes_found;
-        document.getElementById('symbols-count').innerText = data.functions_found + data.classes_found;
-
-        terminal.innerText = `✓ Repository scan complete.\nIdentified ${data.functions_found} functions and ${data.classes_found} classes across ${data.files_indexed} files.`;
-        showToast('Repository fully indexed');
+        try { localStorage.setItem('voxcode.repo', repoPath); } catch (e) {}
+        $('chunk-count-chip').innerText = `${data.chunks_created} Chunks`;
+        $('func-count').innerText = data.functions_found;
+        $('class-count').innerText = data.classes_found;
+        $('symbols-count').innerText = data.functions_found + data.classes_found;
+        terminal.innerText = `✓ Indexed ${data.files_indexed} files: ${data.functions_found} functions and ${data.classes_found} classes (${data.duration_seconds}s).`;
+        showToast('Repository indexed');
       } catch (err) {
-        terminal.innerText = `[Indexing Error]: ${err}`;
+        terminal.innerText = `[Indexing Error] ${err.message}`;
       }
     }
 
     async function speakSummary() {
+      const text = lastSummary || $('voice-line-preview').innerText.replace(/^"|"$/g, '');
+      if (!text.trim()) { showToast('Nothing to read yet. Ask something first.'); return; }
       try {
-        const previewText = document.getElementById('voice-line-preview').innerText.replace(/"/g, '');
-        await apiFetch('/voice/speak', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            text: previewText || lastSummary,
-            emotion: lastEmotion,
-            intensity: lastIntensity
-          })
+        const res = await apiFetch('/voice/speak', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: text.slice(0, 2000), emotion: lastEmotion, intensity: lastIntensity, play: true }),
         });
-        showToast('Playing voice summary...');
+        if (!res.ok) throw new Error(await errorText(res));
+        showToast('Reading the answer aloud on the VoxCode machine…');
       } catch (e) {
-        console.warn(e);
+        showToast(`Can't speak: ${e.message}`, 6000);
       }
     }
 

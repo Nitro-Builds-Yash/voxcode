@@ -209,3 +209,13 @@ def test_answers_carry_quality_routing_and_cache_flags(client, sample_repo):
         json={"query": "where is the logout", "repository_path": str(sample_repo), "session_id": "cache-b"},
     ).json()
     assert again["cached"] is True and again["summary"] == first["summary"]
+
+
+def test_speak_reports_a_missing_tts_engine(client, monkeypatch):
+    """Regression: /voice/speak answered "ok" and stayed silent when no engine was installed."""
+    from voxcode.voice.tts.tts_service import tts_service
+
+    monkeypatch.setattr(tts_service, "available", lambda: False)
+    reply = client.post("/voice/speak", json={"text": "hello", "play": True})
+    assert reply.status_code == 503 and "not installed" in reply.json()["detail"]
+    assert client.post("/voice/speak", json={"text": "hello", "play": False}).status_code == 200

@@ -1,7 +1,7 @@
 //! BM25 Okapi with an inverted index.
 //!
-//! Scores match `rank_bm25.BM25Okapi` (k1=1.5, b=0.75, epsilon=0.25,
-//! negative IDFs floored to epsilon * mean IDF) to the last bit: the same
+//! Scores match `bm25_retriever.Okapi` (k1=1.5, b=0.75, Lucene IDF
+//! ln(1 + (N - df + 0.5) / (df + 0.5)), which is never negative): the same
 //! floating-point operations happen in the same order. Only documents that
 //! contain a query term are touched, instead of every document per term.
 
@@ -17,10 +17,10 @@ pub struct Bm25 {
 
 impl Bm25 {
     pub fn new(corpus: &[Vec<String>]) -> Self {
-        Self::with_params(corpus, 1.5, 0.75, 0.25)
+        Self::with_params(corpus, 1.5, 0.75)
     }
 
-    pub fn with_params(corpus: &[Vec<String>], k1: f64, b: f64, epsilon: f64) -> Self {
+    pub fn with_params(corpus: &[Vec<String>], k1: f64, b: f64) -> Self {
         let n = corpus.len();
         let mut postings: HashMap<String, Vec<(u32, f64)>> = HashMap::new();
         let mut total_len = 0usize;
@@ -42,24 +42,14 @@ impl Bm25 {
         } else {
             total_len as f64 / n as f64
         };
-        let mut idf = HashMap::with_capacity(postings.len());
-        let mut idf_sum = 0.0;
-        let mut negative = Vec::new();
-        for (t, docs) in &postings {
-            let df = docs.len() as f64;
-            let value = (n as f64 - df + 0.5).ln() - (df + 0.5).ln();
-            idf_sum += value;
-            if value < 0.0 {
-                negative.push(t.clone());
-            }
-            idf.insert(t.clone(), value);
-        }
-        if !idf.is_empty() {
-            let eps = epsilon * (idf_sum / idf.len() as f64);
-            for t in negative {
-                idf.insert(t, eps);
-            }
-        }
+        // Lucene IDF: never negative, so a term in most documents still scores.
+        let idf = postings
+            .iter()
+            .map(|(t, docs)| {
+                let df = docs.len() as f64;
+                (t.clone(), (1.0 + (n as f64 - df + 0.5) / (df + 0.5)).ln())
+            })
+            .collect();
         let norm = corpus
             .iter()
             .map(|d| k1 * (1.0 - b + b * d.len() as f64 / avgdl))
@@ -122,6 +112,18 @@ mod tests {
 
     fn doc(s: &str) -> Vec<String> {
         s.split_whitespace().map(String::from).collect()
+    }
+
+    #[test]
+    fn a_term_in_every_document_still_scores() {
+        // Regression: Okapi IDF made this negative, so tiny repos found nothing.
+        let index = Bm25::new(&[
+            doc("def add a b return a b"),
+            doc("test add assert add 2 3"),
+        ]);
+        let top = index.top_k(&doc("add"), 5);
+        assert_eq!(top.len(), 2);
+        assert!(top.iter().all(|(_, s)| *s > 0.0));
     }
 
     #[test]

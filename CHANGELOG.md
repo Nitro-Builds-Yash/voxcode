@@ -2,6 +2,19 @@
 
 All notable changes to VoxCode. Versions follow [Semantic Versioning](https://semver.org).
 
+## [0.8.1] — Bug fixes
+
+Found by smoke-testing the server, the web UI and the review page in Chrome against an OpenAI-compatible fake model.
+
+### Fixed
+- **Search found nothing in small projects.** The Okapi IDF (from `rank_bm25`) is negative for words in more than half the files, so the best matches scored below zero and were dropped; answers then had no code context. BM25 now uses Lucene's IDF, which is never negative, in Python and in the Rust core (`rank-bm25` is no longer a dependency).
+- **Questions were routed to edit mode.** The learned intent model sent "explain the add function" and "summarize the readme" to refactor. It now only refines the keyword rules within the same family: a question is never turned into an edit.
+- **The first question waited ~30–50 s.** The precise (Jedi) call graph now builds in the background after indexing; search uses name matching until it's ready. Indexing this repo went from 32 s to 0.3 s.
+- **The web UI looked frozen while the model worked.** It now streams the answer as it's written and shows the sources it used.
+- **Web UI: the mic did nothing without Chrome's online speech service.** It now falls back to VoxCode's local Whisper and says why when recording fails.
+- **Web UI: "Read aloud" claimed success when no speech engine was installed, and read a placeholder instead of the answer.** `/voice/speak` now returns 503 with an install hint, and the extension shows it once.
+- **Web UI: smaller fixes.** Clearer errors when the model can't be reached ("Can't reach ollama at … Is Ollama running?"), config saves check for errors, Apply hides after use and Undo is offered, the repo path is remembered, diffs render without blank lines, icons are inlined (no CDN, works offline), and there's a favicon.
+
 ## [0.8.0] — Review before it runs
 
 Inspired by [Plannotator](https://github.com/backnotprop/plannotator).

@@ -123,6 +123,19 @@ async function stream(
     }
 }
 
+let speechWarned = false;
+/** Spoken replies used to fail silently (e.g. no TTS engine installed). Say why, once. */
+function reportSpeechFailure(err: Error) {
+    if (speechWarned) return;
+    speechWarned = true;
+    output.appendLine(`Spoken reply failed: ${err.message}`);
+    void vscode.window
+        .showWarningMessage(`VoxCode can't speak replies: ${err.message}`, 'Turn off spoken replies')
+        .then((choice) => {
+            if (choice) void vscode.workspace.getConfiguration('voiceCoding').update('speakReplies', false, vscode.ConfigurationTarget.Global);
+        });
+}
+
 // ---------------------------------------------------------------- ui helpers
 function setStatus(text: string, tooltip?: string) {
     statusBar.text = text;
@@ -135,7 +148,7 @@ function idle() {
 
 function speak(text: string, replyId?: string) {
     if (!config().speakReplies || !text.trim()) return;
-    api('/voice/speak', { text, play: true, reply_id: replyId }).catch(() => undefined);
+    api('/voice/speak', { text, play: true, reply_id: replyId }).catch(reportSpeechFailure);
 }
 
 function stopSpeaking() {
