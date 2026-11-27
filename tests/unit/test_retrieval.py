@@ -45,7 +45,10 @@ def test_graph_expansion_adds_callees(sample_repo, tmp_path):
     assert {"find_user", "verify_password"} <= added
 
 
-def test_bm25_only_when_no_embedder(sample_repo, tmp_path):
+def test_bm25_only_when_no_embedder(sample_repo, tmp_path, monkeypatch):
+    from voxcode.config.settings import settings
+
+    monkeypatch.setattr(settings, "LOCAL_SEMANTIC", False)
     retriever = _retriever(sample_repo, tmp_path, None)
     assert retriever.semantic is None
     assert retriever.search("logout session")[0].symbol_name == "AuthService.logout"

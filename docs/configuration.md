@@ -139,3 +139,12 @@ Set `VOXCODE_NO_BROWSER=1` to print review URLs instead of opening a browser. SS
 | `WATCH_DEBOUNCE_SECONDS` | `2.0` | Wait this long after the last file change before re-indexing. |
 | `QDRANT_COLLECTION_PREFIX` | `voxcode` | Prefix of the Qdrant collections (one per repository). |
 | `APP_NAME` / `APP_VERSION` | `VoxCode` / current | Reported by `/health` and the API docs. |
+
+## v0.9.0
+
+| Setting | Default | Purpose |
+|---|---|---|
+| `LOCAL_SEMANTIC` | `true` | With no embedding model installed, train a small latent semantic model per repository (TF-IDF + SVD) and fuse it with BM25. Cached under `CACHE_DIR/lsa`. |
+| `CREW_MAX_RESEARCHERS` | `3` | Most researchers the crew runs in parallel. |
+| `CREW_MAX_ROUNDS` | `2` | Most coder → tester → reviewer rounds for a change. |
+| `CREW_MAX_TOKENS` | `200000` | Token budget for one crew run; agents stop when it runs out. |

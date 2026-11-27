@@ -5,6 +5,7 @@ voxcode index  [PATH] [--full]        index a repository (default: current folde
 voxcode search "query" [--repo PATH]  show matching code
 voxcode ask    "question" [--repo PATH]       streamed answer
 voxcode edit   "instruction" [--repo PATH] [--tests]   propose a validated patch
+voxcode crew   "task" [--repo PATH] [--mode auto|answer|change] [--tests]   run the multi-agent crew
 voxcode eval   [--repo PATH] [--answers | --learning]  retrieval / answer / learned-ranker benchmark
 voxcode train-ranker [--repo PATH]    train the learned ranker (docstrings + feedback)
 voxcode mcp    [--repo PATH]          run as an MCP server (Claude, Cursor, ...)
@@ -43,6 +44,14 @@ def build_parser() -> argparse.ArgumentParser:
         command.add_argument("--repo", default=".")
         if name == "edit":
             command.add_argument("--tests", action="store_true", help="run tests against the patch")
+
+    crew = sub.add_parser(
+        "crew", help="run the multi-agent crew (planner, researchers, coder, tester, reviewer)"
+    )
+    crew.add_argument("task")
+    crew.add_argument("--repo", default=".")
+    crew.add_argument("--mode", choices=["auto", "answer", "change"], default="auto")
+    crew.add_argument("--tests", action="store_true", help="run tests against patches")
 
     evaluate = sub.add_parser("eval", help="retrieval or answer quality benchmark")
     evaluate.add_argument("--repo", default=".")
@@ -155,6 +164,31 @@ def _query_command(args, parser) -> int:
     return 0
 
 
+def _crew(args, parser) -> int:
+    from voxcode.api.routes.crew import start_run
+    from voxcode.crew.trace import trace_store
+
+    trace = start_run(args.task, _repo(parser, args.repo), args.mode, args.tests, background=True)
+    seq = -1
+    while True:
+        for event in trace.events_after(seq, timeout=1.0):
+            seq = event.seq
+            detail = event.text if event.kind != "tool" else f"{event.text}({event.data.get('args')})"
+            print(f"{event.t:6.1f}s  {event.agent:<13} {event.kind:<7} {detail[:140]}")
+        if trace.status != "running" and seq >= len(trace.events) - 1:
+            break
+    trace_store.save(trace)
+    result = trace.result
+    print()
+    if result.get("kind") == "answer":
+        print(result.get("answer", ""))
+    elif result.get("diff"):
+        print(result["diff"])
+        print(f"\nApply it with: POST /crews/{trace.id}/apply (or open /crew/{trace.id})")
+    print(f"\n{trace.total_tokens:,} tokens · {len(trace.events)} events · run {trace.id}")
+    return 0 if trace.status == "done" else 1
+
+
 def _train_ranker(args, parser) -> int:
     import json
 
@@ -259,6 +293,7 @@ COMMANDS = {
     "search": _query_command,
     "ask": _query_command,
     "edit": _query_command,
+    "crew": _crew,
     "train-ranker": _train_ranker,
     "eval": _eval,
     "hook": _hook,

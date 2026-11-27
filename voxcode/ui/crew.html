@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VoxCode Crew</title>
+<style>
+  :root {
+    --bg0: #120d0b; --card: #1f1714; --card2: #261c17; --border: #3a2a22;
+    --text: #fff7ed; --muted: #d6c4b8; --faint: #9a8579;
+    --amber: #fbbf24; --coral: #fb7185; --magenta: #e879f9; --mint: #6ee7b7; --sky: #7dd3fc; --violet: #a78bfa; --red: #f87171;
+    --grad: linear-gradient(90deg, var(--amber), var(--coral) 50%, var(--magenta));
+    --head: 'Space Grotesk', 'Inter', ui-sans-serif, system-ui, sans-serif;
+    --sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--bg0); min-height: 100%; }
+  body { margin: 0; min-height: 100vh; background: radial-gradient(circle at 85% -10%, #3a1d1f 0%, var(--bg0) 55%) fixed; background-color: var(--bg0); color: var(--text); font: 14.5px/1.55 var(--sans); }
+  header { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 14px; padding: 12px 22px; background: rgba(18,13,11,.86); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); }
+  .brand { font: 700 20px var(--head); letter-spacing: -.5px; color: var(--text); text-decoration: none; }
+  .brand span, .gradtext { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .crumb { font: 600 15px var(--head); color: var(--muted); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .chip { font: 700 11px var(--mono); letter-spacing: .8px; text-transform: uppercase; padding: 3px 9px; border-radius: 99px; border: 1px solid var(--border); color: var(--faint); }
+  .chip.running { color: var(--sky); border-color: #29566b; } .chip.done { color: var(--mint); border-color: #2c6b55; } .chip.failed { color: var(--red); border-color: #7c2f3a; }
+  a.nav { color: var(--faint); text-decoration: none; font-size: 13px; } a.nav:hover { color: var(--text); }
+  main { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 20px; padding: 20px 22px; max-width: 1500px; margin: 0 auto; }
+  .panel { background: rgba(31,23,20,.85); border: 1px solid var(--border); border-radius: 16px; padding: 16px; }
+  h3.side { font: 700 11.5px var(--mono); letter-spacing: 1.4px; text-transform: uppercase; color: var(--faint); margin: 0 0 10px; }
+  textarea, input[type=text], select { width: 100%; background: #160f0c; color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 9px 11px; font: 14px var(--sans); }
+  textarea { resize: vertical; min-height: 92px; } textarea:focus, input:focus, select:focus { outline: 1px solid var(--amber); }
+  label { font-size: 12.5px; color: var(--muted); display: block; margin: 10px 0 4px; }
+  button { font: 600 13px var(--sans); color: var(--text); background: var(--card2); border: 1px solid var(--border); border-radius: 9px; padding: 8px 12px; cursor: pointer; }
+  button.primary { background: var(--grad); color: #1a0f0c; border: 0; width: 100%; padding: 11px; margin-top: 12px; font-size: 14px; }
+  button:disabled { opacity: .5; cursor: default; }
+  .runs a { display: block; padding: 9px 10px; border-radius: 10px; text-decoration: none; color: var(--muted); border: 1px solid transparent; }
+  .runs a:hover, .runs a.on { background: var(--card2); border-color: var(--border); color: var(--text); }
+  .runs .t { font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .runs .m { font-size: 11.5px; color: var(--faint); }
+  .tiles { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 18px; }
+  .tile { background: rgba(31,23,20,.85); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; }
+  .tile .v { font: 700 22px var(--head); letter-spacing: -.5px; } .tile .l { font: 700 10.5px var(--mono); letter-spacing: 1.2px; color: var(--faint); text-transform: uppercase; }
+  .gantt { margin-bottom: 18px; } .gantt svg { width: 100%; display: block; }
+  .lanes { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 14px; margin-bottom: 18px; }
+  .agent { border: 1px solid var(--border); border-radius: 16px; background: rgba(31,23,20,.85); overflow: hidden; display: flex; flex-direction: column; max-height: 420px; }
+  .agent .hd { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-bottom: 1px solid var(--border); background: var(--card2); }
+  .agent .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .agent.working .dot { animation: pulse 1.2s infinite; }
+  @keyframes pulse { 50% { box-shadow: 0 0 0 6px rgba(251,191,36,.18); opacity: .6; } }
+  .agent .name { font: 700 14.5px var(--head); flex: 1; text-transform: capitalize; } .agent .usage { font: 11px var(--mono); color: var(--faint); }
+  .agent .log { padding: 8px 12px 12px; overflow: auto; }
+  .ev { padding: 7px 0; border-bottom: 1px dashed #33251e; font-size: 13px; } .ev:last-child { border-bottom: 0; }
+  .ev .k { font: 700 10px var(--mono); letter-spacing: 1px; text-transform: uppercase; margin-right: 6px; }
+  .ev .ts { float: right; font: 11px var(--mono); color: var(--faint); }
+  .ev code, .result code { font: 12px var(--mono); background: #2a1e18; border: 1px solid var(--border); border-radius: 5px; padding: 0 4px; color: #fed7aa; }
+  .ev .obs { margin-top: 4px; font: 11.5px/1.5 var(--mono); color: var(--faint); white-space: pre-wrap; max-height: 70px; overflow: hidden; }
+  .k.start { color: var(--sky); } .k.tool { color: var(--amber); } .k.result { color: var(--mint); } .k.error { color: var(--red); } .k.done { color: var(--magenta); }
+  .result { margin-bottom: 18px; } .result h2 { font: 700 20px var(--head); margin: 0 0 10px; letter-spacing: -.4px; }
+  .badges { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .badge { font: 700 11px var(--mono); padding: 4px 9px; border-radius: 99px; border: 1px solid var(--border); }
+  .badge.ok { color: var(--mint); border-color: #2c6b55; } .badge.bad { color: var(--red); border-color: #7c2f3a; } .badge.info { color: var(--sky); border-color: #29566b; }
+  .answer { white-space: pre-wrap; font-size: 15px; line-height: 1.65; }
+  pre.diff { background: #160f0c; border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; overflow: auto; font: 12.5px/1.6 var(--mono); max-height: 460px; margin: 0; }
+  .add { color: var(--mint); background: rgba(110,231,183,.08); display: inline-block; min-width: 100%; } .del { color: var(--red); background: rgba(248,113,113,.08); display: inline-block; min-width: 100%; }
+  .issues li { margin: 4px 0; color: var(--muted); }
+  .empty { text-align: center; padding: 60px 20px; color: var(--faint); }
+  .empty h1 { font: 700 34px var(--head); letter-spacing: -1px; margin: 0 0 8px; color: var(--text); }
+  .roles { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-top: 22px; }
+  .role { border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; background: var(--card); font-size: 13px; color: var(--muted); }
+  .role b { display: block; font: 700 14px var(--head); color: var(--text); text-transform: capitalize; }
+  #toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); background: #241a15; border: 1px solid var(--faint); padding: 10px 16px; border-radius: 12px; display: none; z-index: 30; }
+  @media (max-width: 1100px) { main { grid-template-columns: 1fr; } .tiles { grid-template-columns: repeat(3, 1fr); } }
+</style>
+</head>
+<body>
+<header>
+  <a class="brand" href="/">vox<span>code</span></a>
+  <span class="chip">crew</span>
+  <div class="crumb" id="crumb">Agent crew</div>
+  <span class="chip" id="status" style="display:none"></span>
+  <a class="nav" href="/review">Reviews</a>
+</header>
+<main>
+  <aside>
+    <div class="panel">
+      <h3 class="side">New run</h3>
+      <textarea id="task" placeholder="Ask a question about the code, or describe a change…"></textarea>
+      <label for="repo">Repository</label>
+      <input type="text" id="repo" placeholder="/path/to/repo">
+      <label for="mode">Mode</label>
+      <select id="mode"><option value="auto">Auto (planner decides)</option><option value="answer">Answer a question</option><option value="change">Make a change</option></select>
+      <label><input type="checkbox" id="tests" checked> Run tests on patches</label>
+      <button class="primary" id="go">Run the crew</button>
+    </div>
+    <div class="panel runs" style="margin-top:14px"><h3 class="side">Recent runs</h3><div id="runs"></div></div>
+  </aside>
+  <section id="view"></section>
+</main>
+<div id="toast"></div>
+<script>
+'use strict';
+const TOKEN = window.VOXCODE_TOKEN || '';
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const ROLE = {
+  planner: ['#fbbf24', 'Splits the task into research questions and a plan'],
+  researcher: ['#fb7185', 'Searches and reads code with tools, in parallel'],
+  writer: ['#7dd3fc', 'Writes the answer from the research notes'],
+  coder: ['#e879f9', 'Writes the patch from the plan and notes'],
+  tester: ['#6ee7b7', 'Runs the tests against the patch in a copy'],
+  reviewer: ['#a78bfa', 'Checks grounding or reviews the patch; sends it back'],
+  crew: ['#9a8579', 'Orchestrator'],
+};
+const roleOf = (agent) => agent.split('-')[0];
+const colorOf = (agent) => (ROLE[roleOf(agent)] || ROLE.crew)[0];
+let run = null, controller = null;
+
+async function api(path, options = {}) {
+  const res = await fetch(path, { ...options, headers: { ...(options.body ? { 'Content-Type': 'application/json' } : {}), ...(TOKEN ? { 'X-VoxCode-Token': TOKEN } : {}) } });
+  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || res.statusText);
+  return res.json();
+}
+function toast(text, ms = 3200) { const t = $('#toast'); t.textContent = text; t.style.display = 'block'; clearTimeout(t._h); t._h = setTimeout(() => (t.style.display = 'none'), ms); }
+function inline(text) { return esc(text).replace(/`([^`]+)`/g, '<code>$1</code>'); }
+
+// ------------------------------------------------------------ state from events
+function emptyRun(id, task) { return { id, task, status: 'running', events: [], agents: {}, result: {}, total_tokens: 0, total_cost_usd: 0 }; }
+function addEvent(e) {
+  run.events.push(e);
+  const a = (run.agents[e.agent] ||= { input_tokens: 0, output_tokens: 0, tool_calls: 0, first: e.t, last: e.t });
+  a.last = e.t; if (a.first == null) a.first = e.t;
+  if (e.kind === 'tool') a.tool_calls++;
+}
+
+// ------------------------------------------------------------ rendering
+function render() {
+  if (!run) return showIntro();
+  $('#crumb').textContent = run.task;
+  const st = $('#status'); st.style.display = ''; st.textContent = run.status; st.className = `chip ${run.status}`;
+  const agents = Object.keys(run.agents).filter((a) => a !== 'crew');
+  const duration = run.events.length ? run.events[run.events.length - 1].t : 0;
+  const tools = Object.values(run.agents).reduce((n, a) => n + (a.tool_calls || 0), 0);
+  $('#view').innerHTML = `
+    <div class="tiles">
+      ${tile(agents.length, 'agents')}${tile(tools, 'tool calls')}${tile((run.total_tokens || 0).toLocaleString(), 'tokens')}
+      ${tile(run.total_cost_usd ? '$' + run.total_cost_usd.toFixed(4) : '—', 'cost')}${tile(duration.toFixed(1) + 's', 'duration')}${tile(run.events.length, 'events')}
+    </div>
+    ${resultHtml()}
+    <div class="panel gantt"><h3 class="side">Timeline</h3>${gantt(agents, duration)}</div>
+    <div class="lanes">${agents.map(laneHtml).join('')}</div>`;
+  const apply = $('#apply'); if (apply) apply.onclick = applyPatch;
+  document.querySelectorAll('.agent .log').forEach((l) => (l.scrollTop = l.scrollHeight));
+}
+const tile = (v, l) => `<div class="tile"><div class="v">${esc(v)}</div><div class="l">${l}</div></div>`;
+
+function gantt(agents, duration) {
+  if (!agents.length) return '<div class="faint">Waiting for the planner…</div>';
+  const W = 1000, rowH = 30, left = 130, H = agents.length * rowH + 26, span = Math.max(duration, 0.001);
+  const x = (t) => left + ((W - left - 10) * t) / span;
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Agent timeline">`;
+  for (let i = 0; i <= 4; i++) { const t = (span * i) / 4, xx = x(t); svg += `<line x1="${xx}" y1="0" x2="${xx}" y2="${H - 18}" stroke="#3a2a22"/><text x="${xx}" y="${H - 4}" fill="#9a8579" font-size="11" font-family="monospace" text-anchor="${i === 4 ? "end" : i === 0 ? "start" : "middle"}">${t.toFixed(1)}s</text>`; }
+  agents.forEach((name, i) => {
+    const a = run.agents[name], y = i * rowH + 6, c = colorOf(name);
+    const evs = run.events.filter((e) => e.agent === name);
+    const end = run.status === 'running' && evs.length && evs[evs.length - 1].kind !== 'result' && evs[evs.length - 1].kind !== 'error' ? duration : a.last;
+    svg += `<text x="0" y="${y + 15}" fill="#d6c4b8" font-size="12.5" font-family="sans-serif">${esc(name)}</text>`;
+    svg += `<rect x="${x(a.first)}" y="${y + 3}" width="${Math.max(4, x(end) - x(a.first))}" height="16" rx="8" fill="${c}" fill-opacity=".28" stroke="${c}" stroke-opacity=".7"/>`;
+    for (const e of evs) if (e.kind === 'tool' || e.kind === 'result' || e.kind === 'error') svg += `<circle cx="${x(e.t)}" cy="${y + 11}" r="${e.kind === 'tool' ? 3.5 : 5}" fill="${e.kind === 'error' ? '#f87171' : c}"><title>${esc(e.kind + ': ' + e.text)}</title></circle>`;
+  });
+  return svg + '</svg>';
+}
+
+function laneHtml(name) {
+  const a = run.agents[name], evs = run.events.filter((e) => e.agent === name);
+  const last = evs[evs.length - 1];
+  const working = run.status === 'running' && last && !['result', 'error', 'done'].includes(last.kind);
+  const tokens = (a.input_tokens || 0) + (a.output_tokens || 0);
+  return `<div class="agent ${working ? 'working' : ''}"><div class="hd"><span class="dot" style="background:${colorOf(name)}"></span>
+    <span class="name">${esc(name.replace('-', ' '))}</span><span class="usage">${tokens ? tokens.toLocaleString() + ' tok' : ''}${a.tool_calls ? ' · ' + a.tool_calls + ' tools' : ''}</span></div>
+    <div class="log">${evs.map(eventHtml).join('')}${working ? '<div class="ev faint">working…</div>' : ''}</div></div>`;
+}
+function eventHtml(e) {
+  let body = inline(e.text);
+  if (e.kind === 'tool') body = `<code>${esc(e.text)}(${esc(JSON.stringify(e.data.args || {})).slice(0, 90)})</code>${e.data.observation ? `<div class="obs">${esc(e.data.observation)}</div>` : ''}`;
+  if (e.data && e.data.research) body += `<ol style="margin:6px 0 0 18px;padding:0">${e.data.research.map((q) => `<li>${inline(q)}</li>`).join('')}</ol>`;
+  if (e.data && e.data.issues && e.data.issues.length) body += `<ul class="issues" style="margin:6px 0 0 18px;padding:0">${e.data.issues.map((i) => `<li>${inline(i)}</li>`).join('')}</ul>`;
+  return `<div class="ev"><span class="ts">${e.t.toFixed(1)}s</span><span class="k ${e.kind}">${e.kind}</span>${body}</div>`;
+}
+
+function resultHtml() {
+  const r = run.result || {};
+  if (run.status === 'failed') return `<div class="panel result"><h2>Run failed</h2><div class="answer">${esc(r.error || '')}</div></div>`;
+  if (run.status !== 'done') return '';
+  if (r.kind === 'answer') {
+    const g = r.quality ? r.quality.groundedness : null;
+    return `<div class="panel result"><h2><span class="gradtext">Answer</span></h2><div class="badges">
+      ${g != null ? `<span class="badge ${g >= 0.75 ? 'ok' : 'bad'}">groundedness ${Math.round(g * 100)}%</span>` : ''}
+      <span class="badge info">${(r.plan && r.plan.research || []).length} research threads</span></div>
+      <div class="answer">${inline(r.answer || '')}</div></div>`;
+  }
+  if (r.kind === 'change') {
+    if (!r.diff) return `<div class="panel result"><h2>No patch</h2><div class="answer">The coder could not produce a patch; see the coder lane.</div></div>`;
+    const t = r.tests || {}, rv = r.review || {};
+    const diff = r.diff.split('\n').map((l) => l.startsWith('+') && !l.startsWith('+++') ? `<span class="add">${esc(l)}</span>` : l.startsWith('-') && !l.startsWith('---') ? `<span class="del">${esc(l)}</span>` : esc(l)).join('\n');
+    return `<div class="panel result"><h2><span class="gradtext">Patch</span> <span style="font-size:14px;color:var(--faint)">${esc((r.files || []).join(', '))}</span></h2>
+      <div class="badges"><span class="badge ${rv.approved ? 'ok' : 'bad'}">${rv.approved ? 'reviewer approved' : 'reviewer: changes requested'}${rv.score ? ' · ' + rv.score + '/5' : ''}</span>
+      <span class="badge ${!t.ran ? 'info' : t.passed ? 'ok' : 'bad'}">${!t.ran ? 'tests not run' : t.passed ? 'tests passed' : 'tests failed'}</span></div>
+      ${r.summary ? `<p class="answer" style="margin-top:0">${inline(r.summary)}</p>` : ''}
+      <pre class="diff">${diff}</pre><div style="margin-top:12px;display:flex;gap:8px"><button id="apply">Apply to working tree</button></div></div>`;
+  }
+  return '';
+}
+
+function showIntro() {
+  $('#status').style.display = 'none'; $('#crumb').textContent = 'Agent crew';
+  $('#view').innerHTML = `<div class="panel empty"><h1>A crew of <span class="gradtext">agents</span> on your code</h1>
+    <div>A planner splits the task, researchers investigate in parallel with code tools, then a writer answers, or a coder, tester and reviewer iterate on a patch.</div>
+    <div class="roles">${Object.entries(ROLE).filter(([k]) => k !== 'crew').map(([k, [c, d]]) => `<div class="role"><b style="color:${c}">${k}</b>${d}</div>`).join('')}</div></div>`;
+}
+
+// ------------------------------------------------------------ data
+async function loadRuns() {
+  try {
+    const items = await api('/crews');
+    $('#runs').innerHTML = items.length ? items.map((r) => `<a href="/crew/${r.id}" class="${run && run.id === r.id ? 'on' : ''}"><div class="t">${esc(r.task)}</div>
+      <div class="m">${esc(r.status)} · ${r.duration ?? 0}s · ${(r.total_tokens || 0).toLocaleString()} tok</div></a>`).join('') : '<div class="faint">No runs yet.</div>';
+  } catch (e) { $('#runs').innerHTML = `<div class="faint">${esc(e.message)}</div>`; }
+}
+
+async function follow(id) {
+  if (controller) controller.abort();
+  controller = new AbortController();
+  run = await api(`/crews/${id}`);
+  render();
+  if (run.status !== 'running') { loadRuns(); return; }
+  let seq = run.events.length ? run.events[run.events.length - 1].seq : -1;
+  try {
+    const res = await fetch(`/crews/${id}/events?after=${seq}`, { headers: TOKEN ? { 'X-VoxCode-Token': TOKEN } : {}, signal: controller.signal });
+    const reader = res.body.getReader(), decoder = new TextDecoder(); let buffer = '';
+    for (;;) {
+      const { value, done } = await reader.read(); if (done) break;
+      buffer += decoder.decode(value, { stream: true }); let cut;
+      while ((cut = buffer.indexOf('\n\n')) !== -1) {
+        const block = buffer.slice(0, cut); buffer = buffer.slice(cut + 2);
+        if (!block.startsWith('data:')) continue;
+        const msg = JSON.parse(block.slice(5));
+        if (msg.type === 'event') { addEvent(msg); render(); }
+        if (msg.type === 'end') { run = await api(`/crews/${id}`); render(); loadRuns(); return; }
+      }
+    }
+  } catch (e) { if (e.name !== 'AbortError') toast(`Live updates stopped: ${e.message}`); }
+}
+
+async function applyPatch() {
+  try { const r = await api(`/crews/${run.id}/apply`, { method: 'POST' }); toast(`Applied to ${r.files_modified.join(', ')}`); $('#apply').disabled = true; }
+  catch (e) { toast(`Apply failed: ${e.message}`, 5000); }
+}
+
+$('#go').onclick = async () => {
+  const task = $('#task').value.trim(), repo = $('#repo').value.trim();
+  if (!task || !repo) { toast('Enter a task and a repository path'); return; }
+  try { localStorage.setItem('voxcode.repo', repo); } catch (e) {}
+  $('#go').disabled = true;
+  try {
+    const created = await api('/crews', { method: 'POST', body: JSON.stringify({ task, repository_path: repo, mode: $('#mode').value, run_tests: $('#tests').checked }) });
+    history.pushState({}, '', created.url);
+    run = emptyRun(created.id, task); render(); loadRuns();
+    await follow(created.id);
+  } catch (e) { toast(e.message, 5000); }
+  finally { $('#go').disabled = false; }
+};
+$('#task').addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) $('#go').click(); });
+window.addEventListener('popstate', () => boot());
+
+function boot() {
+  try { $('#repo').value = localStorage.getItem('voxcode.repo') || ''; } catch (e) {}
+  const id = location.pathname.split('/')[2];
+  loadRuns();
+  if (id) follow(id).catch((e) => { $('#view').innerHTML = `<div class="panel empty">${esc(e.message)}</div>`; });
+  else { run = null; showIntro(); }
+}
+boot();
+</script>
+</body>
+</html>

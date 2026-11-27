@@ -18,6 +18,7 @@
   <a href="#features"><b>Features</b></a> &nbsp;•&nbsp;
   <a href="#integrations"><b>Integrations</b></a> &nbsp;•&nbsp;
   <a href="#how-it-works"><b>How it works</b></a> &nbsp;•&nbsp;
+  <a href="#crew"><b>Agent crew</b></a> &nbsp;•&nbsp;
   <a href="#review"><b>Review</b></a> &nbsp;•&nbsp;
   <a href="#learning"><b>Learning</b></a> &nbsp;•&nbsp;
   <a href="#rust-core"><b>Rust core</b></a> &nbsp;•&nbsp;
@@ -148,6 +149,30 @@ flowchart LR
 
 More in [architecture.md](docs/architecture.md).
 
+<a id="crew"></a>
+## 🤝 Agent crew
+
+One command, six specialised agents. `voxcode crew "…"` (or the `/crew` page) runs a small team on the task:
+
+```mermaid
+flowchart LR
+  P[🧭 Planner] --> R1[🔎 Researcher 1] & R2[🔎 Researcher 2] & R3[🔎 Researcher 3]
+  R1 & R2 & R3 -->|question| W[✍️ Writer] --> V[⚖️ Reviewer<br/>groundedness]
+  R1 & R2 & R3 -->|change| C[🛠 Coder] --> T[🧪 Tester<br/>sandbox] --> V2[⚖️ Reviewer<br/>rubric]
+  V2 -->|issues + failing output| C
+```
+
+- **Parallel research.** The planner breaks the task into questions; researchers answer them at the same time with search, file and call-graph tools.
+- **Checked output.** Answers are re-written if under 75% grounded in the code that was read. Patches go through the tests and a reviewer's rubric, and come back to the coder with the issues for up to two rounds.
+- **Fully observable.** Every agent's tokens, tool calls and cost are metered under one budget, streamed live and saved for replay.
+
+<p align="center"><img src="docs/assets/crew-patch.png" alt="Crew page: a patch approved by the reviewer, a timeline of six agents, and each agent's tool calls" width="100%"></p>
+
+```bash
+voxcode crew "how does the review store wait for a decision?" --repo .
+voxcode crew "add input validation to the /index route" --mode change --tests
+```
+
 <a id="review"></a>
 <p align="center"><img src="docs/assets/section-review.svg" alt="Review before it runs" width="100%"></p>
 
@@ -214,6 +239,7 @@ VoxCode also works **on** Rust projects: `impl`-aware symbols, a call graph from
 | Benchmark | What it checks | Run |
 |---|---|---|
 | Retrieval | 30 handwritten questions about this repo: code-aware tokens lift recall@5 **0.47 → 0.67** over whitespace BM25 | `voxcode eval` |
+| Local semantic model | Same 30 questions, no GPU or embedding model: hybrid BM25 + TF-IDF/SVD lifts MRR **0.49 → 0.53**, recall@5 0.63 → 0.70 over BM25 alone | `voxcode eval` |
 | Learned ranker | Leave-one-out over the same questions as feedback: MRR@10 **0.50 → 0.58**, recall@5 0.67 → 0.70 | `voxcode eval --learning` |
 | Intent model | 5-fold CV on 264 labelled requests: **67%** vs 57% for keyword rules; it refines the rules and never turns a question into an edit | `pytest tests/unit/test_learning.py` |
 | SWE-bench Lite | Does search find the files a real GitHub fix touched? (recall@1/5/10) | `voxcode swebench` |

@@ -16,6 +16,7 @@ from voxcode.learning.features import CandidateLists, featurize
 from voxcode.models.retrieval_result import RetrievalResult
 from voxcode.retrieval.bm25.bm25_retriever import BM25Retriever, to_result
 from voxcode.retrieval.hybrid.fusion import reciprocal_rank_fusion
+from voxcode.retrieval.semantic.local_lsa import LocalSemanticRetriever
 from voxcode.retrieval.semantic.semantic_retriever import SemanticRetriever
 from voxcode.retrieval.semantic.vector_store import VectorStore
 
@@ -37,11 +38,18 @@ class HybridRetriever:
 
             self.ranker = load_ranker(index.repo_key)
         self._callers: dict[str, int] | None = None
-        self.semantic = None
+        self.semantic: SemanticRetriever | LocalSemanticRetriever | None = None
         if embedder is not None and index.semantic_model:
             self.semantic = SemanticRetriever(
                 embedder, vector_store or VectorStore(index.repo_key), self.chunks_by_id
             )
+        elif settings.LOCAL_SEMANTIC and index.chunks:
+            # No neural embedder installed: a semantic model trained on this repo.
+            from voxcode.retrieval.semantic.local_lsa import model_for
+
+            model = model_for(index.repo_key, index.chunks)
+            if model is not None:
+                self.semantic = LocalSemanticRetriever(model, index.chunks)
 
     def candidate_lists(
         self, query: str, top_k: int | None = None, extra_queries: list[str] | None = None

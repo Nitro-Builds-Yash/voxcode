@@ -77,3 +77,15 @@ Recognised voice commands: `accept`, `reject`, `undo`, `next file`, `previous fi
 ## v0.8 additions
 
 Plan and patch review endpoints (`/reviews…`) are documented in [review.md](review.md#api).
+
+## v0.9 additions: agent crew
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` | `/crews` | Start a run. Body: `task`, `repository_path`, `mode` (`auto`, `answer` or `change`), `run_tests` (default `true`). Returns the run id at once; the crew works in the background. |
+| `GET` | `/crews` | Recent runs with status, duration and tokens. |
+| `GET` | `/crews/{id}` | Full trace: events, per-agent stats, cost and the result (answer or patch). |
+| `GET` | `/crews/{id}/events?after=N` | Server-sent events: `event` for each step (agent, kind, text, data), then `end`. Finished runs are replayed from disk. |
+| `POST` | `/crews/{id}/apply` | Apply the run's patch to the working tree and re-index. `409` if there's no patch or it no longer applies. |
+
+The page at `/crew` (and `/crew/{id}` for one run) shows runs live.

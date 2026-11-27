@@ -16,6 +16,8 @@ from fastapi.staticfiles import StaticFiles
 from voxcode.api import services
 from voxcode.api.routes.agent import router as agent_router
 from voxcode.api.routes.config import router as config_router
+from voxcode.api.routes.crew import pages as crew_pages
+from voxcode.api.routes.crew import router as crew_router
 from voxcode.api.routes.health import router as health_router
 from voxcode.api.routes.index import router as index_router
 from voxcode.api.routes.review import pages as review_pages
@@ -75,6 +77,8 @@ app.include_router(voice_router)
 app.include_router(index_router)
 app.include_router(config_router)
 app.include_router(review_router)
+app.include_router(crew_router)
+app.include_router(crew_pages)
 app.include_router(review_pages)
 
 try:
