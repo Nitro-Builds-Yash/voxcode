@@ -86,7 +86,7 @@ def default_model() -> IntentModel:
     """Trained once per install (about 3 s), then loaded from the cache in milliseconds."""
     from voxcode.config import paths
 
-    digest = hashlib.sha1(DATA.read_bytes() + f"{DIM}".encode()).hexdigest()[:16]
+    digest = hashlib.sha1(DATA.read_bytes() + f"{DIM}".encode(), usedforsecurity=False).hexdigest()[:16]
     cache = paths.CACHE_DIR / f"intent-model-{digest}.npz"
     try:
         data = np.load(cache)

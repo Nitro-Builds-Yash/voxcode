@@ -1,5 +1,8 @@
 """Protects the local API from other websites and (optionally) other users.
 
+* DNS rebinding: a website can point its own domain at 127.0.0.1, so its
+  pages become "same origin" with this server. Requests must therefore be
+  addressed to localhost / 127.0.0.1 / ::1 / HOST or an ALLOWED_HOSTS name.
 * Cross-site requests: a page on any website can make your browser send
   requests to http://localhost:8000. Requests carrying an Origin header that
   is neither the server's own origin nor in ALLOWED_ORIGINS are rejected.
@@ -31,6 +34,11 @@ class LocalSecurityMiddleware:
         headers = {k.decode().lower(): v.decode() for k, v in scope.get("headers", [])}
         path = scope.get("path", "")
 
+        if not _host_allowed(headers.get("host", "")):
+            return await _deny(
+                scope, receive, send, 421, "Requests must be addressed to localhost (see ALLOWED_HOSTS)"
+            )
+
         origin = headers.get("origin")
         if origin and not _origin_allowed(origin, headers.get("host", ""), scope):
             return await _deny(scope, receive, send, 403, f"Origin {origin} is not allowed")
@@ -45,6 +53,25 @@ class LocalSecurityMiddleware:
         return await self.app(scope, receive, send)
 
 
+_LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1"}
+
+
+def _host_allowed(host_header: str) -> bool:
+    allowed = settings.allowed_hosts
+    if "*" in allowed:
+        return True
+    host = host_header.strip().lower()
+    if host.startswith("["):  # [::1]:8000
+        host = host[1 : host.find("]")] if "]" in host else host
+    elif host.count(":") == 1:
+        host = host.split(":", 1)[0]
+    if not host:
+        return True  # HTTP/1.0 clients without Host can't be a browser rebinding attack
+    configured = settings.HOST.lower()
+    wildcard = configured in ("0.0.0.0", "::")  # nosec B104: a comparison, not a bind
+    return host in _LOCAL_HOSTS or host in allowed or (not wildcard and host == configured)
+
+
 def _origin_allowed(origin: str, host: str, scope) -> bool:
     if origin in settings.allowed_origins:
         return True
@@ -54,7 +81,7 @@ def _origin_allowed(origin: str, host: str, scope) -> bool:
 
 async def _deny(scope, receive, send, status: int, message: str):
     if scope["type"] == "websocket":
-        await send({"type": "websocket.close", "code": 4403 if status == 403 else 4401})
+        await send({"type": "websocket.close", "code": {403: 4403, 401: 4401}.get(status, 4400)})
         return
     body = json.dumps({"detail": message}).encode()
     await send(

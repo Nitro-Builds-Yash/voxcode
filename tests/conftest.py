@@ -159,6 +159,7 @@ def isolated_storage(tmp_path, monkeypatch):
 
     monkeypatch.setattr(paths, "LEARNING_DIR", tmp_path / "learning")
     monkeypatch.setattr(settings, "BACKGROUND_CALL_GRAPH", False)  # deterministic graphs in tests
+    monkeypatch.setattr(settings, "ALLOWED_HOSTS", "testserver")  # Starlette's TestClient host
     answer_cache.clear()
     return store
 

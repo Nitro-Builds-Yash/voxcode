@@ -219,3 +219,27 @@ def test_speak_reports_a_missing_tts_engine(client, monkeypatch):
     reply = client.post("/voice/speak", json={"text": "hello", "play": True})
     assert reply.status_code == 503 and "not installed" in reply.json()["detail"]
     assert client.post("/voice/speak", json={"text": "hello", "play": False}).status_code == 200
+
+
+@pytest.mark.parametrize(
+    ("host", "expected"),
+    [
+        ("evil.example:8000", 421),  # DNS rebinding: the attacker's domain pointed at 127.0.0.1
+        ("localhost:8000", 200),
+        ("127.0.0.1:8000", 200),
+        ("[::1]:8000", 200),
+    ],
+)
+def test_requests_must_be_addressed_to_localhost(client, host, expected):
+    """Regression: with Host and Origin both set to an attacker's rebinding domain, the API answered."""
+    origin = f"http://{host}"
+    reply = client.get("/config/", headers={"Host": host, "Origin": origin})
+    assert reply.status_code == expected
+
+
+def test_allowed_hosts_setting(client, monkeypatch):
+    monkeypatch.setattr(settings, "ALLOWED_HOSTS", "testserver,devbox.lan")
+    assert client.get("/health", headers={"Host": "devbox.lan:8000"}).status_code == 200
+    assert client.get("/health", headers={"Host": "other.lan:8000"}).status_code == 421
+    monkeypatch.setattr(settings, "ALLOWED_HOSTS", "*")
+    assert client.get("/health", headers={"Host": "other.lan:8000"}).status_code == 200

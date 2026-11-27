@@ -2,6 +2,25 @@
 
 All notable changes to VoxCode. Versions follow [Semantic Versioning](https://semver.org).
 
+## [0.8.2] — Audit fixes
+
+From a full re-audit: static analysis (ruff, mypy, Bandit, Vulture, Radon), dependency audit (pip-audit: no known vulnerabilities), coverage, and a manual security review.
+
+### Security
+- **DNS rebinding.** With no `API_TOKEN` (the default), a website could point its domain at 127.0.0.1 and send same-origin requests to VoxCode: read and change the config, apply patches and run tests. Requests must now be addressed to localhost, `::1`, `HOST` or a name in the new `ALLOWED_HOSTS` setting, and anything else gets `421`. Docker Compose allows the `voxcode` service name for Prometheus.
+- Patches into `.git/` are rejected with a clear message (git already refused them).
+- Optional `RERANK_MODEL_REVISION` pins the reranker download. Bandit now reports no medium or high findings: non-security hashes are marked as such, and the two false positives are annotated.
+
+### Fixed
+- **`voxcode index` never finished the precise call graph.** The background thread died with the CLI process. CLI commands now build it before exiting, and the server completes any graph left pending.
+- **`voxcode ask` / `edit` printed a Python traceback** when the model was unreachable; they now print the error and exit 1.
+- `git` subprocesses that could hang now have timeouts.
+
+### Changed
+- The CLI is split into one function per command (`main` complexity 42 → small functions) and is now tested (was 0% coverage).
+- The VS Code extension README (its Marketplace page) now covers `@vox` chat, hands-free mode, plan review, branch/PR targets and all settings.
+- Five settings that were documented nowhere are now in `docs/configuration.md`.
+
 ## [0.8.1] — Bug fixes
 
 Found by smoke-testing the server, the web UI and the review page in Chrome against an OpenAI-compatible fake model.

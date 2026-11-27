@@ -21,7 +21,7 @@ import sys
 from pathlib import Path
 
 
-def main(argv: list[str] | None = None) -> None:
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="voxcode", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
@@ -85,138 +85,200 @@ def main(argv: list[str] | None = None) -> None:
     swe.add_argument("--resolve", action="store_true", help="also generate patches and run the tests")
     swe.add_argument("--output", default="swebench_results.jsonl")
 
-    args = parser.parse_args(argv)
+    return parser
 
-    if args.command == "serve":
-        from voxcode.main import main as serve
 
-        serve()
-        return
+# ------------------------------------------------------------------ commands
+# Each returns a process exit code. Repository commands run in a short-lived
+# process, so the precise call graph is built before exiting (a background
+# thread would die with the process and leave the index on name matching).
 
-    if args.command == "train-ranker":
-        import json as _json
 
-        from voxcode.api import services
-        from voxcode.learning.training import train
+def _serve(args) -> int:
+    from voxcode.main import main as serve
 
-        stats = services.index_repository(Path(args.repo).resolve())
-        repo_index = services.indexer.store.load(stats.repo_key)
-        assert repo_index is not None
-        report = train(repo_index, min_feedback=args.min_feedback)
-        print(_json.dumps({k: v for k, v in report.items() if k != "features"}, indent=2))
-        return
+    serve()
+    return 0
 
-    if args.command == "eval":
-        if args.learning:
-            from voxcode.evaluation import learning_eval
 
-            learning_eval.main(["--repo", args.repo])
-            return
-        if args.answers:
-            from voxcode.evaluation import answer_eval
-
-            answer_eval.main(["--repo", args.repo])
-        else:
-            from voxcode.evaluation import retrieval_eval
-
-            extra = ["--embedding-models", args.embedding_models] if args.embedding_models else []
-            retrieval_eval.main(["--repo", args.repo, *extra])
-        return
-
-    if args.command == "hook":
-        from voxcode.review import hooks
-
-        if args.action == "claude-plan":
-            sys.exit(hooks.claude_plan_hook())
-        if args.action == "install":
-            print(f"Added the plan-review hook to {hooks.install_claude(args.project)}")
-            print("Claude Code plans now open in VoxCode for review. Restart Claude Code to load it.")
-        else:
-            removed = hooks.uninstall_claude(args.project)
-            print("Removed the VoxCode hook." if removed else "No VoxCode hook was installed.")
-        return
-
-    if args.command == "review":
-        from voxcode.review.client import review_text
-        from voxcode.review.feedback import title_from
-
-        text = sys.stdin.read() if args.file == "-" else Path(args.file).read_text(encoding="utf-8")
-        is_diff = args.diff or args.file.endswith((".diff", ".patch"))
-        name = "stdin" if args.file == "-" else Path(args.file).name
-        decision = review_text(
-            text,
-            "diff" if is_diff else "document",
-            name if is_diff else title_from(text, name),
-            "cli",
-            {"file": args.file},
-        )
-        print("APPROVED" if decision.get("decision") == "approved" else decision.get("feedback", ""))
-        sys.exit(0 if decision.get("decision") == "approved" else 1)
-
-    if args.command == "reviews":
-        from voxcode.review.store import review_store
-
-        for r in review_store.list(50):
-            print(f"{r['id']}  {r['status']:<9} {r['kind']:<8} {r['source']:<12} {r['title']}")
-        return
-
-    if args.command == "mcp":
-        try:
-            from voxcode.integrations.mcp_server import run
-        except ImportError:
-            parser.exit(1, "voxcode: the MCP server needs the 'mcp' extra: pip install 'voxcode[mcp]'\n")
-        run(args.repo, args.transport, args.host, args.port)
-        return
-
-    if args.command == "swebench":
-        from voxcode.evaluation import swebench
-
-        argv = [args.instances, "--output", args.output]
-        if args.limit:
-            argv += ["--limit", str(args.limit)]
-        if args.workdir:
-            argv += ["--workdir", args.workdir]
-        if args.resolve:
-            argv.append("--resolve")
-        swebench.main(argv)
-        return
-
-    from voxcode.agent.agent_request import AgentRequest
-    from voxcode.agent.runtime import runtime_cache
-    from voxcode.api import services
+def _repo(parser: argparse.ArgumentParser, path: str) -> Path:
     from voxcode.core.repository import RepositoryPathError, resolve_repository_path
 
     try:
-        repo = resolve_repository_path(args.path if args.command == "index" else args.repo)
+        return resolve_repository_path(path)
     except RepositoryPathError as exc:
         parser.exit(2, f"voxcode: {exc}\n")
 
-    if args.command == "index":
-        stats = services.index_repository(repo, full=args.full)
-        print(
-            f"Indexed {stats.files_indexed} files ({stats.files_changed} changed, "
-            f"{stats.files_removed} removed) into {stats.chunks_created} chunks in "
-            f"{stats.duration_seconds}s · {'semantic + keyword' if stats.semantic_indexed else 'keyword only'}"
-        )
-        return
 
+def _index(args, parser) -> int:
+    from voxcode.api import services
+
+    stats = services.index_repository(_repo(parser, args.path), full=args.full)
+    print(
+        f"Indexed {stats.files_indexed} files ({stats.files_changed} changed, "
+        f"{stats.files_removed} removed) into {stats.chunks_created} chunks in "
+        f"{stats.duration_seconds}s · {'semantic + keyword' if stats.semantic_indexed else 'keyword only'}"
+    )
+    return 0
+
+
+def _query_command(args, parser) -> int:
+    from voxcode.agent.agent_request import AgentRequest
+    from voxcode.agent.runtime import runtime_cache
+    from voxcode.api import services
+
+    repo = _repo(parser, args.repo)
     key = services.ensure_indexed(repo)
-    request = AgentRequest(session_id="cli", repository_key=key, query=args.text)
-
     if args.command == "search":
         retriever = runtime_cache.retriever(key)
-        for hit in retriever.expand(retriever.search(args.text, 8)):
+        hits = retriever.expand(retriever.search(args.text, 8))
+        for hit in hits:
             print(f"[{hit.source:8}] {hit.file_path}:{hit.start_line}  {hit.symbol_name}")
-    elif args.command == "ask":
-        for event in services.pipeline().stream(request):
-            if event["type"] == "token":
-                sys.stdout.write(event["text"])
-                sys.stdout.flush()
-        print()
+        if not hits:
+            print("No matches.")
+        return 0
+    request = AgentRequest(session_id="cli", repository_key=key, query=args.text)
+    try:
+        if args.command == "ask":
+            for event in services.pipeline().stream(request):
+                if event["type"] == "token":
+                    sys.stdout.write(event["text"])
+                    sys.stdout.flush()
+            print()
+        else:
+            edit = services.edit_agent().run(request, repo, run_tests=args.tests)
+            print(f"[{edit.status}] {edit.summary}\n")
+            print(edit.diff or "(no patch)")
+    except Exception as exc:  # e.g. the model is unreachable: a message, not a traceback
+        print(f"\nvoxcode: {exc}", file=sys.stderr)
+        return 1
+    return 0
+
+
+def _train_ranker(args, parser) -> int:
+    import json
+
+    from voxcode.api import services
+    from voxcode.learning.training import train
+
+    stats = services.index_repository(_repo(parser, args.repo))
+    repo_index = services.indexer.store.load(stats.repo_key)
+    assert repo_index is not None
+    report = train(repo_index, min_feedback=args.min_feedback)
+    print(json.dumps({k: v for k, v in report.items() if k != "features"}, indent=2))
+    return 0
+
+
+def _eval(args, parser) -> int:
+    if args.learning:
+        from voxcode.evaluation import learning_eval
+
+        learning_eval.main(["--repo", args.repo])
+    elif args.answers:
+        from voxcode.evaluation import answer_eval
+
+        answer_eval.main(["--repo", args.repo])
     else:
-        edit = services.edit_agent().run(request, repo, run_tests=args.tests)
-        print(f"[{edit.status}] {edit.summary}\n")
-        print(edit.diff or "(no patch)")
+        from voxcode.evaluation import retrieval_eval
+
+        extra = ["--embedding-models", args.embedding_models] if args.embedding_models else []
+        retrieval_eval.main(["--repo", args.repo, *extra])
+    return 0
+
+
+def _hook(args, parser) -> int:
+    from voxcode.review import hooks
+
+    if args.action == "claude-plan":
+        return hooks.claude_plan_hook()
+    if args.action == "install":
+        print(f"Added the plan-review hook to {hooks.install_claude(args.project)}")
+        print("Claude Code plans now open in VoxCode for review. Restart Claude Code to load it.")
+    else:
+        removed = hooks.uninstall_claude(args.project)
+        print("Removed the VoxCode hook." if removed else "No VoxCode hook was installed.")
+    return 0
+
+
+def _review(args, parser) -> int:
+    from voxcode.review.client import review_text
+    from voxcode.review.feedback import title_from
+
+    text = sys.stdin.read() if args.file == "-" else Path(args.file).read_text(encoding="utf-8")
+    is_diff = args.diff or args.file.endswith((".diff", ".patch"))
+    name = "stdin" if args.file == "-" else Path(args.file).name
+    decision = review_text(
+        text,
+        "diff" if is_diff else "document",
+        name if is_diff else title_from(text, name),
+        "cli",
+        {"file": args.file},
+    )
+    approved = decision.get("decision") == "approved"
+    print("APPROVED" if approved else decision.get("feedback", ""))
+    return 0 if approved else 1
+
+
+def _reviews(args, parser) -> int:
+    from voxcode.review.store import review_store
+
+    items = review_store.list(50)
+    for r in items:
+        print(f"{r['id']}  {r['status']:<9} {r['kind']:<8} {r['source']:<12} {r['title']}")
+    if not items:
+        print("No reviews yet.")
+    return 0
+
+
+def _mcp(args, parser) -> int:
+    try:
+        from voxcode.integrations.mcp_server import run
+    except ImportError:
+        parser.exit(1, "voxcode: the MCP server needs the 'mcp' extra: pip install 'voxcode[mcp]'\n")
+    run(args.repo, args.transport, args.host, args.port)
+    return 0
+
+
+def _swebench(args, parser) -> int:
+    from voxcode.evaluation import swebench
+
+    argv = [args.instances, "--output", args.output]
+    if args.limit:
+        argv += ["--limit", str(args.limit)]
+    if args.workdir:
+        argv += ["--workdir", args.workdir]
+    if args.resolve:
+        argv.append("--resolve")
+    swebench.main(argv)
+    return 0
+
+
+COMMANDS = {
+    "serve": lambda args, parser: _serve(args),
+    "index": _index,
+    "search": _query_command,
+    "ask": _query_command,
+    "edit": _query_command,
+    "train-ranker": _train_ranker,
+    "eval": _eval,
+    "hook": _hook,
+    "review": _review,
+    "reviews": _reviews,
+    "mcp": _mcp,
+    "swebench": _swebench,
+}
+
+
+def main(argv: list[str] | None = None) -> None:
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    if args.command != "serve":
+        from voxcode.config.settings import settings
+
+        settings.BACKGROUND_CALL_GRAPH = False  # this process exits when the command ends
+    code = COMMANDS[args.command](args, parser)
+    if code:
+        sys.exit(code)
 
 
 if __name__ == "__main__":

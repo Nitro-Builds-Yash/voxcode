@@ -100,7 +100,9 @@ def commit_on_branch(
             return result
         finally:
             subprocess.run(
-                ["git", "-C", str(repo), "worktree", "remove", "--force", str(worktree)], capture_output=True
+                ["git", "-C", str(repo), "worktree", "remove", "--force", str(worktree)],
+                capture_output=True,
+                timeout=60,
             )
 
 

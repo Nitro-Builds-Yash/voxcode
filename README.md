@@ -266,6 +266,7 @@ CI runs all of this on Python 3.10 and 3.12, builds the Rust core and the VS Cod
 <br>
 
 * Runs on `127.0.0.1`; requests from other websites are rejected, so a page in your browser cannot drive VoxCode.
+* Requests must be addressed to `localhost` / `127.0.0.1` / `::1` (or a name in `ALLOWED_HOSTS`), which blocks DNS-rebinding attacks.
 * `API_TOKEN` requires a token; `ALLOWED_REPO_ROOTS` limits which folders can be indexed or edited.
 * Secrets are redacted before code is sent to a remote model; `LOCAL_ONLY=true` refuses remote models entirely.
 * Patches only touch files inside the repository, are never written without your accept, and can be undone.

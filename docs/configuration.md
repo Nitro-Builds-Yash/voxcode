@@ -128,3 +128,14 @@ Set `VOXCODE_NO_BROWSER=1` to print review URLs instead of opening a browser. SS
 | Setting | Default | Purpose |
 |---|---|---|
 | `BACKGROUND_CALL_GRAPH` | `true` | Build the precise call graph after indexing, in the background, so the first question doesn't wait for it (about 30 s on a mid-size repo). Search uses name matching until it's ready. |
+
+## v0.8.2
+
+| Setting | Default | Purpose |
+|---|---|---|
+| `ALLOWED_HOSTS` | – | Extra host names the server may be reached by (comma-separated), e.g. a LAN name when `HOST=0.0.0.0`. Requests to any other host get `421`, which blocks DNS-rebinding attacks. `localhost`, `127.0.0.1`, `::1` and `HOST` always work; `*` disables the check. |
+| `RERANK_MODEL_REVISION` | – | Pin the reranker to a Hugging Face commit (supply-chain safety). |
+| `EMBEDDING_BATCH_SIZE` | `64` | Chunks per embedding batch. |
+| `WATCH_DEBOUNCE_SECONDS` | `2.0` | Wait this long after the last file change before re-indexing. |
+| `QDRANT_COLLECTION_PREFIX` | `voxcode` | Prefix of the Qdrant collections (one per repository). |
+| `APP_NAME` / `APP_VERSION` | `VoxCode` / current | Reported by `/health` and the API docs. |

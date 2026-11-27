@@ -112,6 +112,7 @@ def run_tests_with_patch(repo: Path, diff: str, timeout: int) -> TestReport | No
             input=normalize_diff(diff),
             capture_output=True,
             text=True,
+            timeout=60,
         )
         if applied.returncode != 0:
             return TestReport(label, False, applied.stderr)

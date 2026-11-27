@@ -110,7 +110,7 @@ class ModelRegistry:
         from voxcode.generation.providers import create_provider
 
         name = (provider_name or settings.DEFAULT_PROVIDER).lower()
-        fingerprint = hashlib.sha1(repr(_provider_config(name)).encode()).hexdigest()
+        fingerprint = hashlib.sha1(repr(_provider_config(name)).encode(), usedforsecurity=False).hexdigest()
         with self._lock:
             cached = self._providers.get(name)
             if cached and cached[0] == fingerprint:
@@ -129,7 +129,7 @@ class ModelRegistry:
 
         name = (settings.CASCADE_PROVIDER or settings.DEFAULT_PROVIDER).lower()
         fingerprint = hashlib.sha1(
-            repr((_provider_config(name), settings.CASCADE_MODEL)).encode()
+            repr((_provider_config(name), settings.CASCADE_MODEL)).encode(), usedforsecurity=False
         ).hexdigest()
         with self._lock:
             cached = self._providers.get("cascade")
@@ -142,7 +142,9 @@ class ModelRegistry:
     def set_provider(self, name: str, provider) -> None:
         with self._lock:
             self._providers[name.lower()] = (
-                hashlib.sha1(repr(_provider_config(name.lower())).encode()).hexdigest(),
+                hashlib.sha1(
+                    repr(_provider_config(name.lower())).encode(), usedforsecurity=False
+                ).hexdigest(),
                 provider,
             )
 

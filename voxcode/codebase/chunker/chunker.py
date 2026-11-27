@@ -212,7 +212,9 @@ def _make_chunk(
 ) -> CodeChunk:
     content = "\n".join(lines)
     end = start + len(lines) - 1
-    digest = hashlib.md5(f"{file_path}\0{chunk_type}\0{name}\0{start}\0{end}\0{content}".encode()).hexdigest()
+    digest = hashlib.md5(
+        f"{file_path}\0{chunk_type}\0{name}\0{start}\0{end}\0{content}".encode(), usedforsecurity=False
+    ).hexdigest()
     base_name = name.rsplit(".", 1)[-1].split(" ")[0]
     calls = sorted(
         {match for match in _CALL_RE.findall(content) if match not in _KEYWORDS and match != base_name}

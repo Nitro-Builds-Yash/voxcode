@@ -103,7 +103,7 @@ class RepositoryIndexer:
                     raw = path.read_bytes()
                 except OSError:
                     continue
-                sha1 = hashlib.sha1(raw).hexdigest()
+                sha1 = hashlib.sha1(raw, usedforsecurity=False).hexdigest()
                 old_entry = previous.files.get(rel) if previous else None
 
                 if old_entry and old_entry.sha1 == sha1:

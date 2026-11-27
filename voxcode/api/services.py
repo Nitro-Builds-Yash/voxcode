@@ -107,6 +107,8 @@ def ensure_indexed(repo: Path) -> str:
     key = repository_key(repo)
     if not indexer.store.path(key).exists():
         index_repository(repo)
+    else:
+        _schedule_call_graph(key)  # finish a call graph left pending (e.g. a process that exited)
     if settings.WATCH_ENABLED:
         watcher.watch(repo, index_repository)
     return key
